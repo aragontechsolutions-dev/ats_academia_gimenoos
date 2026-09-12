@@ -1,0 +1,35 @@
+{
+  "name": "ats-academia-gimenoos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sistema integral de gestion para Academia de Choferes Gimenoos (San Carlos, Maldonado, Uruguay)",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "api:dev": "pnpm --filter @gimenoos/api start:dev",
+    "api:build": "pnpm --filter @gimenoos/api build",
+    "api:test": "pnpm --filter @gimenoos/api test",
+    "db:migrate": "pnpm --filter @gimenoos/api prisma:migrate",
+    "db:generate": "pnpm --filter @gimenoos/api prisma:generate",
+    "db:seed": "pnpm --filter @gimenoos/api prisma:seed",
+    "landing:dev": "pnpm --filter @gimenoos/landing dev",
+    "admin:dev": "pnpm --filter @gimenoos/admin dev",
+    "cliente:dev": "pnpm --filter @gimenoos/cliente dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild"
+    ]
+  }
+}

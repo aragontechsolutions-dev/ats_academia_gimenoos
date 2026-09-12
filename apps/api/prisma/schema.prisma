@@ -1,0 +1,521 @@
+// ============================================================================
+// Esquema de datos - Academia de Choferes Gimenoos
+// Postgres (Supabase) + Prisma v5
+//
+// Convenciones:
+//  - Modelos en PascalCase, tablas y columnas en snake_case via @map / @@map.
+//  - Todas las fechas/horas se guardan en UTC con tipo timestamptz.
+//    Esto NO es cosmetico: la EXCLUDE constraint anti-doble-reserva usa
+//    tstzrange(), que requiere timestamptz. Con el `timestamp` por defecto
+//    de Prisma la constraint no funciona correctamente.
+//  - Los importes son Decimal(12,2) en pesos uruguayos (UYU).
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooler de Supabase (Supavisor, puerto 6543, transaction mode) + ?pgbouncer=true
+  url       = env("DATABASE_URL")
+  // Conexion directa (puerto 5432). Requerida por `prisma migrate`, que necesita
+  // una conexion unica sin pooling.
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums (deben coincidir con packages/shared/src/enums.ts)
+// ---------------------------------------------------------------------------
+
+enum RolUsuario {
+  ADMIN
+  INSTRUCTOR
+  CLIENTE
+}
+
+enum TipoVehiculo {
+  MOTO
+  AUTO
+}
+
+enum CategoriaLicencia {
+  A
+  G1
+  G2
+  G3
+}
+
+enum EstadoVehiculo {
+  ACTIVO
+  MANTENIMIENTO
+  BAJA
+}
+
+enum TipoServicio {
+  CLASE_SUELTA
+  PACK
+  CURSO_COMPLETO
+  GESTORIA
+}
+
+enum EstadoReserva {
+  PENDIENTE
+  CONFIRMADA
+  COMPLETADA
+  CANCELADA
+  AUSENTE
+}
+
+enum TipoExcepcion {
+  BLOQUEO
+  DISPONIBILIDAD_EXTRA
+}
+
+enum CanalPago {
+  MP_ONLINE
+  MP_POINT
+  TRANSFERENCIA
+  EFECTIVO
+}
+
+enum EstadoPago {
+  PENDIENTE
+  PENDIENTE_VERIFICACION
+  APROBADO
+  RECHAZADO
+  REEMBOLSADO
+}
+
+enum EstadoExpediente {
+  INICIADO
+  DOCS_PENDIENTES
+  MEDICO_OK
+  CHARLA_OK
+  TEORICO_APROBADO
+  PRACTICO_APROBADO
+  EMITIDA
+  RECHAZADO
+}
+
+enum TipoDocumento {
+  CEDULA
+  CONSTANCIA_DOMICILIO
+  CARNE_SALUD
+  SOA
+  FOTO
+  AUTORIZACION_MENOR
+  LIBRE_MULTAS
+  OTRO
+}
+
+// ---------------------------------------------------------------------------
+// Identidad y perfiles
+// ---------------------------------------------------------------------------
+
+/// Espejo local del usuario de Supabase Auth.
+/// `id` es el mismo UUID que `auth.users.id` (claim `sub` del JWT): no se genera aca.
+/// La contrasenia y los factores de autenticacion viven SOLO en Supabase Auth.
+model Usuario {
+  id        String     @id @db.Uuid
+  email     String     @unique
+  nombre    String
+  apellido  String
+  telefono  String?
+  rol       RolUsuario @default(CLIENTE)
+  activo    Boolean    @default(true)
+
+  /// Fecha en que el usuario presto consentimiento informado para el tratamiento
+  /// de sus datos personales (Ley 18.331). Null = consentimiento no registrado.
+  consentimientoDatosAt DateTime? @map("consentimiento_datos_at") @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  cliente     Cliente?
+  instructor  Instructor?
+  auditorias  RegistroAuditoria[]
+
+  @@index([rol])
+  @@map("usuarios")
+}
+
+/// Ficha del alumno. Contiene datos identificatorios (cedula) que son datos
+/// personales bajo Ley 18.331: el acceso esta restringido por rol en la API.
+model Cliente {
+  id        String @id @default(uuid()) @db.Uuid
+  usuarioId String @unique @map("usuario_id") @db.Uuid
+
+  /// Cedula de identidad uruguaya, solo digitos incluyendo el verificador.
+  cedula          String?   @unique
+  fechaNacimiento DateTime? @map("fecha_nacimiento") @db.Date
+  direccion       String?
+  ciudad          String    @default("San Carlos")
+  /// Observaciones internas del instructor/admin. No visible para el cliente.
+  notasInternas   String?   @map("notas_internas")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  usuario     Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  reservas    Reserva[]
+  pagos       Pago[]
+  compras     CompraServicio[]
+  expedientes Expediente[]
+
+  @@map("clientes")
+}
+
+/// Instructor. Puede o no tener usuario de login asociado (un instructor sin
+/// acceso al sistema se administra desde el panel sin cuenta en Supabase Auth).
+model Instructor {
+  id        String  @id @default(uuid()) @db.Uuid
+  usuarioId String? @unique @map("usuario_id") @db.Uuid
+
+  nombre        String
+  apellido      String
+  telefono      String?
+  habilitaMoto  Boolean @default(false) @map("habilita_moto")
+  habilitaAuto  Boolean @default(true) @map("habilita_auto")
+  activo        Boolean @default(true)
+  /// Color hexadecimal para distinguirlo en el calendario del panel.
+  colorAgenda   String  @default("#2563eb") @map("color_agenda")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  usuario          Usuario?                   @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  disponibilidades DisponibilidadPlantilla[]
+  excepciones      ExcepcionDisponibilidad[]
+  reservas         Reserva[]
+
+  @@index([activo])
+  @@map("instructores")
+}
+
+// ---------------------------------------------------------------------------
+// Recursos de agenda
+// ---------------------------------------------------------------------------
+
+/// Vehiculo de la academia. Es un recurso reservable con calendario propio:
+/// una clase ocupa simultaneamente a un instructor Y a un vehiculo.
+model Vehiculo {
+  id         String         @id @default(uuid()) @db.Uuid
+  patente    String         @unique
+  tipo       TipoVehiculo
+  marca      String?
+  modelo     String?
+  /// Cilindrada en cc. Determina para que categoria de libreta sirve (G1/G2/G3).
+  cilindrada Int?
+  anio       Int?
+  estado     EstadoVehiculo @default(ACTIVO)
+  /// Vencimiento del SOA. La Intendencia lo exige vigente para el examen practico.
+  soaVence   DateTime?      @map("soa_vence") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  reservas Reserva[]
+
+  @@index([tipo, estado])
+  @@map("vehiculos")
+}
+
+/// Plantilla de disponibilidad recurrente de un instructor.
+/// Las horas se guardan como minutos desde medianoche (0-1440) en hora local
+/// de America/Montevideo, para que la plantilla no se corra con el horario de verano.
+model DisponibilidadPlantilla {
+  id           String @id @default(uuid()) @db.Uuid
+  instructorId String @map("instructor_id") @db.Uuid
+
+  /// 0 = domingo ... 6 = sabado
+  diaSemana      Int @map("dia_semana")
+  minutoInicio   Int @map("minuto_inicio")
+  minutoFin      Int @map("minuto_fin")
+
+  vigenteDesde DateTime? @map("vigente_desde") @db.Date
+  vigenteHasta DateTime? @map("vigente_hasta") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  instructor Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@index([instructorId, diaSemana])
+  @@map("disponibilidad_plantillas")
+}
+
+/// Excepcion puntual sobre la plantilla: licencia, feriado, o un turno extra.
+model ExcepcionDisponibilidad {
+  id           String        @id @default(uuid()) @db.Uuid
+  instructorId String        @map("instructor_id") @db.Uuid
+  tipo         TipoExcepcion
+  inicio       DateTime      @db.Timestamptz(3)
+  fin          DateTime      @db.Timestamptz(3)
+  motivo       String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  instructor Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@index([instructorId, inicio])
+  @@map("excepciones_disponibilidad")
+}
+
+// ---------------------------------------------------------------------------
+// Catalogo comercial
+// ---------------------------------------------------------------------------
+
+/// Servicio vendible: clase suelta, pack de N clases, curso completo o gestoria.
+/// Se guardan dos precios porque es practica habitual del rubro cobrar distinto
+/// segun el medio de pago (contado/transferencia vs. tarjeta).
+model Servicio {
+  id           String        @id @default(uuid()) @db.Uuid
+  slug         String        @unique
+  nombre       String
+  descripcion  String?
+  tipo         TipoServicio
+  /// Null en servicios que no involucran vehiculo (por ejemplo, gestoria).
+  tipoVehiculo TipoVehiculo? @map("tipo_vehiculo")
+
+  /// Cantidad de clases que otorga la compra (1 para clase suelta).
+  cantidadClases Int     @default(1) @map("cantidad_clases")
+  /// Duracion de cada clase en minutos.
+  duracionMin    Int     @default(45) @map("duracion_min")
+
+  precioContado Decimal @map("precio_contado") @db.Decimal(12, 2)
+  precioTarjeta Decimal @map("precio_tarjeta") @db.Decimal(12, 2)
+
+  activo  Boolean @default(true)
+  /// Orden de aparicion en la landing y en el panel.
+  orden   Int     @default(0)
+  /// Se muestra en la landing publica.
+  publico Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  compras CompraServicio[]
+
+  @@index([activo, publico, orden])
+  @@map("servicios")
+}
+
+/// Compra de un servicio por un cliente. Para packs funciona como bolsa de
+/// clases: `clasesUsadas` se incrementa al completarse cada reserva.
+model CompraServicio {
+  id         String @id @default(uuid()) @db.Uuid
+  clienteId  String @map("cliente_id") @db.Uuid
+  servicioId String @map("servicio_id") @db.Uuid
+
+  clasesTotales Int      @map("clases_totales")
+  clasesUsadas  Int      @default(0) @map("clases_usadas")
+  /// Precio efectivamente acordado, congelado al momento de la compra.
+  montoTotal    Decimal  @map("monto_total") @db.Decimal(12, 2)
+  vigenteHasta  DateTime? @map("vigente_hasta") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  cliente  Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  servicio Servicio  @relation(fields: [servicioId], references: [id], onDelete: Restrict)
+  reservas Reserva[]
+  pagos    Pago[]
+
+  @@index([clienteId])
+  @@map("compras_servicio")
+}
+
+// ---------------------------------------------------------------------------
+// Agenda
+// ---------------------------------------------------------------------------
+
+/// Clase agendada. Ocupa a la vez cliente, instructor y vehiculo.
+///
+/// La proteccion contra doble reserva NO vive en el codigo de la aplicacion:
+/// son dos EXCLUDE constraints de Postgres (btree_gist + tstzrange) definidas
+/// en la migracion 20260912120000_agenda_exclusion_constraints. Ver docs/01-modelo-datos.md.
+model Reserva {
+  id           String        @id @default(uuid()) @db.Uuid
+  clienteId    String        @map("cliente_id") @db.Uuid
+  instructorId String        @map("instructor_id") @db.Uuid
+  vehiculoId   String?       @map("vehiculo_id") @db.Uuid
+  compraId     String?       @map("compra_id") @db.Uuid
+
+  tipo   TipoVehiculo
+  inicio DateTime      @db.Timestamptz(3)
+  fin    DateTime      @db.Timestamptz(3)
+  estado EstadoReserva @default(PENDIENTE)
+
+  /// Punto de encuentro acordado con el alumno.
+  lugarEncuentro String? @map("lugar_encuentro")
+  observaciones  String?
+
+  canceladaAt     DateTime? @map("cancelada_at") @db.Timestamptz(3)
+  motivoCancelacion String? @map("motivo_cancelacion")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  cliente    Cliente         @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  instructor Instructor      @relation(fields: [instructorId], references: [id], onDelete: Restrict)
+  vehiculo   Vehiculo?       @relation(fields: [vehiculoId], references: [id], onDelete: Restrict)
+  compra     CompraServicio? @relation(fields: [compraId], references: [id], onDelete: SetNull)
+  pagos      Pago[]
+
+  @@index([inicio, estado])
+  @@index([instructorId, inicio])
+  @@index([vehiculoId, inicio])
+  @@index([clienteId, inicio])
+  @@map("reservas")
+}
+
+// ---------------------------------------------------------------------------
+// Pagos
+// ---------------------------------------------------------------------------
+
+/// Pago unificado para los cuatro canales: checkout online, terminal Point,
+/// transferencia con comprobante y efectivo.
+model Pago {
+  id        String @id @default(uuid()) @db.Uuid
+  clienteId String @map("cliente_id") @db.Uuid
+  compraId  String? @map("compra_id") @db.Uuid
+  reservaId String? @map("reserva_id") @db.Uuid
+
+  /// El monto SIEMPRE lo calcula el backend desde el catalogo. Nunca se toma del cliente.
+  monto  Decimal    @db.Decimal(12, 2)
+  canal  CanalPago
+  estado EstadoPago @default(PENDIENTE)
+
+  /// Identificadores de Mercado Pago (pago online o cobro en terminal Point).
+  mpPaymentId String? @unique @map("mp_payment_id")
+  mpOrderId   String? @unique @map("mp_order_id")
+  /// Referencia propia usada para idempotencia y conciliacion (X-Idempotency-Key).
+  externalRef String? @unique @map("external_ref")
+
+  /// Ruta del comprobante de transferencia dentro del bucket privado.
+  /// Formato: <usuarioId>/<pagoId>/<archivo>. Nunca es una URL publica.
+  comprobantePath String? @map("comprobante_path")
+
+  /// Verificacion manual del comprobante de transferencia.
+  verificadoPor String?   @map("verificado_por") @db.Uuid
+  verificadoAt  DateTime? @map("verificado_at") @db.Timestamptz(3)
+  motivoRechazo String?   @map("motivo_rechazo")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  cliente Cliente         @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  compra  CompraServicio? @relation(fields: [compraId], references: [id], onDelete: SetNull)
+  reserva Reserva?        @relation(fields: [reservaId], references: [id], onDelete: SetNull)
+
+  @@index([estado, canal])
+  @@index([clienteId, createdAt])
+  @@map("pagos")
+}
+
+// ---------------------------------------------------------------------------
+// Expedientes de libreta (tramite ante la Intendencia de Maldonado)
+// ---------------------------------------------------------------------------
+
+model Expediente {
+  id        String            @id @default(uuid()) @db.Uuid
+  clienteId String            @map("cliente_id") @db.Uuid
+  categoria CategoriaLicencia
+  estado    EstadoExpediente  @default(INICIADO)
+
+  libreMultas   Boolean   @default(false) @map("libre_multas")
+  charlaFecha   DateTime? @map("charla_fecha") @db.Timestamptz(3)
+  teoricoFecha  DateTime? @map("teorico_fecha") @db.Timestamptz(3)
+  teoricoAprobado Boolean? @map("teorico_aprobado")
+  practicoFecha DateTime? @map("practico_fecha") @db.Timestamptz(3)
+  practicoAprobado Boolean? @map("practico_aprobado")
+  emitidaFecha  DateTime? @map("emitida_fecha") @db.Date
+
+  observaciones String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  cliente    Cliente               @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  documentos DocumentoExpediente[]
+
+  @@index([estado])
+  @@index([clienteId])
+  @@map("expedientes")
+}
+
+/// Documento adjunto al expediente. El archivo vive en un bucket PRIVADO de
+/// Supabase Storage; aca solo se guarda la ruta. La lectura se hace siempre
+/// con signed URL de corta duracion generada por el backend.
+model DocumentoExpediente {
+  id           String        @id @default(uuid()) @db.Uuid
+  expedienteId String        @map("expediente_id") @db.Uuid
+  tipo         TipoDocumento
+  storagePath  String        @map("storage_path")
+  nombreArchivo String       @map("nombre_archivo")
+  mimeType     String        @map("mime_type")
+  tamanioBytes Int           @map("tamanio_bytes")
+
+  verificado    Boolean   @default(false)
+  verificadoPor String?   @map("verificado_por") @db.Uuid
+  verificadoAt  DateTime? @map("verificado_at") @db.Timestamptz(3)
+  /// Vencimiento del documento (por ejemplo, carne de salud o SOA).
+  venceEl       DateTime? @map("vence_el") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  expediente Expediente @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+
+  @@index([expedienteId, tipo])
+  @@map("documentos_expediente")
+}
+
+// ---------------------------------------------------------------------------
+// Configuracion y auditoria
+// ---------------------------------------------------------------------------
+
+/// Configuracion general de la academia. Tabla de una sola fila (id fijo = 1).
+model ConfiguracionAcademia {
+  id Int @id @default(1)
+
+  nombre    String  @default("Academia de Choferes Gimenoos")
+  direccion String  @default("San Carlos, Maldonado, Uruguay")
+  telefono  String?
+  whatsapp  String?
+  email     String?
+
+  /// Minutos libres que se reservan entre dos clases consecutivas.
+  bufferMinutos Int @default(15) @map("buffer_minutos")
+  /// Horas minimas de antelacion para que el alumno pueda reservar.
+  antelacionMinimaHoras Int @default(12) @map("antelacion_minima_horas")
+  /// Horas minimas de antelacion para cancelar sin penalidad.
+  cancelacionMinimaHoras Int @default(24) @map("cancelacion_minima_horas")
+  /// Dias hacia adelante que el alumno puede ver y reservar.
+  ventanaReservaDias Int @default(30) @map("ventana_reserva_dias")
+
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("configuracion_academia")
+}
+
+/// Registro de auditoria de acciones sensibles (acceso a documentos, cambios
+/// de estado de pagos, alta/baja de usuarios). Requerido por el principio de
+/// seguridad y trazabilidad de la Ley 18.331.
+model RegistroAuditoria {
+  id        String   @id @default(uuid()) @db.Uuid
+  usuarioId String?  @map("usuario_id") @db.Uuid
+  accion    String
+  entidad   String
+  entidadId String?  @map("entidad_id")
+  /// Metadatos del evento. NUNCA debe contener datos sensibles ni secretos.
+  detalle   Json?
+  ip        String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([entidad, entidadId])
+  @@index([createdAt])
+  @@map("registros_auditoria")
+}
