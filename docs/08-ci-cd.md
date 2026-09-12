@@ -84,27 +84,40 @@ Correr esto antes de empujar evita el ciclo de "push, esperar, rojo, arreglar".
 
 ---
 
-# Despliegue (CD) — pendiente de una decisión
+# Despliegue (CD)
 
-**El despliegue automático todavía no está implementado, y es a propósito:**
-depende de dónde se aloje cada pieza, y esa decisión no está tomada.
+**Destino elegido: Render para la API, Vercel para los tres frontends.**
+El procedimiento completo está en [`09-despliegue.md`](09-despliegue.md).
 
-Lo que necesita cada parte:
+| Pieza | Dónde | Se actualiza |
+|---|---|---|
+| `apps/api` | Render (Web Service, Node) | Con cada push a `main`; aplica las migraciones al arrancar |
+| `apps/landing` | Vercel | Con cada push a `main` |
+| `apps/admin` | Vercel | Con cada push a `main` |
+| `apps/cliente` | Vercel | Con cada push a `main` |
 
-| Pieza | Qué requiere |
-|---|---|
-| `apps/api` | Un contenedor Node con salida a internet y variables de entorno (incluida la `service_role`) |
-| `apps/landing` | Hosting estático + CDN. Es lo que más impacta en el SEO local |
-| `apps/admin` | Hosting estático, con `noindex` ya configurado |
-| `apps/cliente` | Hosting estático servido por HTTPS (la PWA no instala sin HTTPS) |
+Configuración versionada en el repositorio:
 
-Una vez elegido el destino, el CD se agrega como un workflow que corre **después**
-de que el CI esté verde en `main`, con estas condiciones mínimas:
+- `render.yaml` — blueprint de la API, con los secretos marcados `sync: false`
+  para que se carguen en el panel y nunca en el repositorio.
+- `vercel.json` — *fallback* de rutas para react-router, cacheo de assets,
+  service worker sin caché y cabeceras de seguridad.
 
-- Las migraciones se aplican con `prisma migrate deploy` **antes** de publicar la
-  nueva versión de la API.
-- Los secretos viajan como *GitHub Secrets*, nunca en el repositorio.
-- El despliegue de producción requiere aprobación manual (*environment protection
-  rule*), para que un merge no publique solo.
+## Relación entre CI y despliegue
 
-Ver el Bloque 6 de [`07-roadmap.md`](07-roadmap.md).
+El CI corre sobre los **pull requests**; el despliegue ocurre al mergear a
+`main`. Marcando los checks como obligatorios (ver más arriba), nada llega a
+producción sin haber pasado tipos, compilación, migraciones y control de
+secretos.
+
+Las migraciones se aplican en el arranque del servicio: si una falla, el
+servicio nuevo no levanta y Render sigue sirviendo la versión anterior.
+
+## Lo que queda fuera del automatismo, a propósito
+
+- **Los secretos** se cargan a mano en Render y Vercel: no viven en el
+  repositorio.
+- **`CORS_ORIGINS`** se completa después del primer despliegue de los
+  frontends, cuando existen sus URLs.
+- **El script de Storage** (`infra/supabase/01-storage.sql`) se ejecuta una vez
+  en el SQL Editor de Supabase.

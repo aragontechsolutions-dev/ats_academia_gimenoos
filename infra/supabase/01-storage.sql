@@ -3,11 +3,33 @@
 --
 -- Ejecutar en: Supabase > SQL Editor, una sola vez por proyecto.
 --
+-- ORDEN IMPORTANTE: este script va DESPUES de aplicar las migraciones de
+-- Prisma (`pnpm supabase:setup` o `pnpm prisma:deploy`). Necesita la tabla
+-- `public.usuarios`, que crea Prisma, porque las politicas consultan el rol
+-- del usuario. La verificacion de abajo lo comprueba y avisa si falta.
+--
+-- Se puede volver a ejecutar cuantas veces haga falta: no duplica nada.
+--
 -- Convencion de rutas: <usuarioId>/<recursoId>/<archivo>
 -- El primer segmento de la ruta es SIEMPRE el UUID del usuario duenio del
 -- archivo. Las politicas de abajo dependen de eso: si se cambia la convencion,
 -- hay que cambiar las politicas.
 -- ============================================================================
+
+-- --- Verificacion previa ---------------------------------------------------
+-- Sin esto, el script falla mas abajo con "relation public.usuarios does not
+-- exist", un mensaje que no dice cual es el problema real ni como resolverlo.
+DO $verificacion$
+BEGIN
+  IF to_regclass('public.usuarios') IS NULL THEN
+    RAISE EXCEPTION E'Faltan las migraciones de la aplicacion.\n\n'
+      'Este script necesita la tabla public.usuarios, que crea Prisma.\n'
+      'Ejecuta primero, desde el repositorio:\n\n'
+      '    cd apps/api && pnpm supabase:setup\n\n'
+      'y volve a correr este script despues.';
+  END IF;
+END
+$verificacion$;
 
 -- --- Buckets ---------------------------------------------------------------
 -- public = false: el archivo NO es accesible por URL directa. Se lee unicamente

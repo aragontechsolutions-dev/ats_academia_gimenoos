@@ -10,7 +10,8 @@
 | [05-proteccion-datos.md](05-proteccion-datos.md) | Datos personales y cumplimiento |
 | [06-guia-desarrollo.md](06-guia-desarrollo.md) | Cómo trabajar en el proyecto |
 | [07-roadmap.md](07-roadmap.md) | **Qué tenés que hacer vos**, ordenado por prioridad |
-| [08-ci-cd.md](08-ci-cd.md) | Verificaciones automáticas y estado del despliegue |
+| [08-ci-cd.md](08-ci-cd.md) | Verificaciones automáticas y despliegue |
+| [09-despliegue.md](09-despliegue.md) | **Paso a paso para poner el sistema en línea** (Render + Vercel) |
 
 **Por dónde empezar:** `07-roadmap.md` si sos quien decide,
 `06-guia-desarrollo.md` para levantar el entorno,

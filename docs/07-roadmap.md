@@ -26,27 +26,34 @@ falta rotarla: está pensada para ser pública.
 
 ---
 
-## Bloque 2 — Dejar Supabase funcionando 🟠
+## Bloque 2 — Desplegar y dejar Supabase funcionando 🟠
 
 Sin esto no se puede probar nada de punta a punta.
 
-- [ ] **Aplicar el esquema a la base**
-      ```bash
-      cd apps/api && pnpm supabase:setup
-      ```
-      Encadena migraciones, datos iniciales y verificación. El verificador te
-      dice si las tres constraints anti-doble-reserva quedaron activas.
-- [ ] **Crear los buckets de archivos**
+**No hace falta clonar el repositorio.** Render aplica las migraciones durante
+el deploy, así que desplegar la API es lo que crea las tablas en Supabase.
+
+- [ ] **1º. Desplegar la API en Render** → Fase 1 de [`09-despliegue.md`](09-despliegue.md).
+      Al terminar, el **Table Editor** de Supabase tiene que mostrar las tablas
+      (`usuarios`, `clientes`, `reservas`, …). Si sigue vacío, las migraciones
+      no corrieron: revisar los logs del deploy.
+- [ ] **2º. Crear los buckets de archivos**
       Ejecutar `infra/supabase/01-storage.sql` en el SQL Editor de Supabase.
       Confirmar en Storage que ambos figuren como *Private*.
-- [ ] **Configurar Auth**
-      Authentication → URL Configuration: cargar las *Redirect URLs* del panel y
-      de la PWA. Supabase solo redirige a URLs de esa lista.
-- [ ] **Traducir las plantillas de correo al español**
+
+      **Va después del paso anterior**: las políticas consultan la tabla
+      `usuarios`. Si se ejecuta antes, el script se detiene y te lo dice.
+- [ ] **3º. Desplegar los tres frontends en Vercel** → Fase 3.
+- [ ] **4º. Conectar las piezas**: `CORS_ORIGINS` en Render con las URLs de
+      Vercel, y esas mismas URLs en las *Redirect URLs* de Supabase Auth → Fase 4.
+- [ ] **5º. Traducir las plantillas de correo al español**
       Authentication → Email Templates. Esos correos los recibe el alumno.
-- [ ] **Crear el primer administrador**
-      Paso 7 de [`03-supabase.md`](03-supabase.md).
-- [ ] **Volver a correr `pnpm verificar`** y que dé todo en verde.
+- [ ] **6º. Crear el primer administrador** → Fase 4.3.
+- [ ] **7º. Verificación de punta a punta** → Fase 5.
+
+> Si preferís trabajar en local (opcional, no es requisito): cloná el
+> repositorio y corré `cd apps/api && pnpm supabase:setup`, que hace lo mismo
+> que el deploy de Render y además ejecuta el verificador.
 
 ---
 
@@ -116,7 +123,8 @@ Ninguna es urgente, pero cada una cambia lo que se construye.
 
 | Decisión | Por qué importa | Cuándo |
 |---|---|---|
-| **Dónde se despliega** (API, sitio, panel, PWA) | Determina el CD. La API necesita un contenedor con salida a internet; los frontends son estáticos | Antes de salir a producción |
+| ~~Dónde se despliega~~ | **Resuelto**: Render (API) + Vercel (frontends). Ver [`09-despliegue.md`](09-despliegue.md) | ✅ |
+| **Región de la base** | Render no tiene región en Sudamérica. Conviene recrear el proyecto Supabase en East US para que la API y la base queden juntas: hoy es barato porque no hay datos, y de paso reemplaza las credenciales expuestas | Antes de desplegar |
 | **API de Mercado Pago Point en Uruguay** | Hay que confirmar **con Mercado Pago** si está habilitada en producción para cuentas en pesos. Si no, el cobro presencial queda como registro manual | Antes de la Etapa 2 |
 | **Canal de recordatorios** | WhatsApp tiene más llegada pero requiere Business API y tiene costo por conversación. Correo y push de la PWA son gratis | Etapa 3 |
 | **Requisitos vigentes del trámite** | Los define la Intendencia de Maldonado, cambian y varían por departamento. Hay que confirmarlos en la fuente oficial | Antes de la Etapa 3 |
@@ -127,7 +135,7 @@ Ninguna es urgente, pero cada una cambia lo que se construye.
 ## Orden sugerido
 
 ```
-Bloque 1 (seguridad)  →  Bloque 2 (Supabase)  →  Bloque 3 (CI)
+Bloque 1 (seguridad)  →  Bloque 2 (desplegar)  →  Bloque 3 (CI)
                                   ↓
                          Etapa 1: agenda  ←  Bloque 4 (datos reales)
                                   ↓
