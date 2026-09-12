@@ -46,6 +46,7 @@ landing funciona sin ellas.
 | `pnpm db:generate` | Regenera el cliente de Prisma |
 | `pnpm db:seed` | Datos iniciales (idempotente) |
 | `pnpm --filter @gimenoos/api verificar` | Diagnostica la conexión con Supabase (base, constraints, auth y buckets) |
+| `pnpm --filter @gimenoos/api supabase:setup` | Migraciones + datos iniciales + verificación, en un comando |
 | `pnpm build` | Compila todo el monorepo |
 | `pnpm typecheck` | Verificación de tipos en todos los paquetes |
 
