@@ -30,15 +30,22 @@ falta rotarla: está pensada para ser pública.
 
 Sin esto no se puede probar nada de punta a punta.
 
-- [ ] **Aplicar el esquema a la base**
+- [ ] **1º. Aplicar el esquema a la base**
       ```bash
       cd apps/api && pnpm supabase:setup
       ```
       Encadena migraciones, datos iniciales y verificación. El verificador te
       dice si las tres constraints anti-doble-reserva quedaron activas.
-- [ ] **Crear los buckets de archivos**
+
+      Para confirmar que salió bien: el **Table Editor** de Supabase tiene que
+      mostrar las tablas (`usuarios`, `clientes`, `reservas`, …). Si sigue
+      vacío, las migraciones no se aplicaron.
+- [ ] **2º. Crear los buckets de archivos**
       Ejecutar `infra/supabase/01-storage.sql` en el SQL Editor de Supabase.
       Confirmar en Storage que ambos figuren como *Private*.
+
+      **Va después del paso anterior**: las políticas consultan la tabla
+      `usuarios`. Si se ejecuta antes, el script se detiene y te lo dice.
 - [ ] **Configurar Auth**
       Authentication → URL Configuration: cargar las *Redirect URLs* del panel y
       de la PWA. Supabase solo redirige a URLs de esa lista.

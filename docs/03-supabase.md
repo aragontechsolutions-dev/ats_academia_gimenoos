@@ -2,6 +2,10 @@
 
 Guía paso a paso para conectar el sistema a un proyecto de Supabase.
 
+> **El orden importa.** Las migraciones de Prisma (paso 3) crean las tablas de la
+> aplicación, y el script de Storage (paso 5) depende de una de ellas. Si se
+> ejecuta al revés, el script de Storage se detiene y avisa qué falta.
+
 ## 1. Crear el proyecto
 
 En [supabase.com](https://supabase.com), proyecto nuevo:
@@ -92,8 +96,12 @@ Conviene volver a correrlo después de cada cambio de configuración.
 
 ## 5. Configurar Storage
 
+**Requiere el paso 3 hecho.** Las políticas consultan la tabla `usuarios`, que
+crea Prisma, para saber quién es administrador.
+
 En **SQL Editor**, ejecutar `infra/supabase/01-storage.sql`. Crea los buckets
-privados `comprobantes` y `expedientes` con sus políticas RLS.
+privados `comprobantes` y `expedientes` con sus políticas RLS. Se puede volver a
+ejecutar cuantas veces haga falta: no duplica nada.
 
 Verificar después en **Storage** que ambos figuren como *Private*.
 
@@ -171,3 +179,5 @@ A partir de ahí los roles se administran desde el panel (Etapa 1).
 | `prisma migrate` se cuelga o falla | Se está usando el pooler (6543) en `DIRECT_URL`; debe ser el puerto 5432 |
 | "too many connections" | Falta `?pgbouncer=true` o `connection_limit` demasiado alto |
 | Subida de archivo rechazada | MIME o tamaño fuera de lo permitido por el bucket, o la ruta no empieza con el UUID del usuario |
+| `01-storage.sql` corta con *"Faltan las migraciones de la aplicación"* | Se ejecutó antes del paso 3. Correr `pnpm supabase:setup` y volver a ejecutarlo |
+| `relation "public.usuarios" does not exist` | Lo mismo, en una versión del script anterior a la verificación previa |
