@@ -164,28 +164,51 @@ y `expedientes` figuren como **Private**.
 
 Son **tres proyectos separados**, los tres apuntando al mismo repositorio.
 
-### Configuración común
+### ⚠️ Lo que hay que cambiar sí o sí: el Root Directory
 
-En [vercel.com/new](https://vercel.com/new) → importar `ats_academia_gimenoos`.
-Para cada proyecto:
+Al importar el repositorio, **Vercel detecta que es un monorepo y preselecciona
+una subcarpeta** (`apps/admin`, por ejemplo). Hay que tocar **Edit** y dejarlo
+en la **raíz del repositorio**, en los tres proyectos.
 
-| Campo | Valor |
-|---|---|
-| Root Directory | *(dejar en la raíz del repositorio)* |
-| Framework Preset | Vite |
-| Install Command | `pnpm install --frozen-lockfile` |
+Si no se cambia, pasa esto: el Build Command construye una app, pero Vercel
+busca el resultado **dentro de la subcarpeta preseleccionada**, que está vacía.
+El build dice `✓ built` y el deploy falla igual, con este error:
 
-> **Por qué la raíz y no `apps/landing`:** es un monorepo pnpm y los paquetes se
-> enlazan entre sí. Construyendo desde la raíz, las dependencias del workspace
-> se resuelven sin depender de ajustes adicionales.
+```
+Error: No Output Directory named "dist" found after the Build completed.
+```
 
-### Los tres proyectos
+Cómo confirmar que quedó bien: en el log de instalación, las dependencias que
+aparecen tienen que ser **las de la app que se está construyendo**. Si el
+proyecto es la landing y ves `@supabase/supabase-js` o `react-router-dom`, el
+Root Directory apunta a otra app — la landing no usa ninguna de las dos.
 
-| Proyecto | Build Command | Output Directory |
-|---|---|---|
-| `gimenoos-landing` | `pnpm --filter @gimenoos/landing build` | `apps/landing/dist` |
-| `gimenoos-admin` | `pnpm --filter @gimenoos/admin build` | `apps/admin/dist` |
-| `gimenoos-cliente` | `pnpm --filter @gimenoos/cliente build` | `apps/cliente/dist` |
+**Por qué la raíz y no la carpeta de la app:** es un monorepo pnpm y los
+paquetes se enlazan entre sí. Desde la raíz, las dependencias del workspace se
+resuelven sin ajustes adicionales, y Vercel toma el `vercel.json` de la raíz —
+que es el que trae el *fallback* de rutas y las cabeceras de seguridad. Con el
+Root Directory dentro de `apps/`, ese archivo no se aplica y el panel y la PWA
+dan 404 al recargar cualquier ruta.
+
+### Configuración de cada proyecto
+
+**Los cuatro campos se cambian juntos.** Copiar el Build Command de un proyecto
+al otro sin cambiar el resto es la forma más fácil de romper el deploy.
+
+| Campo | `gimenoos-landing` | `gimenoos-admin` | `gimenoos-cliente` |
+|---|---|---|---|
+| Root Directory | **raíz del repo** | **raíz del repo** | **raíz del repo** |
+| Install Command | `pnpm install --frozen-lockfile` | ídem | ídem |
+| Build Command | `pnpm --filter @gimenoos/landing build` | `pnpm --filter @gimenoos/admin build` | `pnpm --filter @gimenoos/cliente build` |
+| Output Directory | `apps/landing/dist` | `apps/admin/dist` | `apps/cliente/dist` |
+
+**Framework Preset:** con el Root Directory en la raíz, el preset no aporta
+nada, porque el build y la salida están definidos explícitamente. Si Vercel
+insiste con un valor por defecto que pisa el Output Directory, poné **Other**.
+
+Los tres interruptores de *override* (Build, Output, Install) tienen que quedar
+**activados**: si están apagados, Vercel usa sus valores por defecto y el deploy
+falla aunque el campo muestre el texto correcto.
 
 ### Variables de entorno
 
@@ -204,6 +227,15 @@ Para cada proyecto:
 El `vercel.json` de la raíz ya resuelve, para los tres: el *fallback* de rutas
 para react-router, que el service worker de la PWA nunca se cachee, el cacheo
 permanente de los assets versionados y las cabeceras de seguridad.
+
+### Si un deploy falla
+
+| Error | Causa | Solución |
+|---|---|---|
+| `No Output Directory named "dist" found` | El Root Directory apunta a una subcarpeta, o el override del Output Directory está apagado | Root Directory en la raíz y Output Directory en `apps/<app>/dist`, con el override activado |
+| Se instalan dependencias de otra app | El Root Directory apunta a la app equivocada | Ídem |
+| `ERR_PNPM_OUTDATED_LOCKFILE` | El `pnpm-lock.yaml` no coincide con los `package.json` | Rehacer el lockfile en una rama y mergear; no quitar `--frozen-lockfile` |
+| Recargar una ruta del panel o la PWA da 404 | No se aplicó el `vercel.json` de la raíz | El Root Directory tiene que estar en la raíz |
 
 ### Evitar builds innecesarios (opcional)
 
