@@ -16,29 +16,34 @@ API va primero: eso crea las tablas en Supabase y destraba todo lo demás.
 
 ---
 
-## Decisión previa: dónde vive la base
+## Dónde vive cada cosa
 
-Render **no tiene región en Sudamérica**. El proyecto Supabase actual está en
-São Paulo (`sa-east-1`). Si la API queda en Estados Unidos y la base en Brasil,
-**cada consulta cruza el continente**: una pantalla que hace cinco consultas
-paga ese viaje cinco veces.
+La base ya está en **East US (North Virginia), `us-east-1`**, así que **el
+servicio de Render tiene que crearse en Virginia** (o, si no estuviera
+disponible, Ohio). API y base quedan juntas.
 
-Lo que más pesa no es la distancia al usuario, sino la distancia **entre la API
-y la base**: una visita genera pocas llamadas a la API, pero cada llamada genera
-varias consultas a la base.
+Por qué importa: lo que más pesa no es la distancia al usuario, sino la
+distancia **entre la API y la base**. Una visita genera pocas llamadas a la API,
+pero cada llamada genera varias consultas a la base. Con las dos en la misma
+región, esas consultas cuestan milisegundos en vez de cruzar el continente.
 
-| Opción | API ↔ Base | Recomendación |
-|---|---|---|
-| **A.** Recrear el proyecto Supabase en **East US** y Render en Virginia/Ohio | milisegundos | ✅ Recomendada |
-| **B.** Dejar Supabase en São Paulo, Render en Virginia/Ohio | ~100–200 ms por consulta | Funciona, pero se nota |
+El usuario en Uruguay paga una sola ida y vuelta hasta Estados Unidos por
+petición, que es inevitable: Render no tiene región en Sudamérica.
 
-**La opción A hoy es barata**: el proyecto todavía no tiene datos. Y tiene un
-beneficio extra — al crear un proyecto nuevo, las credenciales que se expusieron
-en una conversación (contraseña de la base y `service_role`) quedan
-automáticamente reemplazadas, sin tener que rotarlas aparte.
+### Antes de seguir: dar de baja el proyecto Supabase anterior
 
-Si elegís A: creá el proyecto nuevo en East US **antes** de seguir, y usá sus
-credenciales en todo lo que viene. El proyecto viejo se puede borrar.
+Si quedó un proyecto viejo en São Paulo, **borralo** (Project Settings →
+General → Delete project).
+
+No es prolijidad: sus credenciales se expusieron en una conversación de chat y
+**siguen siendo válidas mientras el proyecto exista**. Borrarlo las anula de
+raíz, que es más seguro que rotarlas.
+
+### Sobre las credenciales del proyecto nuevo
+
+**No las pegues en ningún chat.** Copialas del panel de Supabase directamente a
+los campos de Render y de Vercel. Cada vez que una credencial pasa por un
+mensaje, hay que rotarla después.
 
 ---
 
@@ -54,7 +59,7 @@ conectar la cuenta de GitHub y elegir `ats_academia_gimenoos`.
 | Name | `gimenoos-api` |
 | Language / Runtime | **Node** |
 | Branch | `main` |
-| Region | La más cercana a la base (ver decisión previa) |
+| Region | **Virginia (US East)** — la misma que la base |
 | Root Directory | *(vacío — el build corre desde la raíz del monorepo)* |
 | Instance Type | Free |
 
@@ -96,14 +101,32 @@ En **Environment**, cargar:
 | `COREPACK_ENABLE_DOWNLOAD_PROMPT` | `0` |
 | `DATABASE_URL` | Pooler de Supabase, puerto **6543**, con `?pgbouncer=true` |
 | `DIRECT_URL` | Conexión de Supabase, puerto **5432** |
+
+> Las dos cadenas se copian tal cual del panel: **Project Settings → Database →
+> Connection string**. El host incluye la región (`...us-east-1.pooler.supabase.com`),
+> así que no conviene escribirlo a mano. A `DATABASE_URL` hay que agregarle
+> `?pgbouncer=true` si no viene incluido.
+>
+> Si la contraseña tiene caracteres especiales (`@ : / ? # & %`), hay que
+> codificarlos en URL o la cadena se interpreta mal.
+
+Resto de las variables:
+
+| Variable | Valor |
+|---|---|
 | `SUPABASE_URL` | `https://<REF>.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | La clave `service_role` |
-| `SUPABASE_JWT_LEGACY_SECRET` | **Vacía** (el proyecto usa JWT Signing Keys) |
+| `SUPABASE_JWT_LEGACY_SECRET` | **Vacía**, salvo lo que diga JWT Keys (ver abajo) |
 | `CORS_ORIGINS` | Provisorio: `https://localhost` — se completa en la Fase 4 |
 | `THROTTLE_TTL_SEGUNDOS` | `60` |
 | `THROTTLE_LIMITE` | `100` |
 
 **No definir `PORT`:** lo asigna Render y la API lo lee de ahí.
+
+> **`SUPABASE_JWT_LEGACY_SECRET`:** mirá **Settings → JWT Keys**. Si dice que el
+> secreto heredado ya migró a *JWT Signing Keys* —lo habitual en proyectos
+> nuevos—, la variable va **vacía** y los tokens se verifican contra el JWKS.
+> Solo si el proyecto todavía usa el secreto compartido hay que cargarlo ahí.
 
 > Alternativa: el repositorio incluye `render.yaml`, que se puede usar con
 > **New → Blueprint** en lugar de cargar todo a mano. Los secretos igual se
