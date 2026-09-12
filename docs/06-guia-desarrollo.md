@@ -99,6 +99,7 @@ que llega un número.
 
 - [ ] `pnpm typecheck` sin errores
 - [ ] `pnpm build` sin errores
+- [ ] `pnpm --filter @gimenoos/api test` sin errores (requiere la base local)
 - [ ] Checklist de seguridad de `docs/02-seguridad.md` si se tocó algo sensible
 - [ ] Documentación actualizada si cambió el comportamiento
 - [ ] Ningún secreto en el diff (revisar `.env`, claves, tokens)

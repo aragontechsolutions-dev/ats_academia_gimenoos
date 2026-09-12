@@ -8,6 +8,10 @@ del trámite de libreta.
 
 Las fundaciones están listas y verificadas. Ver [`docs/04-plan-etapas.md`](docs/04-plan-etapas.md).
 
+Cada pull request contra `main` corre verificaciones automáticas de tipos,
+compilación, migraciones, las constraints de agenda y control de secretos.
+Ver [`docs/08-ci-cd.md`](docs/08-ci-cd.md).
+
 ## Stack
 
 React 19 + Vite 6 + Tailwind 4 · NestJS 11 + Prisma 5 · Supabase (Postgres, Auth, Storage)
@@ -49,6 +53,8 @@ Guía completa: [`docs/06-guia-desarrollo.md`](docs/06-guia-desarrollo.md).
 | [Plan de etapas](docs/04-plan-etapas.md) | Qué sigue |
 | [Protección de datos](docs/05-proteccion-datos.md) | Cumplimiento |
 | [Guía de desarrollo](docs/06-guia-desarrollo.md) | Cómo trabajar acá |
+| [Roadmap](docs/07-roadmap.md) | **Acciones pendientes del lado de la academia** |
+| [CI/CD](docs/08-ci-cd.md) | Verificaciones automáticas antes de mergear |
 
 ## Antes de publicar
 
