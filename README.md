@@ -55,6 +55,7 @@ Guía completa: [`docs/06-guia-desarrollo.md`](docs/06-guia-desarrollo.md).
 | [Guía de desarrollo](docs/06-guia-desarrollo.md) | Cómo trabajar acá |
 | [Roadmap](docs/07-roadmap.md) | **Acciones pendientes del lado de la academia** |
 | [CI/CD](docs/08-ci-cd.md) | Verificaciones automáticas antes de mergear |
+| [Despliegue](docs/09-despliegue.md) | Poner el sistema en línea: Render + Vercel |
 
 ## Antes de publicar
 

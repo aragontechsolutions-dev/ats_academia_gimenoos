@@ -1,0 +1,76 @@
+# ============================================================================
+# Blueprint de Render para la API.
+#
+# Se puede usar de dos formas (ver docs/09-despliegue.md):
+#   A) Creando el Web Service a mano en el panel y copiando estos comandos.
+#      Es la via recomendada la primera vez: se ve cada campo y se elige la
+#      region con libertad.
+#   B) Como Blueprint (New > Blueprint), que lee este archivo.
+#
+# Las variables marcadas `sync: false` NO se guardan en el repositorio:
+# Render las pide al crear el servicio y quedan solo en su panel.
+# ============================================================================
+services:
+  - type: web
+    name: gimenoos-api
+    runtime: node
+    plan: free
+    # La rama que se despliega. Cada push a main dispara un deploy.
+    branch: main
+
+    # Build:
+    # - corepack activa la version de pnpm declarada en packageManager.
+    # - --prod=false fuerza la instalacion de devDependencies: con
+    #   NODE_ENV=production pnpm las omitiria y no habria compilador
+    #   (nest build) ni ts-node para el seed.
+    # - prisma:generate debe correr antes de compilar: el cliente de Prisma
+    #   se genera a partir del esquema y sin el no compilan los tipos.
+    buildCommand: >-
+      corepack enable &&
+      pnpm install --frozen-lockfile --prod=false &&
+      pnpm --filter @gimenoos/api prisma:generate &&
+      pnpm --filter @gimenoos/api build
+
+    # Arranque:
+    # - prisma:deploy aplica las migraciones pendientes. Si falla, el servicio
+    #   NO arranca: es preferible a quedar sirviendo sobre un esquema a medias.
+    # - prisma:seed es idempotente (usa upsert) y garantiza que exista la fila
+    #   de configuracion que consume la landing.
+    startCommand: >-
+      pnpm --filter @gimenoos/api prisma:deploy &&
+      pnpm --filter @gimenoos/api prisma:seed &&
+      node apps/api/dist/main.js
+
+    # Render reinicia el servicio si esta ruta deja de responder 200.
+    healthCheckPath: /api/v1/health
+
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: NODE_ENV
+        value: production
+      # Evita que corepack se quede esperando una confirmacion interactiva.
+      - key: COREPACK_ENABLE_DOWNLOAD_PROMPT
+        value: '0'
+      - key: THROTTLE_TTL_SEGUNDOS
+        value: '60'
+      - key: THROTTLE_LIMITE
+        value: '100'
+
+      # --- Secretos y valores propios del proyecto -------------------------
+      # `sync: false` = Render los pide al crear el servicio. Nunca van al repo.
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # Vacia si el proyecto Supabase ya usa JWT Signing Keys (es el caso).
+      - key: SUPABASE_JWT_LEGACY_SECRET
+        sync: false
+      # URLs de los frontends en Vercel, separadas por coma y sin barra final.
+      # Se completa DESPUES de desplegar los frontends.
+      - key: CORS_ORIGINS
+        sync: false
