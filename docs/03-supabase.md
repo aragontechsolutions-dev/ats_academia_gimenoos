@@ -47,9 +47,16 @@ eso Prisma expone `directUrl` como campo separado.
 
 ```bash
 cd apps/api
-cp .env.example .env     # y completar con los valores de arriba
-pnpm prisma:deploy       # aplica las migraciones ya versionadas
-pnpm prisma:seed         # carga catálogo y configuración inicial
+cp .env.example .env      # y completar con los valores de arriba
+pnpm supabase:setup       # migraciones + datos iniciales + verificación
+```
+
+`supabase:setup` encadena los tres pasos. Si preferís hacerlos por separado:
+
+```bash
+pnpm prisma:deploy        # aplica las migraciones ya versionadas
+pnpm prisma:seed          # carga catálogo y configuración inicial
+pnpm verificar            # diagnostica que todo haya quedado bien
 ```
 
 `prisma:deploy` (y no `prisma:migrate`) es lo que se usa contra Supabase:
@@ -109,12 +116,21 @@ de salir a producción. Los correos los recibe el alumno.
 
 ### Claves asimétricas (recomendado)
 
-En **Authentication → JWT Keys**, migrar a claves asimétricas (ES256) si el
-proyecto todavía usa el secreto compartido. Con eso, `SUPABASE_JWT_LEGACY_SECRET`
-queda vacía y la API verifica los tokens contra el JWKS público.
+En **Settings → JWT Keys** se ve cuál de los dos esquemas usa el proyecto:
 
-Si el proyecto aún no migró, poner el secreto heredado en esa variable: la API
-acepta HS256 como respaldo y deja un aviso en el log.
+| Lo que muestra el panel | Qué poner en `SUPABASE_JWT_LEGACY_SECRET` |
+|---|---|
+| *"Legacy JWT secret has been migrated to new JWT Signing Keys"* | **Vacía.** Los tokens se firman con claves asimétricas y se verifican contra el JWKS |
+| Solo el secreto heredado, sin signing keys | El JWT Secret. La API acepta HS256 como respaldo y avisa en el log |
+
+Cuando el proyecto ya migró, **dejar la variable vacía no es opcional**:
+completarla haría que la API acepte también tokens HS256 sin ninguna necesidad,
+ampliando la superficie de ataque a cambio de nada.
+
+> El aviso del panel sobre las API keys `anon` y `service_role` se refiere a que
+> esas claves siguen siendo JWT heredados. Funcionan sin problema; migrar a las
+> nuevas *publishable* y *secret* keys es una mejora aparte, no un requisito
+> para que el sistema funcione.
 
 ## 7. Crear el primer administrador
 

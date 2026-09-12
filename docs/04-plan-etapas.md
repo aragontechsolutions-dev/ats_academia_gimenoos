@@ -16,6 +16,8 @@
 | Panel con login y consulta de catálogo | ✅ |
 | PWA instalable con service worker propio | ✅ |
 | SQL de buckets y RLS de Storage | ✅ escrito, pendiente de aplicar |
+| Pruebas automáticas de las constraints de agenda | ✅ 11 casos |
+| CI con verificaciones obligatorias antes de mergear | ✅ |
 | Documentación | ✅ |
 
 ### Verificado en esta etapa
@@ -25,7 +27,8 @@
   y 401 con token inválido.
 - Los tres frontends compilan para producción.
 - Las constraints de agenda rechazan solapamientos y permiten clases
-  consecutivas (6 casos probados, detalle en `docs/01-modelo-datos.md`).
+  consecutivas. Los 6 casos manuales quedaron convertidos en 11 pruebas
+  automáticas que corren en cada pull request.
 
 ### Pendiente de datos reales
 
@@ -54,7 +57,8 @@ El sistema funciona, pero tiene placeholders marcados con `TODO(datos-reales)`:
   transacción).
 - ABM de instructores, vehículos, disponibilidades y servicios.
 - Servicio de auditoría conectado a las acciones sensibles.
-- Pruebas de concurrencia: dos reservas simultáneas sobre el mismo hueco.
+- Pruebas de concurrencia: dos reservas simultáneas sobre el mismo hueco
+  (se suman a las 11 pruebas de constraints que ya corren en CI).
 
 ### Panel
 - Calendario día/semana/mes con filtros por instructor y vehículo.

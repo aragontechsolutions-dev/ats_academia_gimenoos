@@ -1,0 +1,180 @@
+# ============================================================================
+# Verificaciones automaticas antes de mergear.
+#
+# Corre en cada pull request contra main y en cada push a main.
+# Para que estas verificaciones BLOQUEEN el merge hay que marcarlas como
+# obligatorias en Settings > Branches > Branch protection rules.
+# Ver docs/08-ci-cd.md.
+# ============================================================================
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Si se empuja un commit nuevo al PR, se cancela la corrida anterior:
+# no tiene sentido gastar minutos verificando codigo ya reemplazado.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  calidad:
+    name: Tipos y compilacion
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      # El cliente de Prisma se genera a partir del esquema: sin esto,
+      # los tipos de @prisma/client no existen y el typecheck falla.
+      - name: Generar cliente de Prisma
+        run: pnpm --filter @gimenoos/api prisma:generate
+
+      - name: Verificacion de tipos
+        run: pnpm typecheck
+
+      - name: Compilacion de produccion
+        run: pnpm build
+        env:
+          # Valores de compilacion. Los reales se inyectan al desplegar.
+          VITE_SUPABASE_URL: https://ejemplo.supabase.co
+          VITE_SUPABASE_ANON_KEY: clave-de-compilacion
+          VITE_API_URL: http://localhost:3000/api/v1
+
+  base-de-datos:
+    name: Migraciones y constraints de agenda
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: gimenoos
+          POSTGRES_PASSWORD: gimenoos_ci
+          POSTGRES_DB: gimenoos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gimenoos -d gimenoos"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://gimenoos:gimenoos_ci@localhost:5432/gimenoos?schema=public
+      DIRECT_URL: postgresql://gimenoos:gimenoos_ci@localhost:5432/gimenoos?schema=public
+      # Base aparte para el chequeo de desvio: `prisma migrate diff` RESETEA la
+      # base que use como shadow. Apuntarla a la de pruebas borraria los datos.
+      SHADOW_DATABASE_URL: postgresql://gimenoos:gimenoos_ci@localhost:5432/gimenoos_shadow
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Generar cliente de Prisma
+        run: pnpm --filter @gimenoos/api prisma:generate
+
+      - name: Crear base auxiliar para el chequeo de desvio
+        run: |
+          PGPASSWORD=gimenoos_ci createdb -h localhost -U gimenoos gimenoos_shadow
+
+      # Detecta el error mas facil de cometer: cambiar schema.prisma y
+      # olvidarse de generar la migracion correspondiente. Sin esto, el desvio
+      # aparece recien al desplegar contra Supabase.
+      - name: Verificar que el esquema y las migraciones esten sincronizados
+        working-directory: apps/api
+        run: |
+          if pnpm exec prisma migrate diff \
+              --from-migrations prisma/migrations \
+              --to-schema-datamodel prisma/schema.prisma \
+              --shadow-database-url "$SHADOW_DATABASE_URL" \
+              --exit-code; then
+            echo "Esquema y migraciones sincronizados"
+          else
+            echo "::error::schema.prisma tiene cambios sin migracion. Ejecuta: pnpm db:migrate"
+            exit 1
+          fi
+
+      # Aplica las migraciones tal cual se aplicarian en produccion.
+      # Si una migracion esta rota, se detecta aca y no en Supabase.
+      - name: Aplicar migraciones
+        run: pnpm --filter @gimenoos/api prisma:deploy
+
+      # La invariante mas importante del sistema: nadie puede tomar
+      # un horario ya ocupado.
+      - name: Pruebas de las constraints anti-doble-reserva
+        run: pnpm --filter @gimenoos/api test
+
+  secretos:
+    name: Control de secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ningun archivo .env versionado
+        run: |
+          encontrados=$(git ls-files | grep -E '(^|/)\.env(\..*)?$' | grep -v '\.env\.example$' || true)
+          if [ -n "$encontrados" ]; then
+            echo "::error::Hay archivos .env versionados:"
+            echo "$encontrados"
+            exit 1
+          fi
+          echo "Ningun .env versionado"
+
+      - name: Ninguna credencial en el codigo
+        run: |
+          # Busca claves de servicio y cadenas de conexion con contrasenia real.
+          # Los .env.example y la documentacion quedan fuera: ahi los placeholders
+          # son intencionales.
+          hallazgos=$(git grep -nIE \
+            "(service_role.{0,40}eyJ[A-Za-z0-9_-]{20,}|postgresql://[^:]+:[^:@<\"']{8,}@)" \
+            -- ':!*.env.example' ':!docs/*' ':!pnpm-lock.yaml' ':!.github/*' || true)
+          if [ -n "$hallazgos" ]; then
+            echo "::error::Posibles credenciales en el repositorio:"
+            echo "$hallazgos"
+            exit 1
+          fi
+          echo "Sin credenciales detectadas"
+
+      - name: La clave service_role no aparece en ningun frontend
+        run: |
+          # Una variable VITE_ termina dentro del JavaScript que descarga el
+          # visitante: ahi nunca puede ir una clave que saltea RLS.
+          hallazgos=$(git grep -nI "VITE_.*SERVICE_ROLE" -- apps/ || true)
+          if [ -n "$hallazgos" ]; then
+            echo "::error::Una clave service_role esta expuesta a un frontend:"
+            echo "$hallazgos"
+            exit 1
+          fi
+          echo "Ningun service_role expuesto en frontends"

@@ -16,7 +16,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "verificar": "ts-node scripts/verificar-supabase.ts"
+    "verificar": "ts-node scripts/verificar-supabase.ts",
+    "supabase:setup": "prisma migrate deploy && prisma db seed && ts-node scripts/verificar-supabase.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -59,11 +60,17 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/test"
+    ],
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "maxWorkers": 1,
+    "testTimeout": 30000
   }
 }
