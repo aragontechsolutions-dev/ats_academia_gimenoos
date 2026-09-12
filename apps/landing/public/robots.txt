@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# TODO(datos-reales): reemplazar por el dominio definitivo de la academia.
+Sitemap: https://www.academiagimenoos.com.uy/sitemap.xml

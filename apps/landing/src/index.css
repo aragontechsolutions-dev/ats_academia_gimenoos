@@ -1,0 +1,29 @@
+@import 'tailwindcss';
+
+/*
+  Paleta y tipografia del sitio.
+  TODO(datos-reales): ajustar los colores de marca cuando la academia defina su
+  identidad visual (logo, colores). El azul de abajo es un valor de arranque.
+*/
+@theme {
+  --color-marca-50: #eff6ff;
+  --color-marca-100: #dbeafe;
+  --color-marca-600: #1d4ed8;
+  --color-marca-700: #1e40af;
+  --color-marca-900: #172554;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Respeta a quien configuro "reducir movimiento" en su sistema operativo. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  @apply bg-white text-slate-800 antialiased;
+}

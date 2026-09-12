@@ -1,0 +1,25 @@
+# Postgres local para desarrollo y para validar migraciones antes de aplicarlas en Supabase.
+# En produccion la base es Supabase; esto es SOLO entorno local.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gimenoos_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gimenoos
+      POSTGRES_PASSWORD: gimenoos_dev
+      POSTGRES_DB: gimenoos
+      TZ: America/Montevideo
+    ports:
+      - '5433:5432'
+    volumes:
+      - gimenoos_pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U gimenoos -d gimenoos']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  gimenoos_pgdata:
