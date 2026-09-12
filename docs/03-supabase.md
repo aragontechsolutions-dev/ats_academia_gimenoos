@@ -56,17 +56,41 @@ pnpm prisma:seed         # carga catálogo y configuración inicial
 aplica las migraciones existentes sin intentar generar nuevas ni tocar una
 shadow database.
 
+> **La contraseña de la base no es la `service_role` ni la `anon`.** Es la que se
+> definió al crear el proyecto, y va dentro de las dos cadenas de conexión. Si
+> contiene caracteres especiales (`@ : / ? # & %`) hay que codificarlos en URL,
+> o la cadena se interpreta mal y la conexión falla con un error confuso.
+
 La extensión `btree_gist`, necesaria para las constraints de agenda, la crea la
 propia migración.
 
-## 4. Configurar Storage
+## 4. Verificar que todo quedó bien
+
+```bash
+cd apps/api && pnpm verificar
+```
+
+Comprueba, y dice cómo arreglar cada cosa que falle:
+
+- que no queden placeholders sin reemplazar en el `.env`;
+- que `DATABASE_URL` use el pooler con `?pgbouncer=true` y `DIRECT_URL` el
+  puerto 5432 (los dos errores de configuración más frecuentes);
+- que la base conecte, tenga `btree_gist` y **las tres constraints
+  anti-doble-reserva activas**;
+- si el proyecto firma los tokens con claves asimétricas o con el secreto
+  heredado, y si eso coincide con lo configurado;
+- que los buckets existan y **sean privados**.
+
+Conviene volver a correrlo después de cada cambio de configuración.
+
+## 5. Configurar Storage
 
 En **SQL Editor**, ejecutar `infra/supabase/01-storage.sql`. Crea los buckets
 privados `comprobantes` y `expedientes` con sus políticas RLS.
 
 Verificar después en **Storage** que ambos figuren como *Private*.
 
-## 5. Configurar Auth
+## 6. Configurar Auth
 
 **Authentication → Providers**
 
@@ -92,7 +116,7 @@ queda vacía y la API verifica los tokens contra el JWKS público.
 Si el proyecto aún no migró, poner el secreto heredado en esa variable: la API
 acepta HS256 como respaldo y deja un aviso en el log.
 
-## 6. Crear el primer administrador
+## 7. Crear el primer administrador
 
 El sistema aprovisiona el usuario local en su primer acceso, con rol `CLIENTE`
 por defecto. Para el primer administrador:
@@ -111,7 +135,7 @@ A partir de ahí los roles se administran desde el panel (Etapa 1).
 > antes del primer ingreso. `app_metadata` solo se escribe con la clave
 > `service_role`, nunca por el propio usuario.
 
-## 7. Checklist antes de producción
+## 8. Checklist antes de producción
 
 - [ ] Buckets `comprobantes` y `expedientes` en **Private**
 - [ ] `01-storage.sql` ejecutado y políticas visibles en la tabla `storage.objects`
