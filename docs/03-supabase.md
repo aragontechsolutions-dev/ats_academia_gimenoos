@@ -10,8 +10,10 @@ Guía paso a paso para conectar el sistema a un proyecto de Supabase.
 
 En [supabase.com](https://supabase.com), proyecto nuevo:
 
-- **Región**: la más cercana a Uruguay disponible (habitualmente `sa-east-1`,
-  São Paulo). Reduce la latencia de cada consulta.
+- **Región**: la misma en la que va a correr la API, no la más cercana a
+  Uruguay. Lo que domina el tiempo de respuesta es la distancia entre la API y
+  la base, no la distancia al visitante. Con la API en Render, eso significa
+  **East US (North Virginia)**. Ver [`09-despliegue.md`](09-despliegue.md).
 - **Contraseña de la base**: generarla larga y guardarla en un gestor de
   contraseñas. Es la que va en `DATABASE_URL`.
 

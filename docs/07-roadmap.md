@@ -9,20 +9,18 @@ Lo que corresponde al código está en [`04-plan-etapas.md`](04-plan-etapas.md).
 
 ## Bloque 1 — Seguridad inmediata 🔴
 
-**Hacer ahora, antes que nada.**
+Los secretos que se expusieron en una conversación de chat pertenecían al
+proyecto Supabase de São Paulo. Al crear el proyecto nuevo en East US quedaron
+reemplazados, **pero siguen siendo válidos mientras el proyecto viejo exista**.
 
-- [ ] **Rotar la contraseña de la base**
-      Supabase → Project Settings → Database → *Reset database password*.
-      Actualizar las dos cadenas en `apps/api/.env`.
-- [ ] **Rotar la clave `service_role`**
-      Supabase → Project Settings → API → *Rotate*.
-      Actualizar `SUPABASE_SERVICE_ROLE_KEY` en `apps/api/.env`.
+- [ ] **Borrar el proyecto Supabase anterior**
+      Project Settings → General → *Delete project*. Esto anula de raíz la
+      contraseña y la clave `service_role` que se filtraron; es más seguro que
+      rotarlas.
 
-Ambos secretos quedaron expuestos en una conversación de chat. La `anon` no hace
-falta rotarla: está pensada para ser pública.
-
-> De acá en adelante, los secretos se pasan por un gestor de contraseñas o se
-> cargan directo en el `.env`, nunca por chat, correo o mensajería.
+- [ ] **No pegar las credenciales nuevas en ningún chat.**
+      Van del panel de Supabase directamente a los campos de Render y Vercel.
+      Cada credencial que pasa por un mensaje hay que rotarla después.
 
 ---
 
@@ -124,7 +122,7 @@ Ninguna es urgente, pero cada una cambia lo que se construye.
 | Decisión | Por qué importa | Cuándo |
 |---|---|---|
 | ~~Dónde se despliega~~ | **Resuelto**: Render (API) + Vercel (frontends). Ver [`09-despliegue.md`](09-despliegue.md) | ✅ |
-| **Región de la base** | Render no tiene región en Sudamérica. Conviene recrear el proyecto Supabase en East US para que la API y la base queden juntas: hoy es barato porque no hay datos, y de paso reemplaza las credenciales expuestas | Antes de desplegar |
+| ~~Región de la base~~ | **Resuelto**: proyecto recreado en East US (`us-east-1`). El servicio de Render va en Virginia, junto a la base | ✅ |
 | **API de Mercado Pago Point en Uruguay** | Hay que confirmar **con Mercado Pago** si está habilitada en producción para cuentas en pesos. Si no, el cobro presencial queda como registro manual | Antes de la Etapa 2 |
 | **Canal de recordatorios** | WhatsApp tiene más llegada pero requiere Business API y tiene costo por conversación. Correo y push de la PWA son gratis | Etapa 3 |
 | **Requisitos vigentes del trámite** | Los define la Intendencia de Maldonado, cambian y varían por departamento. Hay que confirmarlos en la fuente oficial | Antes de la Etapa 3 |
