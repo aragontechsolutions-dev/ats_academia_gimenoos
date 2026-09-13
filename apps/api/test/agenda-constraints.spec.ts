@@ -71,12 +71,12 @@ beforeAll(async () => {
   await prisma.cliente.upsert({
     where: { id: ID_CLIENTE },
     update: {},
-    create: { id: ID_CLIENTE, usuarioId: ID_USUARIO },
+    create: { id: ID_CLIENTE, usuarioId: ID_USUARIO, nombre: 'Prueba', apellido: 'Uno' },
   });
   await prisma.cliente.upsert({
     where: { id: ID_CLIENTE_2 },
     update: {},
-    create: { id: ID_CLIENTE_2, usuarioId: ID_USUARIO_2 },
+    create: { id: ID_CLIENTE_2, usuarioId: ID_USUARIO_2, nombre: 'Prueba', apellido: 'Dos' },
   });
 
   await prisma.instructor.upsert({

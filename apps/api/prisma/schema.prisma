@@ -142,9 +142,23 @@ model Usuario {
 
 /// Ficha del alumno. Contiene datos identificatorios (cedula) que son datos
 /// personales bajo Ley 18.331: el acceso esta restringido por rol en la API.
+///
+/// El alumno existe con independencia de que tenga cuenta para entrar al
+/// sistema: la mayoria se anota en el local y nunca inicia sesion. Por eso los
+/// datos de contacto viven aca y `usuarioId` es opcional.
+///
+/// Division de responsabilidades: Cliente es el alumno (entidad del negocio),
+/// Usuario es la credencial de acceso. Cuando el alumno se crea una cuenta, se
+/// vinculan por correo (ver UsuariosService.resolverDesdeToken).
 model Cliente {
-  id        String @id @default(uuid()) @db.Uuid
-  usuarioId String @unique @map("usuario_id") @db.Uuid
+  id        String  @id @default(uuid()) @db.Uuid
+  usuarioId String? @unique @map("usuario_id") @db.Uuid
+
+  nombre   String
+  apellido String
+  telefono String?
+  /// Sirve ademas para vincular la ficha con la cuenta cuando el alumno se registra.
+  email    String?
 
   /// Cedula de identidad uruguaya, solo digitos incluyendo el verificador.
   cedula          String?   @unique
@@ -153,16 +167,19 @@ model Cliente {
   ciudad          String    @default("San Carlos")
   /// Observaciones internas del instructor/admin. No visible para el cliente.
   notasInternas   String?   @map("notas_internas")
+  activo          Boolean   @default(true)
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  usuario     Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario     Usuario?         @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
   reservas    Reserva[]
   pagos       Pago[]
   compras     CompraServicio[]
   expedientes Expediente[]
 
+  @@index([apellido, nombre])
+  @@index([email])
   @@map("clientes")
 }
 

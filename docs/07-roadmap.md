@@ -74,28 +74,28 @@ Detalle en [`08-ci-cd.md`](08-ci-cd.md).
 
 ## Bloque 4 — Datos reales de la academia 🟢
 
-El sistema funciona con placeholders. Necesito que me pases:
+**Ya no hace falta pasármelos: los cargás vos desde el panel.** Todo lo de este
+bloque tiene su pantalla.
 
-- [ ] **Contacto**: dirección exacta del local, teléfono, WhatsApp (con código de
-      país), correo, horarios de atención.
-- [ ] **Precios** de cada servicio, en pesos uruguayos, diferenciando **contado o
-      transferencia** de **tarjeta**. Para: clase suelta de auto, packs de auto,
-      clase suelta de moto, packs de moto, gestoría del trámite.
-- [ ] **Instructores**: nombre, qué dicta (moto, auto o ambos), y si querés que
-      aparezcan en el sitio, foto y una línea de presentación.
-- [ ] **Vehículos**: patente, tipo, marca, modelo, cilindrada (en motos) y
-      vencimiento del SOA.
-- [ ] **Duración real de las clases** y cuántos minutos de margen dejás entre una
-      y otra.
-- [ ] **Política de cancelación**: con cuánta antelación puede cancelar un alumno
-      sin penalidad.
-- [ ] **Marca**: logo y colores. Con eso se ajustan la landing y los íconos de la PWA.
-- [ ] **Dominio** definitivo del sitio.
+- [ ] **Instructores** → sección Instructores. Nombre, si da moto o auto, y su
+      plantilla semanal de horarios. Sin la plantilla cargada, el sistema no
+      puede ofrecer ningún turno.
+- [ ] **Vehículos** → sección Vehículos. Patente, tipo, cilindrada en las motos
+      y vencimiento del SOA.
+- [ ] **Precios** → sección Precios. El de contado o transferencia y el de
+      tarjeta, para cada servicio. Mientras estén en cero, el sitio muestra
+      «Consultanos el precio» en vez de un importe falso.
+- [ ] **Alumnos** → sección Alumnos, o se registran solos al crearse una cuenta.
 
-Mientras falten, las secciones sin datos reales simplemente no se muestran: el
-sitio nunca publica información inventada.
+Lo único que sigue necesitando tocar código:
 
----
+- [ ] **Contacto y textos del sitio** → `apps/landing/src/contenido.ts`:
+      dirección, teléfono, WhatsApp, correo y horarios de atención. Mientras
+      falten, esas secciones no se muestran.
+- [ ] **Marca**: logo y colores, para la landing y los íconos de la PWA.
+- [ ] **Dominio** definitivo.
+
+Pasame esos tres y los dejo listos.
 
 ## Bloque 5 — Textos legales ⚪
 

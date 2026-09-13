@@ -66,12 +66,22 @@ Se divide en tres entregas para que cada una sea revisable por separado.
 
 Detalle en [`10-motor-agenda.md`](10-motor-agenda.md).
 
-### Etapa 1.B — Panel
+### Etapa 1.B — Panel ✅ COMPLETADA
 
-- Calendario día/semana/mes con filtros por instructor y vehículo.
-- Alta rápida de clase desde el calendario.
-- ABM de instructores, vehículos y precios desde la interfaz.
-- Ficha del alumno con su historial.
+| Entregable | Estado |
+|---|---|
+| Calendario día / semana / mes con filtros | ✅ |
+| Alta de clase eligiendo entre los horarios disponibles | ✅ |
+| Detalle de clase: confirmar, dictada, ausente, cancelar | ✅ |
+| ABM de alumnos y ficha con historial | ✅ |
+| ABM de instructores con plantilla semanal y excepciones | ✅ |
+| ABM de vehículos | ✅ |
+| ABM de servicios y precios | ✅ |
+| El alumno deja de necesitar cuenta para existir | ✅ migración |
+| Vinculación automática de ficha al crear la cuenta | ✅ |
+| Pruebas | ✅ 51 + recorrido en navegador real |
+
+Detalle en [`11-panel.md`](11-panel.md).
 
 ### Etapa 1.C — PWA del alumno
 
