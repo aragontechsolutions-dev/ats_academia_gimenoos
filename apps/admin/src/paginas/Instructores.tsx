@@ -172,7 +172,16 @@ function FormularioInstructor({
   async function guardar() {
     setGuardando(true);
     setError(null);
-    const cuerpo = { ...datos, telefono: datos.telefono || undefined };
+    // `activo` se manda SOLO al editar. Al crear, la API no lo acepta —y hace
+    // bien: el formulario ni siquiera ofrece el campo cuando se da de alta, y un
+    // instructor nuevo nace activo por definición. Mandar el estado entero del
+    // formulario incluía ese campo y el alta fallaba con 400.
+    const { activo, ...comunes } = datos;
+    const cuerpo = {
+      ...comunes,
+      telefono: datos.telefono || undefined,
+      ...(instructor ? { activo } : {}),
+    };
     try {
       if (instructor) await api.actualizar(instructor.id, cuerpo);
       else await api.crear(cuerpo);
