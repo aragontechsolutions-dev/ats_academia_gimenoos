@@ -177,6 +177,7 @@ model Cliente {
   pagos       Pago[]
   compras     CompraServicio[]
   expedientes Expediente[]
+  graduaciones Graduado[]
 
   @@index([apellido, nombre])
   @@index([email])
@@ -584,4 +585,55 @@ model SeccionLanding {
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("secciones_landing")
+}
+
+/// Egreso de un alumno: su diploma y, si autorizo, su foto en la galeria publica.
+///
+/// El diploma existe para reemplazar a la libreta en la foto de egresado. La
+/// libreta muestra nombre completo, numero de documento y fecha de nacimiento:
+/// publicarla legible es un riesgo real de suplantacion de identidad para el
+/// alumno. El diploma lo emite la academia y no lleva ningun dato sensible, asi
+/// que la foto se puede publicar sin exponer a nadie.
+model Graduado {
+  id        String @id @default(uuid()) @db.Uuid
+  clienteId String @map("cliente_id") @db.Uuid
+
+  categoria   CategoriaLicencia
+  fechaEgreso DateTime @map("fecha_egreso") @db.Date
+  /// Ano de egreso, desnormalizado: la galeria publica filtra y agrupa por ano
+  /// en cada pagina, y un indice sobre una columna es mas barato que una
+  /// funcion sobre la fecha en cada consulta.
+  anio Int
+
+  /// Codigo corto para verificar el diploma. Permite comprobar que es autentico
+  /// sin que el diploma tenga que mostrar ningun dato del alumno.
+  codigo String @unique
+
+  // --- Autorizacion para publicar (Ley 18.331) ------------------------------
+  /// Fecha de la firma. Sin esto NO se puede publicar: lo impide una constraint
+  /// en la base, no solo el codigo.
+  autorizacionAt DateTime? @map("autorizacion_at") @db.Timestamptz(3)
+  /// Quien firmo la autorizacion. Si el alumno es menor, su padre, madre o tutor.
+  autorizacionFirmante String? @map("autorizacion_firmante")
+  /// true cuando quien firmo es el representante legal de un menor de edad.
+  autorizacionEsTutor Boolean @default(false) @map("autorizacion_es_tutor")
+
+  /// Foto del egresado con su diploma. Ruta dentro del bucket de Storage.
+  fotoRuta String? @map("foto_ruta")
+
+  /// Si aparece en la galeria publica.
+  publicado Boolean @default(false)
+
+  notas String?
+
+  creadoPor String?  @map("creado_por") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  /// La galeria publica pide los publicados de un ano, ordenados por fecha.
+  @@index([publicado, anio, fechaEgreso])
+  @@index([clienteId])
+  @@map("graduados")
 }

@@ -17,7 +17,11 @@ import { LandingService } from '../src/modules/landing/landing.service';
 import { LandingController } from '../src/modules/landing/landing.controller';
 import { ActualizarNegocioDto } from '../src/modules/landing/dto/negocio.dto';
 import { ActualizarSeccionDto } from '../src/modules/landing/dto/seccion.dto';
-import { SECCIONES_LANDING, esClaveValida, ordenPorDefecto } from '../src/modules/landing/claves';
+import {
+  SECCIONES_LANDING,
+  esClaveValida,
+  ordenPorDefecto,
+} from '../src/modules/landing/claves';
 import type { UsuarioAutenticado } from '../src/common/auth/jwt-payload.interface';
 
 const prisma = new PrismaService();
@@ -85,7 +89,7 @@ describe('claves de sección', () => {
   });
 
   it('no quedan claves duplicadas en la lista', () => {
-    const claves = SECCIONES_LANDING.map((s) => s.clave);
+    const claves = SECCIONES_LANDING.map((seccion) => seccion.clave);
     expect(new Set(claves).size).toBe(claves.length);
   });
 });
@@ -208,8 +212,8 @@ describe('el panel ve todas las secciones', () => {
   it('devuelve la lista completa aunque la base esté vacía', async () => {
     const secciones = await servicio.listarParaPanel();
     expect(secciones).toHaveLength(SECCIONES_LANDING.length);
-    expect(secciones.map((s) => s.clave)).toEqual(
-      expect.arrayContaining(SECCIONES_LANDING.map((s) => s.clave)),
+    expect(secciones.map((seccion) => seccion.clave)).toEqual(
+      expect.arrayContaining(SECCIONES_LANDING.map((seccion) => seccion.clave)),
     );
   });
 

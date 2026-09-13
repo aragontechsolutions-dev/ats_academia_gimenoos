@@ -8,6 +8,7 @@ const SECCIONES = [
   { ruta: '/instructores', texto: 'Instructores', exacto: false, soloAdmin: true },
   { ruta: '/vehiculos', texto: 'Vehículos', exacto: false, soloAdmin: true },
   { ruta: '/servicios', texto: 'Precios', exacto: false, soloAdmin: true },
+  { ruta: '/graduados', texto: 'Egresados', exacto: false, soloAdmin: true },
   { ruta: '/sitio', texto: 'Sitio web', exacto: false, soloAdmin: true },
 ];
 

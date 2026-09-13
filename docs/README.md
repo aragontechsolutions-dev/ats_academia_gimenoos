@@ -17,6 +17,8 @@
 | [12-pwa-alumno.md](12-pwa-alumno.md) | La app del alumno y qué puede y no puede tocar |
 | [13-landing.md](13-landing.md) | El sitio público: contenido, identidad visual y qué falta cargar |
 | [14-contenido-editable.md](14-contenido-editable.md) | Cómo editar el sitio desde el panel, sin tocar código |
+| [15-graduados-y-diploma.md](15-graduados-y-diploma.md) | El diploma de egresado y la galería de graduados |
+| [16-autorizacion-imagen.md](16-autorizacion-imagen.md) | **Formulario de autorización para imprimir y firmar** |
 
 **Por dónde empezar:** `07-roadmap.md` si sos quien decide,
 `06-guia-desarrollo.md` para levantar el entorno,

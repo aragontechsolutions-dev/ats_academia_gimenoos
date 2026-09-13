@@ -192,3 +192,24 @@ export interface NegocioLanding {
   instagram: string | null;
   facebook: string | null;
 }
+
+// --- Egresados y diplomas --------------------------------------------------
+
+export type CategoriaLicencia = 'A' | 'G1' | 'G2' | 'G3';
+
+export interface Graduado {
+  id: string;
+  clienteId: string;
+  categoria: CategoriaLicencia;
+  fechaEgreso: string;
+  anio: number;
+  /** Código de verificación impreso en el diploma. */
+  codigo: string;
+  autorizacionAt: string | null;
+  autorizacionFirmante: string | null;
+  autorizacionEsTutor: boolean;
+  fotoRuta: string | null;
+  publicado: boolean;
+  notas: string | null;
+  cliente: { id: string; nombre: string; apellido: string };
+}
