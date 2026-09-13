@@ -1,17 +1,21 @@
-import { academia } from '../contenido';
+import { enlaceWhatsApp } from '../lib/whatsapp';
 
-const MENSAJE = encodeURIComponent('Hola, quiero consultar por las clases de manejo.');
-
-/** Boton flotante. No se renderiza si todavia no se cargo el numero real. */
+/**
+ * Botón flotante de WhatsApp.
+ *
+ * No se renderiza si todavía no se cargó el número real: un botón flotante que
+ * no lleva a ninguna parte es peor que no tenerlo.
+ */
 export function BotonWhatsApp() {
-  if (!academia.whatsapp) return null;
+  const enlace = enlaceWhatsApp();
+  if (!enlace) return null;
 
   return (
     <a
-      href={`https://wa.me/${academia.whatsapp}?text=${MENSAJE}`}
+      href={enlace}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-white shadow-lg transition hover:bg-green-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2"
+      className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25d366] text-white shadow-xl shadow-carbon-950/25 transition hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-carbon-950 focus-visible:ring-offset-2"
     >
       <span className="sr-only">Escribinos por WhatsApp</span>
       <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

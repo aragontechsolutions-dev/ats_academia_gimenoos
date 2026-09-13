@@ -1,0 +1,37 @@
+import { Route, ShieldCheck, UserCheck, Gauge } from 'lucide-react';
+import { porQue } from '../contenido';
+import { Seccion, TituloSeccion } from './ui/Seccion';
+
+const ICONOS = {
+  volante: Gauge,
+  escudo: ShieldCheck,
+  instructor: UserCheck,
+  carretera: Route,
+} as const;
+
+export function PorQue() {
+  return (
+    <Seccion id="por-que">
+      <TituloSeccion sobretitulo="Por qué Gimenoos" titulo={porQue.titulo} bajada={porQue.texto} />
+
+      <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {porQue.tarjetas.map((tarjeta, indice) => {
+          const Icono = ICONOS[tarjeta.icono];
+          return (
+            <article
+              key={tarjeta.titulo}
+              className="aparece group rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:border-marca-500 hover:shadow-xl hover:shadow-marca-500/10"
+              style={{ transitionDelay: `${indice * 80}ms` }}
+            >
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-marca-50 text-marca-500 transition group-hover:bg-marca-500 group-hover:text-white">
+                <Icono size={24} aria-hidden="true" />
+              </span>
+              <h3 className="mt-5 text-lg font-bold text-carbon-950">{tarjeta.titulo}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{tarjeta.detalle}</p>
+            </article>
+          );
+        })}
+      </div>
+    </Seccion>
+  );
+}

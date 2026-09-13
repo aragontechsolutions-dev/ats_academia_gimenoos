@@ -1,34 +1,47 @@
 import { instructores } from '../contenido';
+import { Seccion, TituloSeccion } from './ui/Seccion';
 
 /**
- * La seccion no se renderiza mientras no haya instructores reales cargados.
- * Publicar personas o credenciales inventadas seria enganioso.
+ * Instructores.
+ *
+ * Publicar el nombre y la foto de una persona es tratar un dato personal
+ * (Ley 18.331): la sección solo aparece cuando hay instructores cargados, lo
+ * que en la práctica significa que alguien dio esa autorización.
  */
 export function Instructores() {
   if (instructores.length === 0) return null;
 
   return (
-    <section id="instructores" className="mx-auto max-w-6xl px-4 py-16">
-      <h2 className="text-3xl font-bold text-slate-900">Quiénes te enseñan</h2>
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {instructores.map((instructor) => (
-          <article key={instructor.nombre} className="rounded-xl border border-slate-200 p-6">
+    <Seccion id="instructores">
+      <TituloSeccion
+        sobretitulo="Equipo"
+        titulo="Quién te va a enseñar"
+        bajada="Vas a manejar acompañado por alguien que enseña todos los días."
+      />
+
+      <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {instructores.map((instructor, indice) => (
+          <article
+            key={instructor.nombre}
+            className="aparece overflow-hidden rounded-2xl border border-slate-200 bg-white"
+            style={{ transitionDelay: `${indice * 80}ms` }}
+          >
             {instructor.foto && (
               <img
                 src={instructor.foto}
-                alt={`Foto de ${instructor.nombre}`}
-                className="h-20 w-20 rounded-full object-cover"
+                alt={`Instructor: ${instructor.nombre}`}
                 loading="lazy"
-                width={80}
-                height={80}
+                className="h-56 w-full object-cover"
               />
             )}
-            <h3 className="mt-4 font-semibold text-slate-900">{instructor.nombre}</h3>
-            <p className="text-sm text-marca-600">{instructor.rol}</p>
-            <p className="mt-2 text-sm text-slate-600">{instructor.descripcion}</p>
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-carbon-950">{instructor.nombre}</h3>
+              <p className="text-sm font-semibold text-marca-600">{instructor.rol}</p>
+              <p className="mt-3 text-sm text-slate-600">{instructor.descripcion}</p>
+            </div>
           </article>
         ))}
       </div>
-    </section>
+    </Seccion>
   );
 }

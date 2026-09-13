@@ -1,27 +1,36 @@
+import { Quote } from 'lucide-react';
 import { testimonios } from '../contenido';
+import { Seccion, TituloSeccion } from './ui/Seccion';
 
 /**
- * Solo se muestran testimonios reales con autorizacion del alumno.
- * Mientras el arreglo este vacio, la seccion no existe en la pagina.
+ * Testimonios.
+ *
+ * Solo testimonios reales con autorización del alumno. Inventar una reseña es
+ * publicidad engañosa y además expone a la academia; mientras no haya ninguna
+ * cargada, la sección simplemente no está.
  */
 export function Testimonios() {
   if (testimonios.length === 0) return null;
 
   return (
-    <section className="bg-slate-50">
-      <div className="mx-auto max-w-6xl px-4 py-16">
-        <h2 className="text-3xl font-bold text-slate-900">Lo que dicen nuestros alumnos</h2>
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
-          {testimonios.map((testimonio) => (
-            <figure key={testimonio.nombre} className="rounded-xl bg-white p-6 shadow-sm">
-              <blockquote className="text-slate-700">“{testimonio.texto}”</blockquote>
-              <figcaption className="mt-4 text-sm font-semibold text-slate-900">
-                {testimonio.nombre}
-              </figcaption>
-            </figure>
-          ))}
-        </div>
+    <Seccion id="testimonios" oscura>
+      <TituloSeccion sobretitulo="Alumnos" titulo="Lo que cuentan quienes ya manejan" claro />
+
+      <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {testimonios.map((testimonio, indice) => (
+          <figure
+            key={testimonio.nombre}
+            className="aparece rounded-2xl bg-carbon-900 p-7"
+            style={{ transitionDelay: `${indice * 80}ms` }}
+          >
+            <Quote size={28} aria-hidden="true" className="text-marca-500" />
+            <blockquote className="mt-4 text-slate-200">{testimonio.texto}</blockquote>
+            <figcaption className="mt-5 border-t border-white/10 pt-4 text-sm font-bold text-white">
+              {testimonio.nombre}
+            </figcaption>
+          </figure>
+        ))}
       </div>
-    </section>
+    </Seccion>
   );
 }

@@ -89,13 +89,27 @@ bloque tiene su pantalla.
 
 Lo único que sigue necesitando tocar código:
 
-- [ ] **Contacto y textos del sitio** → `apps/landing/src/contenido.ts`:
-      dirección, teléfono, WhatsApp, correo y horarios de atención. Mientras
-      falten, esas secciones no se muestran.
-- [ ] **Marca**: logo y colores, para la landing y los íconos de la PWA.
-- [ ] **Dominio** definitivo.
+- [ ] **El número de WhatsApp** → `apps/landing/src/contenido.ts`, campo
+      `whatsapp`. **Es el dato más importante del sitio público.** Sin él no hay
+      botón flotante, ni formulario de contacto, ni CTA de WhatsApp: el sitio
+      queda sin forma de convertir una visita en una consulta.
+- [ ] **Resto del contacto** → mismo archivo: dirección, teléfono, correo,
+      horarios de atención y el enlace de Google Maps. Lo que falte, no se
+      muestra; no hay datos de relleno.
+- [ ] **Fotos propias** de la academia, las clases y los vehículos → `galeria` y
+      `vehiculos` en el mismo archivo. Las secciones aparecen solas cuando hay
+      fotos. No se usan imágenes de banco: mostrar un auto que no es el de la
+      academia sería afirmar algo que no es cierto.
+- [ ] **Instructores y testimonios** → mismo archivo, **con autorización expresa
+      de cada persona** para publicar su nombre y su foto (es un dato personal:
+      Ley 18.331).
+- [ ] **Marca**: logo definitivo. Los colores ya están (rojo/amarillo/negro, con
+      el contraste verificado); si la academia tiene otros, se cambian en
+      `apps/landing/src/index.css`.
+- [ ] **Dominio** definitivo, y una imagen de 1200×630 para cuando el enlace se
+      comparta por WhatsApp.
 
-Pasame esos tres y los dejo listos.
+Todo esto está explicado en [`13-landing.md`](13-landing.md).
 
 ## Bloque 5 — Textos legales ⚪
 
