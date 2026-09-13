@@ -160,9 +160,9 @@ export function PaginaGraduadosPublica() {
                 key={graduado.id}
                 className="overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-xl hover:shadow-carbon-950/5"
               >
-                {graduado.fotoRuta ? (
+                {graduado.fotoUrl ? (
                   <img
-                    src={graduado.fotoRuta}
+                    src={graduado.fotoUrl}
                     alt={`${graduado.nombre} ${graduado.apellido} con su diploma`}
                     loading="lazy"
                     className="h-60 w-full object-cover"
