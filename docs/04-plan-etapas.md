@@ -48,31 +48,39 @@ El sistema funciona, pero tiene placeholders marcados con `TODO(datos-reales)`:
 
 ## Etapa 1 — Agenda y catálogo
 
-**Objetivo:** que la academia pueda operar su día a día desde el panel.
+Se divide en tres entregas para que cada una sea revisable por separado.
 
-### Backend
-- Motor de cálculo de huecos: plantilla − reservas − bloqueos + extras − buffer,
-  filtrado por instructor y vehículo habilitados para el tipo.
-- Crear, cancelar y reprogramar reservas (reprogramar = cancelar + crear, en una
-  transacción).
-- ABM de instructores, vehículos, disponibilidades y servicios.
-- Servicio de auditoría conectado a las acciones sensibles.
-- Pruebas de concurrencia: dos reservas simultáneas sobre el mismo hueco
-  (se suman a las 11 pruebas de constraints que ya corren en CI).
+### Etapa 1.A — Backend de agenda ✅ COMPLETADA
 
-### Panel
+| Entregable | Estado |
+|---|---|
+| Motor de cálculo de horarios disponibles | ✅ |
+| Reservas: agendar, listar, reprogramar, cancelar, cambiar estado | ✅ |
+| Permisos por rol, con verificación de pertenencia | ✅ |
+| ABM de instructores, con plantilla semanal y excepciones | ✅ |
+| ABM de vehículos | ✅ |
+| ABM de servicios y precios | ✅ |
+| Servicio de auditoría conectado a las acciones sensibles | ✅ |
+| Consumo de clases de un pack al completar | ✅ |
+| Pruebas, incluida la de concurrencia | ✅ 44 en total |
+
+Detalle en [`10-motor-agenda.md`](10-motor-agenda.md).
+
+### Etapa 1.B — Panel
+
 - Calendario día/semana/mes con filtros por instructor y vehículo.
 - Alta rápida de clase desde el calendario.
-- Ficha del alumno con historial.
+- ABM de instructores, vehículos y precios desde la interfaz.
+- Ficha del alumno con su historial.
 
-### PWA
-- Reserva de clase por parte del alumno.
+### Etapa 1.C — PWA del alumno
+
+- Reserva de clase eligiendo horario entre los disponibles.
 - Cancelación según la política configurada.
+- Vista de sus próximas clases.
 
 **Riesgo principal:** las zonas horarias. Todo se persiste en UTC y se convierte
 a `America/Montevideo` solo al mostrar.
-
----
 
 ## Etapa 2 — Pagos
 
