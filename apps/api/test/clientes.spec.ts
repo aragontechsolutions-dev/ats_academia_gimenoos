@@ -67,7 +67,7 @@ beforeEach(async () => {
       apellido: 'Pereira',
       telefono: '099555444',
       email: 'lucia@local',
-      cedula: '12345678',
+      documento: '12345678',
       direccion: 'Calle Falsa 123',
       notasInternas: 'Le cuesta el estacionamiento',
     },
@@ -87,7 +87,7 @@ afterAll(async () => {
 describe('Cada rol ve solo los datos que necesita', () => {
   it('el administrador ve la cédula y las notas internas', async () => {
     const ficha = await clientes.obtener(ID.cliente, ADMIN);
-    expect(ficha).toMatchObject({ cedula: '12345678', notasInternas: expect.any(String) });
+    expect(ficha).toMatchObject({ documento: '12345678', notasInternas: expect.any(String) });
   });
 
   it('el instructor no recibe cédula, domicilio ni notas internas', async () => {
@@ -106,15 +106,15 @@ describe('Cada rol ve solo los datos que necesita', () => {
   // falle por algo que no tiene nada que ver con lo que verifica.
   it('el instructor no puede encontrar a un alumno por su cédula', async () => {
     const comoAdmin = await clientes.listar({ q: '12345678' }, ADMIN);
-    expect(comoAdmin.map((c) => c.id)).toContain(ID.cliente);
+    expect(comoAdmin.datos.map((c) => c.id)).toContain(ID.cliente);
 
     const comoInstructor = await clientes.listar({ q: '12345678' }, INSTRUCTOR);
-    expect(comoInstructor.map((c) => c.id)).not.toContain(ID.cliente);
+    expect(comoInstructor.datos.map((c) => c.id)).not.toContain(ID.cliente);
   });
 
   it('la búsqueda por nombre funciona para ambos', async () => {
     const comoInstructor = await clientes.listar({ q: 'Pereira' }, INSTRUCTOR);
-    expect(comoInstructor.map((c) => c.id)).toContain(ID.cliente);
+    expect(comoInstructor.datos.map((c) => c.id)).toContain(ID.cliente);
   });
 });
 
@@ -140,7 +140,7 @@ describe('El alumno consulta y edita su propia ficha', () => {
         usuarioId: ID_USUARIO_ALUMNO,
         nombre: 'Propio',
         apellido: 'Alumno',
-        cedula: '87654321',
+        documento: '87654321',
         notasInternas: 'Todavía le cuesta el embrague',
       },
     });
@@ -155,7 +155,7 @@ describe('El alumno consulta y edita su propia ficha', () => {
     const ficha = await clientes.obtenerMia(ID_USUARIO_ALUMNO);
 
     // La cédula es suya: puede verla y completarla para el trámite.
-    expect(ficha).toMatchObject({ id: ID_FICHA_ALUMNO, cedula: '87654321' });
+    expect(ficha).toMatchObject({ id: ID_FICHA_ALUMNO, documento: '87654321' });
     // Las notas internas son observaciones del instructor sobre su desempeño.
     expect(ficha).not.toHaveProperty('notasInternas');
   });

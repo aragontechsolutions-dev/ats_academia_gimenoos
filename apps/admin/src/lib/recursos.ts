@@ -1,5 +1,6 @@
 /** Funciones tipadas contra la API, agrupadas por dominio. */
 import { llamarApi } from './api';
+import type { Pagina } from '../componentes/ui/Paginacion';
 import type {
   Cliente, FichaCliente, Excepcion, Franja, Hueco, Instructor, Reserva, Servicio, TipoVehiculo,
   Vehiculo, EstadoReserva, SeccionLanding, NegocioLanding, Graduado,
@@ -86,8 +87,10 @@ export const agenda = {
 // --- Instructores ----------------------------------------------------------
 
 export const instructores = {
-  listar: (incluirInactivos = false) =>
-    llamarApi<Instructor[]>(`/instructores${query({ incluirInactivos })}`),
+  listar: (p: { incluirInactivos?: boolean; pagina?: number; porPagina?: number } = {}) =>
+    llamarApi<Pagina<Instructor>>(
+      `/instructores${query({ incluirInactivos: p.incluirInactivos, pagina: p.pagina, porPagina: p.porPagina })}`,
+    ),
 
   obtener: (id: string) => llamarApi<Instructor>(`/instructores/${id}`),
 
@@ -123,14 +126,26 @@ export const instructores = {
 // --- Vehículos -------------------------------------------------------------
 
 export const vehiculos = {
-  listar: (incluirInactivos = false) =>
-    llamarApi<Vehiculo[]>(`/vehiculos${query({ incluirInactivos })}`),
+  listar: (p: { incluirInactivos?: boolean; pagina?: number; porPagina?: number } = {}) =>
+    llamarApi<Pagina<Vehiculo>>(
+      `/vehiculos${query({ incluirInactivos: p.incluirInactivos, pagina: p.pagina, porPagina: p.porPagina })}`,
+    ),
 
   crear: (cuerpo: Partial<Vehiculo>) =>
     llamarApi<Vehiculo>('/vehiculos', { method: 'POST', body: JSON.stringify(cuerpo) }),
 
   actualizar: (id: string, cuerpo: Partial<Vehiculo>) =>
     llamarApi<Vehiculo>(`/vehiculos/${id}`, { method: 'PATCH', body: JSON.stringify(cuerpo) }),
+
+  /**
+   * La foto va por su propio endpoint: `actualizar` reemplaza la ficha entera y
+   * mandarla con solo la foto borraría marca, modelo y SOA.
+   */
+  guardarFoto: (id: string, fotoRuta: string) =>
+    llamarApi<Vehiculo>(`/vehiculos/${id}/foto`, {
+      method: 'PATCH',
+      body: JSON.stringify({ fotoRuta }),
+    }),
 };
 
 // --- Catálogo --------------------------------------------------------------
@@ -151,8 +166,10 @@ export const servicios = {
 // --- Alumnos ---------------------------------------------------------------
 
 export const clientes = {
-  listar: (p: { q?: string; incluirInactivos?: boolean } = {}) =>
-    llamarApi<Cliente[]>(`/clientes${query({ q: p.q, incluirInactivos: p.incluirInactivos })}`),
+  listar: (p: { q?: string; incluirInactivos?: boolean; pagina?: number; porPagina?: number } = {}) =>
+    llamarApi<Pagina<Cliente>>(
+      `/clientes${query({ q: p.q, incluirInactivos: p.incluirInactivos, pagina: p.pagina, porPagina: p.porPagina })}`,
+    ),
 
   obtener: (id: string) => llamarApi<FichaCliente>(`/clientes/${id}`),
 
@@ -186,8 +203,16 @@ export const sitio = {
 // --- Egresados -------------------------------------------------------------
 
 export const graduados = {
-  listar: (p: { anio?: number; sinAutorizacion?: boolean } = {}) =>
-    llamarApi<Graduado[]>(`/graduados${query({ anio: p.anio, sinAutorizacion: p.sinAutorizacion })}`),
+  listar: (p: { anio?: number; sinAutorizacion?: boolean; pagina?: number; porPagina?: number } = {}) =>
+    llamarApi<Pagina<Graduado>>(
+      `/graduados${query({ anio: p.anio, sinAutorizacion: p.sinAutorizacion, pagina: p.pagina, porPagina: p.porPagina })}`,
+    ),
+
+  /**
+   * Años con egresados y cuántos esperan autorización, sobre el total y no
+   * sobre la página que se está viendo.
+   */
+  resumen: () => llamarApi<{ sinAutorizacion: number; anios: number[] }>('/graduados/resumen'),
 
   crear: (cuerpo: Record<string, unknown>) =>
     llamarApi<Graduado>('/graduados', { method: 'POST', body: JSON.stringify(cuerpo) }),

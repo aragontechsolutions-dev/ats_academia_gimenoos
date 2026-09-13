@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { DateTime } from 'luxon';
 
 import { Modal } from '../componentes/ui/Modal';
+import { Paginacion, PAGINA_VACIA, type Pagina } from '../componentes/ui/Paginacion';
 import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
@@ -20,7 +21,9 @@ const FORMULARIO_VACIO = {
 };
 
 export function Instructores() {
-  const [lista, setLista] = useState<Instructor[]>([]);
+  const [pagina, setPagina] = useState<Pagina<Instructor>>(PAGINA_VACIA as Pagina<Instructor>);
+  const [consulta, setConsulta] = useState({ pagina: 1, porPagina: 10 });
+  const lista = pagina.datos;
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editando, setEditando] = useState<Instructor | 'nuevo' | null>(null);
@@ -29,11 +32,11 @@ export function Instructores() {
   const cargar = useCallback(() => {
     setCargando(true);
     void api
-      .listar(true)
-      .then(setLista)
+      .listar({ incluirInactivos: true, ...consulta })
+      .then(setPagina)
       .catch((problema: Error) => setError(problema.message))
       .finally(() => setCargando(false));
-  }, []);
+  }, [consulta]);
 
   useEffect(cargar, [cargar]);
 
@@ -124,6 +127,12 @@ export function Instructores() {
           </p>
         )}
       </div>
+      <Paginacion
+        pagina={pagina}
+        etiqueta="instructores"
+        onCambio={(cambios) => setConsulta((actual) => ({ ...actual, ...cambios }))}
+      />
+
 
       {editando && (
         <FormularioInstructor

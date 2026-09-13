@@ -17,6 +17,7 @@ import {
   ActualizarGraduadoDto,
   ConsultaGaleriaDto,
   CrearGraduadoDto,
+  ListarGraduadosDto,
 } from './dto/graduado.dto';
 import { Publico } from '../../common/auth/publico.decorator';
 import { Roles } from '../../common/auth/roles.decorator';
@@ -56,11 +57,18 @@ export class GraduadosController {
   @Get()
   @Roles(RolUsuario.ADMIN)
   @ApiOperation({ summary: 'Todos los egresados, para el panel' })
-  listar(@Query('anio') anio?: string, @Query('sinAutorizacion') sinAutorizacion?: string) {
-    return this.graduados.listar({
-      anio: anio ? Number(anio) : undefined,
-      soloSinAutorizacion: sinAutorizacion === 'true',
-    });
+  listar(@Query() consulta: ListarGraduadosDto) {
+    return this.graduados.listar(
+      { anio: consulta.anio, soloSinAutorizacion: consulta.sinAutorizacion ?? false },
+      consulta,
+    );
+  }
+
+  @Get('resumen')
+  @Roles(RolUsuario.ADMIN)
+  @ApiOperation({ summary: 'Años con egresados y cuántos esperan autorización' })
+  resumen() {
+    return this.graduados.resumen();
   }
 
   @Get(':id')

@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, RolUsuario } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { normalizarTelefono } from '../../common/formato/telefono';
+import { normalizarDocumento } from '../../common/formato/documento';
+import { armarPagina, normalizarPaginacion } from '../../common/paginacion/paginacion';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
 import type { UsuarioAutenticado } from '../../common/auth/jwt-payload.interface';
 import type {
@@ -28,7 +31,9 @@ const CAMPOS_BASICOS = {
  */
 const CAMPOS_PROPIOS = {
   ...CAMPOS_BASICOS,
-  cedula: true,
+  tipoDocumento: true,
+  paisDocumento: true,
+  documento: true,
   fechaNacimiento: true,
   direccion: true,
 } satisfies Prisma.ClienteSelect;
@@ -36,7 +41,9 @@ const CAMPOS_PROPIOS = {
 /** Lo que ve un administrador: incluye los datos identificatorios. */
 const CAMPOS_COMPLETOS = {
   ...CAMPOS_BASICOS,
-  cedula: true,
+  tipoDocumento: true,
+  paisDocumento: true,
+  documento: true,
   fechaNacimiento: true,
   direccion: true,
   notasInternas: true,
@@ -72,22 +79,37 @@ export class ClientesService {
               { nombre: { contains: termino, mode: 'insensitive' } },
               { apellido: { contains: termino, mode: 'insensitive' } },
               { email: { contains: termino, mode: 'insensitive' } },
-              // Buscar por cédula es habitual en el mostrador, pero solo tiene
-              // sentido para quien puede verla.
+              // Buscar por documento es habitual en el mostrador, pero solo
+              // tiene sentido para quien puede verlo.
               ...(usuario.rol === RolUsuario.ADMIN
-                ? [{ cedula: { contains: termino } as Prisma.StringNullableFilter }]
+                ? [
+                    {
+                      documento: {
+                        contains: termino.replace(/[.\s-]/g, '').toUpperCase(),
+                        mode: 'insensitive',
+                      } as Prisma.StringNullableFilter,
+                    },
+                  ]
                 : []),
             ],
           }
         : {}),
     };
 
-    return this.prisma.cliente.findMany({
-      where,
-      select: this.campos(usuario.rol),
-      orderBy: [{ apellido: 'asc' }, { nombre: 'asc' }],
-      take: 100,
-    });
+    const { pagina, porPagina, saltar } = normalizarPaginacion(dto);
+
+    const [total, datos] = await Promise.all([
+      this.prisma.cliente.count({ where }),
+      this.prisma.cliente.findMany({
+        where,
+        select: this.campos(usuario.rol),
+        orderBy: [{ apellido: 'asc' }, { nombre: 'asc' }],
+        skip: saltar,
+        take: porPagina,
+      }),
+    ]);
+
+    return armarPagina(datos, total, pagina, porPagina);
   }
 
   /** Ficha con el historial de clases, de la más reciente a la más antigua. */
@@ -213,8 +235,8 @@ export class ClientesService {
       data: {
         nombre: dto.nombre,
         apellido: dto.apellido,
-        telefono: dto.telefono ?? null,
-        cedula: dto.cedula ?? null,
+        telefono: normalizarTelefono(dto.telefono),
+        ...normalizarDocumento(dto),
         fechaNacimiento: dto.fechaNacimiento ?? null,
         direccion: dto.direccion ?? null,
         ...(dto.ciudad ? { ciudad: dto.ciudad } : {}),
@@ -236,9 +258,9 @@ export class ClientesService {
     return {
       nombre: dto.nombre,
       apellido: dto.apellido,
-      telefono: dto.telefono ?? null,
+      telefono: normalizarTelefono(dto.telefono),
       email: dto.email ?? null,
-      cedula: dto.cedula ?? null,
+      ...normalizarDocumento(dto),
       fechaNacimiento: dto.fechaNacimiento ?? null,
       direccion: dto.direccion ?? null,
       ciudad: dto.ciudad ?? 'San Carlos',

@@ -42,10 +42,16 @@ export function Agenda() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void Promise.all([apiInstructores.listar(), apiVehiculos.listar()])
+    // Son desplegables de filtro: necesitan la lista completa, no una página.
+    // Con el paginado por defecto mostrarían solo 10 y nadie se daría cuenta de
+    // que faltan instructores en el filtro.
+    void Promise.all([
+      apiInstructores.listar({ porPagina: 100 }),
+      apiVehiculos.listar({ porPagina: 100 }),
+    ])
       .then(([i, v]) => {
-        setListaInstructores(i);
-        setListaVehiculos(v);
+        setListaInstructores(i.datos);
+        setListaVehiculos(v.datos);
       })
       .catch((problema: Error) => setError(problema.message));
   }, []);

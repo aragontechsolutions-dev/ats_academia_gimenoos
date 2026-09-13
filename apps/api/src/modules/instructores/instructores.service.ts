@@ -1,5 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { normalizarTelefono } from '../../common/formato/telefono';
+import {
+  armarPagina,
+  normalizarPaginacion,
+  type ConsultaPaginadaDto,
+} from '../../common/paginacion/paginacion';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
 import type {
   ActualizarInstructorDto,
@@ -15,12 +21,22 @@ export class InstructoresService {
     private readonly auditoria: AuditoriaService,
   ) {}
 
-  listar(incluirInactivos: boolean) {
-    return this.prisma.instructor.findMany({
-      where: incluirInactivos ? {} : { activo: true },
-      orderBy: [{ activo: 'desc' }, { nombre: 'asc' }],
-      include: { disponibilidades: { orderBy: [{ diaSemana: 'asc' }, { minutoInicio: 'asc' }] } },
-    });
+  async listar(incluirInactivos: boolean, consulta: ConsultaPaginadaDto) {
+    const { pagina, porPagina, saltar } = normalizarPaginacion(consulta);
+    const where = incluirInactivos ? {} : { activo: true };
+
+    const [total, datos] = await Promise.all([
+      this.prisma.instructor.count({ where }),
+      this.prisma.instructor.findMany({
+        where,
+        orderBy: [{ activo: 'desc' }, { nombre: 'asc' }],
+        include: { disponibilidades: { orderBy: [{ diaSemana: 'asc' }, { minutoInicio: 'asc' }] } },
+        skip: saltar,
+        take: porPagina,
+      }),
+    ]);
+
+    return armarPagina(datos, total, pagina, porPagina);
   }
 
   async obtener(id: string) {
@@ -42,7 +58,7 @@ export class InstructoresService {
       data: {
         nombre: dto.nombre,
         apellido: dto.apellido,
-        telefono: dto.telefono ?? null,
+        telefono: normalizarTelefono(dto.telefono),
         habilitaMoto: dto.habilitaMoto ?? false,
         habilitaAuto: dto.habilitaAuto ?? true,
         colorAgenda: dto.colorAgenda ?? '#2563eb',
@@ -68,7 +84,7 @@ export class InstructoresService {
       data: {
         nombre: dto.nombre,
         apellido: dto.apellido,
-        telefono: dto.telefono ?? null,
+        telefono: normalizarTelefono(dto.telefono),
         habilitaMoto: dto.habilitaMoto ?? false,
         habilitaAuto: dto.habilitaAuto ?? true,
         colorAgenda: dto.colorAgenda,

@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
@@ -11,12 +11,13 @@ import {
   IsString,
   IsUUID,
   Length,
-  Matches,
+  MaxLength,
   Max,
   Min,
   ValidateNested,
 } from 'class-validator';
 import { TipoExcepcion } from '@prisma/client';
+import { ConsultaPaginadaDto } from '../../../common/paginacion/paginacion';
 
 export class CrearInstructorDto {
   @IsString()
@@ -27,9 +28,13 @@ export class CrearInstructorDto {
   @Length(2, 60)
   apellido!: string;
 
+  /**
+   * Se acepta como lo escriba la persona y el servicio lo normaliza a
+   * `+598 98663201`. Ver `normalizarTelefono`.
+   */
   @IsOptional()
   @IsString()
-  @Matches(/^[\d\s+()-]{8,20}$/, { message: 'El teléfono no tiene un formato válido' })
+  @MaxLength(25, { message: 'El teléfono es demasiado largo' })
   telefono?: string;
 
   @IsOptional()
@@ -118,4 +123,19 @@ export class CrearExcepcionDto {
   @IsString()
   @Length(1, 200)
   motivo?: string;
+}
+
+/**
+ * Parámetros del listado de instructores.
+ *
+ * Hereda la paginación Y declara `incluirInactivos`. Tiene que declararlos
+ * TODOS: `@Query()` valida el objeto entero de parámetros contra este DTO, y
+ * con `forbidNonWhitelisted` cualquiera que no esté acá devuelve 400. Un DTO
+ * incompleto no rompe la compilación, rompe la pantalla.
+ */
+export class ListarInstructoresDto extends ConsultaPaginadaDto {
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  incluirInactivos?: boolean;
 }

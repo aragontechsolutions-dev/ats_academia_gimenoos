@@ -1,9 +1,14 @@
-import { Body, Controller, Get, Param, ParseBoolPipe, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario } from '@prisma/client';
 
 import { VehiculosService } from './vehiculos.service';
-import { ActualizarVehiculoDto, CrearVehiculoDto } from './dto/vehiculo.dto';
+import {
+  ActualizarVehiculoDto,
+  CrearVehiculoDto,
+  FotoVehiculoDto,
+  ListarVehiculosDto,
+} from './dto/vehiculo.dto';
 import { Roles } from '../../common/auth/roles.decorator';
 import { UsuarioActual } from '../../common/auth/usuario-actual.decorator';
 import type { UsuarioAutenticado } from '../../common/auth/jwt-payload.interface';
@@ -16,10 +21,8 @@ export class VehiculosController {
   @Get()
   @Roles(RolUsuario.ADMIN, RolUsuario.INSTRUCTOR)
   @ApiOperation({ summary: 'Vehículos de la academia' })
-  listar(
-    @Query('incluirInactivos', new ParseBoolPipe({ optional: true })) incluirInactivos?: boolean,
-  ) {
-    return this.vehiculos.listar(incluirInactivos ?? false);
+  listar(@Query() consulta: ListarVehiculosDto) {
+    return this.vehiculos.listar(consulta.incluirInactivos ?? false, consulta);
   }
 
   @Get(':id')
@@ -45,5 +48,16 @@ export class VehiculosController {
     @UsuarioActual() usuario: UsuarioAutenticado,
   ) {
     return this.vehiculos.actualizar(id, dto, usuario.id);
+  }
+
+  @Patch(':id/foto')
+  @Roles(RolUsuario.ADMIN)
+  @ApiOperation({ summary: 'Guarda la ruta de la foto del vehículo (cadena vacía la quita)' })
+  guardarFoto(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: FotoVehiculoDto,
+    @UsuarioActual() usuario: UsuarioAutenticado,
+  ) {
+    return this.vehiculos.guardarFoto(id, dto.fotoRuta, usuario.id);
   }
 }

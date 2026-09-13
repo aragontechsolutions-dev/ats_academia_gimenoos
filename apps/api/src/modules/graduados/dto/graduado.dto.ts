@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
@@ -9,11 +9,11 @@ import {
   IsString,
   IsUUID,
   Length,
-  Matches,
   Min,
-  ValidateIf,
 } from 'class-validator';
 import { CategoriaLicencia } from '@prisma/client';
+import { ConsultaPaginadaDto } from '../../../common/paginacion/paginacion';
+import { EsRutaDeFoto } from '../../../common/formato/foto';
 
 export class CrearGraduadoDto {
   @IsUUID()
@@ -57,20 +57,10 @@ export class CrearGraduadoDto {
   /**
    * Ruta de la foto DENTRO del bucket, no una dirección completa.
    *
-   * Se valida la forma exacta a propósito. Si se aceptara una URL cualquiera,
-   * quien tenga acceso al panel podría apuntar la foto de un egresado a
-   * cualquier servidor de internet: una imagen distinta, un rastreador, o algo
-   * peor, servido desde el sitio de la academia como si fuera propio.
-   *
-   * La dirección pública la arma la API a partir de esta ruta.
+   * La dirección pública la arma la API a partir de esta ruta. Por qué se valida
+   * con una forma exacta está explicado en `common/formato/foto.ts`.
    */
-  @IsOptional()
-  @ValidateIf((_objeto, valor) => valor !== null && valor !== '')
-  @IsString()
-  @Length(0, 200)
-  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[a-z0-9._-]{1,80}\.(jpg|jpeg|webp)$/, {
-    message: 'La ruta de la foto no tiene la forma esperada (<id del egresado>/<archivo>.jpg)',
-  })
+  @EsRutaDeFoto('del egresado')
   fotoRuta?: string | null;
 }
 
@@ -116,4 +106,23 @@ export class ConsultaGaleriaDto {
   @IsInt()
   @Min(1900)
   anio?: number;
+}
+
+/**
+ * Parámetros del listado de egresados del panel.
+ *
+ * Declara todos los que acepta el endpoint, no solo la paginación: `@Query()`
+ * valida el objeto entero de parámetros contra este DTO.
+ */
+export class ListarGraduadosDto extends ConsultaPaginadaDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1900)
+  anio?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  sinAutorizacion?: boolean;
 }

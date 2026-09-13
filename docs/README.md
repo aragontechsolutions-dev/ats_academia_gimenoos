@@ -19,6 +19,7 @@
 | [14-contenido-editable.md](14-contenido-editable.md) | Cómo editar el sitio desde el panel, sin tocar código |
 | [15-graduados-y-diploma.md](15-graduados-y-diploma.md) | El diploma de egresado y la galería de graduados |
 | [16-autorizacion-imagen.md](16-autorizacion-imagen.md) | **Formulario de autorización para imprimir y firmar** |
+| [17-fotos.md](17-fotos.md) | Validación de fotos, buckets y la foto de cada vehículo |
 
 **Por dónde empezar:** `07-roadmap.md` si sos quien decide,
 `06-guia-desarrollo.md` para levantar el entorno,

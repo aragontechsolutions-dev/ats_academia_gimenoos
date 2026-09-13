@@ -101,11 +101,20 @@ Conviene volver a correrlo después de cada cambio de configuración.
 **Requiere el paso 3 hecho.** Las políticas consultan la tabla `usuarios`, que
 crea Prisma, para saber quién es administrador.
 
-En **SQL Editor**, ejecutar `infra/supabase/01-storage.sql`. Crea los buckets
-privados `comprobantes` y `expedientes` con sus políticas RLS. Se puede volver a
-ejecutar cuantas veces haga falta: no duplica nada.
+En **SQL Editor**, ejecutar `infra/supabase/01-storage.sql`. Crea cuatro buckets
+con sus políticas RLS. Se puede volver a ejecutar cuantas veces haga falta: no
+duplica nada.
 
-Verificar después en **Storage** que ambos figuren como *Private*.
+| Bucket | Visibilidad | Para qué |
+|---|---|---|
+| `comprobantes` | **Private** | Comprobantes de pago del alumno |
+| `expedientes` | **Private** | Documentación del trámite de libreta |
+| `graduados` | *Public* | Fotos de egresados, que se muestran en el sitio |
+| `vehiculos` | *Public* | Fotos de los vehículos de la flota |
+
+Verificar después en **Storage** que la visibilidad coincida con la tabla. Los
+dos públicos lo son solo para **leer**: escribir en ellos requiere rol de
+administrador. El detalle está en [17-fotos.md](17-fotos.md).
 
 ## 6. Configurar Auth
 

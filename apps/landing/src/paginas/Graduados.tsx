@@ -18,7 +18,7 @@ const CATEGORIA: Record<string, string> = {
   G3: 'Motocicleta',
 };
 
-const VACIA: PaginaGraduados = { total: 0, pagina: 1, porPagina: 10, paginas: 1, graduados: [] };
+const VACIA: PaginaGraduados = { total: 0, pagina: 1, porPagina: 10, paginas: 1, datos: [] };
 
 /** Lee un número de la URL, cayendo al valor por defecto si no es válido. */
 function numero(valor: string | null, porDefecto: number): number {
@@ -146,16 +146,16 @@ export function PaginaGraduadosPublica() {
 
         {cargando && <p className="mt-10 text-slate-500">Cargando…</p>}
 
-        {!cargando && datos.graduados.length === 0 && (
+        {!cargando && datos.datos.length === 0 && (
           <p className="mt-10 rounded-xl border border-slate-200 bg-slate-50 p-6 text-slate-600">
             Todavía no hay egresados publicados
             {anio && ` para ${anio}`}.
           </p>
         )}
 
-        {datos.graduados.length > 0 && (
+        {datos.datos.length > 0 && (
           <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {datos.graduados.map((graduado) => (
+            {datos.datos.map((graduado) => (
               <li
                 key={graduado.id}
                 className="overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-xl hover:shadow-carbon-950/5"

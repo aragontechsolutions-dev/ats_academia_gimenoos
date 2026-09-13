@@ -46,6 +46,14 @@ enum CategoriaLicencia {
   G3
 }
 
+/// Con que documento se identifica un alumno.
+enum TipoIdentificacion {
+  /// Cedula de identidad uruguaya.
+  CEDULA
+  /// Pasaporte, para alumnos extranjeros.
+  PASAPORTE
+}
+
 enum EstadoVehiculo {
   ACTIVO
   MANTENIMIENTO
@@ -160,8 +168,14 @@ model Cliente {
   /// Sirve ademas para vincular la ficha con la cuenta cuando el alumno se registra.
   email    String?
 
-  /// Cedula de identidad uruguaya, solo digitos incluyendo el verificador.
-  cedula          String?   @unique
+  /// Con que documento se identifica. Un alumno extranjero puede sacar la
+  /// libreta con su pasaporte.
+  tipoDocumento TipoIdentificacion @default(CEDULA) @map("tipo_documento")
+  /// Pais emisor, ISO 3166-1 alfa-2. Para la cedula uruguaya es siempre UY.
+  paisDocumento String @default("UY") @map("pais_documento") @db.Char(2)
+  /// Numero del documento. La cedula va solo con digitos, incluido el
+  /// verificador; el pasaporte puede llevar letras y se guarda en mayusculas.
+  documento       String?
   fechaNacimiento DateTime? @map("fecha_nacimiento") @db.Date
   direccion       String?
   ciudad          String    @default("San Carlos")
@@ -179,6 +193,7 @@ model Cliente {
   expedientes Expediente[]
   graduaciones Graduado[]
 
+  @@unique([tipoDocumento, paisDocumento, documento])
   @@index([apellido, nombre])
   @@index([email])
   @@map("clientes")
@@ -229,6 +244,8 @@ model Vehiculo {
   estado     EstadoVehiculo @default(ACTIVO)
   /// Vencimiento del SOA. La Intendencia lo exige vigente para el examen practico.
   soaVence   DateTime?      @map("soa_vence") @db.Date
+  /// Foto del vehiculo. Ruta dentro del bucket de Storage, no una direccion completa.
+  fotoRuta   String?        @map("foto_ruta")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)

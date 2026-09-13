@@ -43,12 +43,13 @@ export interface GraduadoPublico {
   fotoUrl: string | null;
 }
 
+/** Misma forma que devuelven todos los listados paginados de la API. */
 export interface PaginaGraduados {
   total: number;
   pagina: number;
   porPagina: number;
   paginas: number;
-  graduados: GraduadoPublico[];
+  datos: GraduadoPublico[];
 }
 
 /** Tamaños que acepta la API. Cualquier otro lo ignora y usa el de por defecto. */
@@ -59,7 +60,7 @@ const PAGINA_VACIA: PaginaGraduados = {
   pagina: 1,
   porPagina: 10,
   paginas: 1,
-  graduados: [],
+  datos: [],
 };
 
 export async function obtenerGraduados(parametros: {

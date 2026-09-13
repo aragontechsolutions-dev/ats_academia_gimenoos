@@ -11,7 +11,7 @@ Aplicación: `apps/admin` · Roles que entran: `ADMIN` e `INSTRUCTOR`
 | **Agenda** | admin e instructor | La operación diaria: ver, agendar, mover y cerrar clases |
 | **Alumnos** | admin e instructor | Buscar alumnos y consultar su ficha e historial |
 | **Instructores** | solo admin | Alta, horarios semanales y licencias |
-| **Vehículos** | solo admin | Alta, estado y vencimiento del SOA |
+| **Vehículos** | solo admin | Alta, foto, estado y vencimiento del SOA |
 | **Precios** | solo admin | Catálogo de servicios y sus dos precios |
 
 El instructor ve la agenda y los alumnos porque los necesita para dar clase. La
@@ -141,3 +141,69 @@ alta un instructor fallaba con ese 400. La prueba de navegador
 `altas.spec.mjs` recorre los tres formularios de creación de punta a punta y
 falla si la API rechaza alguno: es lo que faltaba, porque la validación vive en
 el borde HTTP y ninguna prueba unitaria recorría el camino completo.
+
+---
+
+## Los listados están paginados
+
+Alumnos, instructores, vehículos y egresados devuelven **10 por página** y
+ofrecen un selector de **10, 20, 50 o 100**. Todos usan la misma forma de
+respuesta:
+
+```json
+{ "total": 30, "pagina": 2, "porPagina": 10, "paginas": 3, "datos": [...] }
+```
+
+El tamaño está acotado a esa lista cerrada **en el DTO y otra vez en el
+servicio**: un `porPagina=100000` en un listado es una forma barata de hacer que
+la base devuelva una tabla entera en cada petición.
+
+### Los desplegables NO se paginan
+
+Los filtros de la agenda, el buscador de alumnos al agendar una clase y el
+desplegable de alumnos del formulario de egresados piden el máximo, no una
+página. Si se paginaran, mostrarían diez instructores y **nadie se daría
+cuenta** de que faltan los demás.
+
+### Lo que se calcula sobre el total, no sobre la página
+
+En egresados, el filtro de años y el aviso de «faltan autorizaciones» se piden
+al servidor (`GET /graduados/resumen`). Calcularlos en el navegador sobre la
+lista visible daba resultados distintos según en qué página estuviera parado
+quien mira.
+
+---
+
+## La misma trampa, otra vez: los DTO de `@Query()`
+
+Ya la vimos con los formularios de alta, y volvió a aparecer al paginar.
+
+**`@Query()` valida el objeto entero de parámetros de la URL contra su DTO.**
+Con `forbidNonWhitelisted`, cualquier parámetro que el DTO no declare devuelve
+`400`. Al agregar la paginación, los listados quedaron recibiendo un DTO que
+solo declaraba `pagina` y `porPagina`, así que `?incluirInactivos=true` —que el
+panel venía mandando desde siempre— empezó a devolver 400 y las tres pantallas
+se veían vacías.
+
+El síntoma es engañoso: no hay error de compilación, la pantalla simplemente no
+muestra nada.
+
+**La regla:** el DTO de `@Query()` de un endpoint tiene que declarar **todos**
+los parámetros que ese endpoint acepta, no solo los que uno está agregando. Por
+eso existen `ListarInstructoresDto`, `ListarVehiculosDto` y `ListarGraduadosDto`
+en vez de usar `ConsultaPaginadaDto` pelado.
+
+---
+
+## Las fotos de los listados
+
+Egresados y Vehículos tienen una miniatura con *Subir* / *Cambiar* / *Quitar* en
+cada fila, con el mismo componente (`componentes/CeldaFoto.tsx`). Las reglas de
+validación, los buckets y por qué la base guarda una ruta y no una dirección
+están en [17-fotos.md](17-fotos.md).
+
+**Una trampa parecida a las dos de arriba, evitada a tiempo:** la foto del
+vehículo va por `PATCH /vehiculos/:id/foto` y no por el PATCH de la ficha.
+`PATCH /vehiculos/:id` reemplaza la ficha entera —lo que no viene se guarda en
+null—, así que mandar solo la foto desde el listado habría borrado la marca, el
+modelo y el SOA del vehículo.

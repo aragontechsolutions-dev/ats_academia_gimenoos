@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { miFicha } from '../lib/recursos';
+import { PAISES } from '../lib/paises';
 import { fechaCorta } from '../lib/fecha';
 import { useSesion } from '../lib/sesion';
 import type { MiFicha } from '../lib/tipos';
@@ -14,7 +15,8 @@ export function MiPerfil() {
   const { cerrarSesion } = useSesion();
   const [ficha, setFicha] = useState<MiFicha | null>(null);
   const [datos, setDatos] = useState({
-    nombre: '', apellido: '', telefono: '', cedula: '', fechaNacimiento: '', direccion: '',
+    nombre: '', apellido: '', telefono: '', tipoDocumento: 'CEDULA' as 'CEDULA' | 'PASAPORTE',
+    paisDocumento: 'UY', documento: '', fechaNacimiento: '', direccion: '',
   });
   const [error, setError] = useState<string | null>(null);
   const [guardado, setGuardado] = useState(false);
@@ -29,7 +31,9 @@ export function MiPerfil() {
           nombre: resultado.nombre,
           apellido: resultado.apellido,
           telefono: resultado.telefono ?? '',
-          cedula: resultado.cedula ?? '',
+          tipoDocumento: resultado.tipoDocumento ?? 'CEDULA',
+          paisDocumento: resultado.paisDocumento ?? 'UY',
+          documento: resultado.documento ?? '',
           fechaNacimiento: resultado.fechaNacimiento?.slice(0, 10) ?? '',
           direccion: resultado.direccion ?? '',
         });
@@ -47,7 +51,9 @@ export function MiPerfil() {
         nombre: datos.nombre,
         apellido: datos.apellido,
         telefono: datos.telefono || undefined,
-        cedula: datos.cedula || undefined,
+        tipoDocumento: datos.tipoDocumento,
+        ...(datos.tipoDocumento === 'PASAPORTE' ? { paisDocumento: datos.paisDocumento } : {}),
+        documento: datos.documento || undefined,
         fechaNacimiento: datos.fechaNacimiento || undefined,
         direccion: datos.direccion || undefined,
       });
@@ -120,15 +126,63 @@ export function MiPerfil() {
         </label>
 
         <label className="block">
-          <span className="text-sm font-medium text-slate-700">Cédula</span>
+          <span className="text-sm font-medium text-slate-700">Documento</span>
+          <select
+            value={datos.tipoDocumento}
+            onChange={(e) =>
+              setDatos({
+                ...datos,
+                tipoDocumento: e.target.value as 'CEDULA' | 'PASAPORTE',
+                documento: '',
+                paisDocumento: e.target.value === 'CEDULA' ? 'UY' : datos.paisDocumento,
+              })
+            }
+            className={CLASES_CAMPO}
+          >
+            <option value="CEDULA">Cédula uruguaya</option>
+            <option value="PASAPORTE">Pasaporte</option>
+          </select>
+        </label>
+
+        {datos.tipoDocumento === 'PASAPORTE' && (
+          <label className="block">
+            <span className="text-sm font-medium text-slate-700">País que lo emitió</span>
+            <select
+              value={datos.paisDocumento}
+              onChange={(e) => setDatos({ ...datos, paisDocumento: e.target.value })}
+              className={CLASES_CAMPO}
+            >
+              {PAISES.map((pais) => (
+                <option key={pais.codigo} value={pais.codigo}>
+                  {pais.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        <label className="block">
+          <span className="text-sm font-medium text-slate-700">
+            {datos.tipoDocumento === 'CEDULA' ? 'Número de cédula' : 'Número de pasaporte'}
+          </span>
           <input
-            inputMode="numeric"
-            value={datos.cedula}
-            onChange={(e) => setDatos({ ...datos, cedula: e.target.value })}
+            inputMode={datos.tipoDocumento === 'CEDULA' ? 'numeric' : 'text'}
+            value={datos.documento}
+            onChange={(e) =>
+              setDatos({
+                ...datos,
+                documento:
+                  datos.tipoDocumento === 'PASAPORTE'
+                    ? e.target.value.toUpperCase()
+                    : e.target.value,
+              })
+            }
             className={CLASES_CAMPO}
           />
           <span className="mt-1 block text-xs text-slate-500">
-            Solo dígitos, sin puntos ni guiones. Hace falta para el trámite de la libreta.
+            {datos.tipoDocumento === 'CEDULA'
+              ? 'Solo dígitos. Los puntos y guiones se quitan solos. Hace falta para el trámite de la libreta.'
+              : 'Letras y números. Las letras se pasan a mayúscula solas.'}
           </span>
         </label>
 

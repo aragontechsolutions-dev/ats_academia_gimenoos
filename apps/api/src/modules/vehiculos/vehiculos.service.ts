@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EstadoVehiculo } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import {
+  armarPagina,
+  normalizarPaginacion,
+  type ConsultaPaginadaDto,
+} from '../../common/paginacion/paginacion';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
+import { rutaFotoONula } from '../../common/formato/foto';
 import type { ActualizarVehiculoDto, CrearVehiculoDto } from './dto/vehiculo.dto';
 
 @Injectable()
@@ -11,11 +17,21 @@ export class VehiculosService {
     private readonly auditoria: AuditoriaService,
   ) {}
 
-  listar(incluirInactivos: boolean) {
-    return this.prisma.vehiculo.findMany({
-      where: incluirInactivos ? {} : { estado: EstadoVehiculo.ACTIVO },
-      orderBy: [{ tipo: 'asc' }, { patente: 'asc' }],
-    });
+  async listar(incluirInactivos: boolean, consulta: ConsultaPaginadaDto) {
+    const { pagina, porPagina, saltar } = normalizarPaginacion(consulta);
+    const where = incluirInactivos ? {} : { estado: EstadoVehiculo.ACTIVO };
+
+    const [total, datos] = await Promise.all([
+      this.prisma.vehiculo.count({ where }),
+      this.prisma.vehiculo.findMany({
+        where,
+        orderBy: [{ tipo: 'asc' }, { patente: 'asc' }],
+        skip: saltar,
+        take: porPagina,
+      }),
+    ]);
+
+    return armarPagina(datos, total, pagina, porPagina);
   }
 
   async obtener(id: string) {
@@ -57,6 +73,30 @@ export class VehiculosService {
       entidad: 'Vehiculo',
       entidadId: id,
       detalle: { estado: vehiculo.estado },
+    });
+    return vehiculo;
+  }
+
+  /**
+   * Guarda la ruta de la foto, sin tocar el resto de la ficha.
+   *
+   * El archivo ya está en Storage: el panel lo sube directo desde el navegador y
+   * acá llega solamente dónde quedó. La forma de esa ruta la valida el DTO.
+   */
+  async guardarFoto(id: string, fotoRuta: string | null | undefined, usuarioId: string) {
+    await this.obtener(id);
+
+    const vehiculo = await this.prisma.vehiculo.update({
+      where: { id },
+      data: { fotoRuta: rutaFotoONula(fotoRuta) ?? null },
+    });
+
+    await this.auditoria.registrar({
+      usuarioId,
+      accion: vehiculo.fotoRuta ? 'VEHICULO_FOTO_CARGADA' : 'VEHICULO_FOTO_QUITADA',
+      entidad: 'Vehiculo',
+      entidadId: id,
+      detalle: { patente: vehiculo.patente },
     });
     return vehiculo;
   }

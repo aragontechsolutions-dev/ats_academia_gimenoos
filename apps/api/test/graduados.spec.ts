@@ -195,7 +195,7 @@ describe('la autorización manda', () => {
     expect(retirado.autorizacionAt).toBeNull();
     expect(retirado.autorizacionFirmante).toBeNull();
 
-    const { graduados: visibles } = await graduados.galeria({});
+    const { datos: visibles } = await graduados.galeria({});
     expect(visibles.map((g) => g.id)).not.toContain(graduado.id);
   });
 });
@@ -252,7 +252,7 @@ describe('lo que ve el público', () => {
   });
 
   it('no filtra datos sensibles del alumno', async () => {
-    const { graduados: filas } = await graduados.galeria({});
+    const { datos: filas } = await graduados.galeria({});
     expect(filas.length).toBeGreaterThan(0);
     for (const fila of filas) {
       expect(Object.keys(fila).sort()).toEqual(
@@ -262,7 +262,7 @@ describe('lo que ve el público', () => {
   });
 
   it('no incluye a los no publicados', async () => {
-    const { graduados: filas, total } = await graduados.galeria({ porPagina: 100 });
+    const { datos: filas, total } = await graduados.galeria({ porPagina: 100 });
     const sinPublicar = await prisma.graduado.findFirst({
       where: { id: { in: creados }, publicado: false },
     });
@@ -292,8 +292,8 @@ describe('lo que ve el público', () => {
 
   it('filtra por año', async () => {
     const pagina = await graduados.galeria({ anio: 2025 });
-    expect(pagina.graduados.length).toBeGreaterThan(0);
-    expect(pagina.graduados.every((g) => g.anio === 2025)).toBe(true);
+    expect(pagina.datos.length).toBeGreaterThan(0);
+    expect(pagina.datos.every((g) => g.anio === 2025)).toBe(true);
   });
 
   it('devuelve los años que tienen egresados publicados, del más nuevo al más viejo', async () => {
@@ -306,7 +306,7 @@ describe('lo que ve el público', () => {
   it('las páginas no se pisan ni repiten', async () => {
     const primera = await graduados.galeria({ porPagina: 10, pagina: 1 });
     const segunda = await graduados.galeria({ porPagina: 10, pagina: 2 });
-    const ids = [...primera.graduados, ...segunda.graduados].map((g) => g.id);
+    const ids = [...primera.datos, ...segunda.datos].map((g) => g.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 });
@@ -397,7 +397,7 @@ describe('la foto', () => {
       data: { fotoRuta: `${graduado.id}/foto.jpg` },
     });
 
-    const { graduados: filas } = await graduados.galeria({ porPagina: 100 });
+    const { datos: filas } = await graduados.galeria({ porPagina: 100 });
     const fila = filas.find((g) => g.id === graduado.id);
     expect(fila?.fotoUrl).toBe(
       `https://proyecto.supabase.co/storage/v1/object/public/graduados/${graduado.id}/foto.jpg`,
@@ -413,7 +413,7 @@ describe('la foto', () => {
       autorizacionFirmante: 'El propio alumno',
       publicado: true,
     });
-    const { graduados: filas } = await graduados.galeria({ porPagina: 100 });
+    const { datos: filas } = await graduados.galeria({ porPagina: 100 });
     expect(filas.find((g) => g.id === graduado.id)?.fotoUrl).toBeNull();
   });
 });

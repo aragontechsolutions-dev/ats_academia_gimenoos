@@ -1,7 +1,9 @@
 import { Type } from 'class-transformer';
 import {
-  IsBoolean, IsDate, IsEmail, IsOptional, IsString, Length, Matches, MaxLength,
+  IsBoolean, IsDate, IsEmail, IsEnum, IsOptional, IsString, Length, MaxLength,
 } from 'class-validator';
+import { TipoIdentificacion } from '@prisma/client';
+import { ConsultaPaginadaDto } from '../../../common/paginacion/paginacion';
 
 export class CrearClienteDto {
   @IsString()
@@ -12,9 +14,14 @@ export class CrearClienteDto {
   @Length(2, 60)
   apellido!: string;
 
+  /**
+   * Se acepta como lo escriba la persona y el servicio lo normaliza a
+   * `+598 98663201`. Acá solo se acota el largo: la validación de verdad, con
+   * su mensaje explicando qué se espera, vive en `normalizarTelefono`.
+   */
   @IsOptional()
   @IsString()
-  @Matches(/^[\d\s+()-]{8,20}$/, { message: 'El teléfono no tiene un formato válido' })
+  @MaxLength(25, { message: 'El teléfono es demasiado largo' })
   telefono?: string;
 
   /** Con este correo se vincula la ficha si el alumno se crea una cuenta después. */
@@ -22,11 +29,25 @@ export class CrearClienteDto {
   @IsEmail({}, { message: 'El correo no tiene un formato válido' })
   email?: string;
 
-  /** Cédula uruguaya: solo dígitos, con el verificador incluido. */
+  /** Cédula uruguaya o pasaporte, para un alumno extranjero. */
+  @IsOptional()
+  @IsEnum(TipoIdentificacion, { message: 'El tipo de documento tiene que ser CEDULA o PASAPORTE' })
+  tipoDocumento?: TipoIdentificacion;
+
+  /** País emisor del pasaporte, ISO 3166-1 alfa-2. Para la cédula siempre es UY. */
   @IsOptional()
   @IsString()
-  @Matches(/^\d{7,8}$/, { message: 'La cédula son 7 u 8 dígitos, sin puntos ni guiones' })
-  cedula?: string;
+  @Length(2, 2, { message: 'El país va con su código de dos letras (por ejemplo BR)' })
+  paisDocumento?: string;
+
+  /**
+   * Número del documento. La cédula se limpia de puntos y guiones; el pasaporte
+   * se guarda en mayúsculas. Ver `normalizarDocumento`.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(25, { message: 'El documento es demasiado largo' })
+  documento?: string;
 
   @IsOptional()
   @Type(() => Date)
@@ -55,7 +76,7 @@ export class ActualizarClienteDto extends CrearClienteDto {
   activo?: boolean;
 }
 
-export class BuscarClientesDto {
+export class BuscarClientesDto extends ConsultaPaginadaDto {
   /** Busca por nombre, apellido, correo o cédula. */
   @IsOptional()
   @IsString()
@@ -86,13 +107,22 @@ export class ActualizarMiFichaDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^[\d\s+()-]{8,20}$/, { message: 'El teléfono no tiene un formato válido' })
+  @MaxLength(25, { message: 'El teléfono es demasiado largo' })
   telefono?: string;
 
   @IsOptional()
+  @IsEnum(TipoIdentificacion, { message: 'El tipo de documento tiene que ser CEDULA o PASAPORTE' })
+  tipoDocumento?: TipoIdentificacion;
+
+  @IsOptional()
   @IsString()
-  @Matches(/^\d{7,8}$/, { message: 'La cédula son 7 u 8 dígitos, sin puntos ni guiones' })
-  cedula?: string;
+  @Length(2, 2, { message: 'El país va con su código de dos letras (por ejemplo BR)' })
+  paisDocumento?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(25, { message: 'El documento es demasiado largo' })
+  documento?: string;
 
   @IsOptional()
   @Type(() => Date)

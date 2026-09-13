@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Modal } from '../componentes/ui/Modal';
+import { Paginacion, PAGINA_VACIA, type Pagina } from '../componentes/ui/Paginacion';
 import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
+import { CeldaFoto } from '../componentes/CeldaFoto';
 import { vehiculos as api } from '../lib/recursos';
 import { fechaCorta } from '../lib/fecha';
 import type { EstadoVehiculo, TipoVehiculo, Vehiculo } from '../lib/tipos';
@@ -14,7 +16,9 @@ const ETIQUETA_ESTADO: Record<EstadoVehiculo, string> = {
 };
 
 export function Vehiculos() {
-  const [lista, setLista] = useState<Vehiculo[]>([]);
+  const [pagina, setPagina] = useState<Pagina<Vehiculo>>(PAGINA_VACIA as Pagina<Vehiculo>);
+  const [consulta, setConsulta] = useState({ pagina: 1, porPagina: 10 });
+  const lista = pagina.datos;
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editando, setEditando] = useState<Vehiculo | 'nuevo' | null>(null);
@@ -22,11 +26,11 @@ export function Vehiculos() {
   const cargar = useCallback(() => {
     setCargando(true);
     void api
-      .listar(true)
-      .then(setLista)
+      .listar({ incluirInactivos: true, ...consulta })
+      .then(setPagina)
       .catch((problema: Error) => setError(problema.message))
       .finally(() => setCargando(false));
-  }, []);
+  }, [consulta]);
 
   useEffect(cargar, [cargar]);
 
@@ -50,6 +54,7 @@ export function Vehiculos() {
         <table className="w-full text-left text-sm">
           <thead className="border-b border-slate-200 text-slate-500">
             <tr>
+              <th className="px-4 py-3 font-medium">Foto</th>
               <th className="px-4 py-3 font-medium">Patente</th>
               <th className="px-4 py-3 font-medium">Tipo</th>
               <th className="px-4 py-3 font-medium">Vehículo</th>
@@ -63,6 +68,17 @@ export function Vehiculos() {
               const soaVencido = vehiculo.soaVence && new Date(vehiculo.soaVence) < hoy;
               return (
                 <tr key={vehiculo.id} className={vehiculo.estado === 'ACTIVO' ? '' : 'bg-slate-50'}>
+                  <td className="px-4 py-3">
+                    <CeldaFoto
+                      bucket="vehiculos"
+                      duenoId={vehiculo.id}
+                      ruta={vehiculo.fotoRuta}
+                      descripcion={`${vehiculo.tipo === 'MOTO' ? 'la moto' : 'el auto'} ${vehiculo.patente}`}
+                      guardar={(fotoRuta) => api.guardarFoto(vehiculo.id, fotoRuta)}
+                      onCambio={cargar}
+                      onError={setError}
+                    />
+                  </td>
                   <td className="px-4 py-3 font-medium text-slate-900">{vehiculo.patente}</td>
                   <td className="px-4 py-3 text-slate-600">
                     {vehiculo.tipo === 'MOTO' ? 'Moto' : 'Auto'}
@@ -110,6 +126,12 @@ export function Vehiculos() {
           <p className="p-6 text-center text-slate-500">Todavía no hay vehículos cargados.</p>
         )}
       </div>
+      <Paginacion
+        pagina={pagina}
+        etiqueta="vehículos"
+        onCambio={(cambios) => setConsulta((actual) => ({ ...actual, ...cambios }))}
+      />
+
 
       {editando && (
         <FormularioVehiculo
