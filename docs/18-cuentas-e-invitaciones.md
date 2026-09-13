@@ -356,6 +356,8 @@ correo puede crearse un administrador.
 | «Esta cuenta no está habilitada» | No hay invitación vigente para ese correo | Invitarlo desde su ficha |
 | «el correo no salió» en el panel | La invitación se guardó pero Supabase no la mandó | Reenviar. Si sigue, revisar la configuración de correo del proyecto |
 | «Supabase está limitando el envío» | Tope de correos del plan | Esperar unos minutos |
+| «Supabase no llegó a completar el envío del correo (504)» | El envío se trabó, casi siempre en el servidor SMTP. **No es un rechazo**: el pedido estaba bien | Mirar *Logs → Auth* en Supabase, que dice el error exacto. Ver [19-correo.md](19-correo.md) |
+| «Supabase no contestó en 60 segundos» | Lo mismo, pero ni siquiera llegó a contestar | Igual que el anterior |
 | «Supabase no devolvió un enlace utilizable» | Ya no debería pasar: era un error de lectura de la respuesta, corregido | Si vuelve, revisar `supabase-admin.service.ts` |
 | «Falta configurar APP_ALUMNO_URL…» | La variable no está cargada en el servidor | Cargarla en Render, ver más arriba |
 | El enlace lleva a `localhost:3000` | El destino no está en las URLs permitidas de Supabase, y cayó en el Site URL | Ver «La configuración de Supabase» |

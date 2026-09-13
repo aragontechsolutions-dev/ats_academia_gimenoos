@@ -11,7 +11,10 @@ import { CanalInvitacion, EstadoInvitacion, RolUsuario, type Invitacion } from '
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
-import { SupabaseAdminService } from '../../common/supabase/supabase-admin.service';
+import {
+  CuentaYaRegistradaError,
+  SupabaseAdminService,
+} from '../../common/supabase/supabase-admin.service';
 import { exigirEmail, normalizarEmail } from '../../common/formato/email';
 import type { CrearInvitacionDto, ListarInvitacionesDto } from './dto/invitacion.dto';
 
@@ -187,11 +190,16 @@ export class InvitacionesService {
    * Pasa cuando se invitó por correo y después se quiere mandar el enlace por
    * WhatsApp: la cuenta de Supabase ya quedó creada por el intento anterior, y
    * `invite` la rechaza por duplicada.
+   *
+   * Se reintenta SOLO ese caso. Antes se reintentaba ante cualquier fallo, y con
+   * un envío que se cuelga eso es peor que no reintentar: se espera dos veces y
+   * el mensaje que llega es el del segundo intento, que habla de otra cosa.
    */
   private async generarCodigoTolerante(email: string, destino: string) {
     try {
       return await this.supabase.generarCodigo(email, destino, true);
-    } catch {
+    } catch (problema) {
+      if (!(problema instanceof CuentaYaRegistradaError)) throw problema;
       return this.supabase.generarCodigo(email, destino, false);
     }
   }

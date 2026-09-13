@@ -10,7 +10,10 @@
  */
 import { ConfigService } from '@nestjs/config';
 
-import { SupabaseAdminService } from '../src/common/supabase/supabase-admin.service';
+import {
+  CuentaYaRegistradaError,
+  SupabaseAdminService,
+} from '../src/common/supabase/supabase-admin.service';
 
 const config = {
   get: (clave: string) =>
@@ -28,6 +31,25 @@ const fetchOriginal = global.fetch;
 function supabaseResponde(estado: number, cuerpo: string) {
   global.fetch = (async () =>
     new Response(cuerpo, { status: estado })) as unknown as typeof global.fetch;
+}
+
+/** Corre algo que TIENE que fallar y devuelve el mensaje que le llega a quien atiende. */
+async function mensajeDelFallo(intento: Promise<unknown>): Promise<string> {
+  try {
+    await intento;
+  } catch (problema) {
+    return (problema as Error).message;
+  }
+  throw new Error('Se esperaba un fallo y no lo hubo');
+}
+
+/** Hace que Supabase no conteste nunca y salte el corte por tiempo. */
+function supabaseNoContesta() {
+  global.fetch = (async () => {
+    const problema = new Error('The operation was aborted due to timeout');
+    problema.name = 'TimeoutError';
+    throw problema;
+  }) as unknown as typeof global.fetch;
 }
 
 afterEach(() => {
@@ -78,11 +100,86 @@ describe('Cuando Supabase rechaza una invitación', () => {
   });
 
   it('un rechazo que no se reconoce dice el código, sin inventar una causa', async () => {
-    supabaseResponde(500, 'algo se rompió del otro lado');
+    supabaseResponde(400, 'algo raro que nadie vio antes');
 
     await expect(supabase.invitar('alumno@ejemplo.uy', 'https://app.ejemplo.uy')).rejects.toThrow(
-      /\(500\)/,
+      /\(400\)/,
     );
+  });
+
+  it('«ya registrada» se puede reconocer sin leer el texto', async () => {
+    // De esto depende el enlace por WhatsApp: es el único fallo con salida, y
+    // el reintento como acceso normal tiene que poder distinguirlo del resto.
+    supabaseResponde(422, JSON.stringify({ msg: 'A user with this email address has already been registered' }));
+
+    await expect(
+      supabase.invitar('alumno@ejemplo.uy', 'https://app.ejemplo.uy'),
+    ).rejects.toBeInstanceOf(CuentaYaRegistradaError);
+  });
+});
+
+describe('Cuando Supabase no llega a mandar el correo', () => {
+  // Esto pasó de verdad en la primera prueba con SMTP propio: el envío se colgó
+  // y el mensaje decía «Supabase rechazó la invitación», que manda a revisar el
+  // pedido —que estaba bien— en vez del servidor de correo.
+  const tiempoAgotado = JSON.stringify({ msg: 'upstream request timeout' });
+
+  it('un 504 no se llama «rechazo»: no hubo rechazo, no se completó', async () => {
+    supabaseResponde(504, tiempoAgotado);
+
+    const mensaje = await mensajeDelFallo(
+      supabase.invitar('alumno@ejemplo.uy', 'https://app.ejemplo.uy'),
+    );
+
+    expect(mensaje).not.toMatch(/rechaz/i);
+    expect(mensaje).toMatch(/504/);
+  });
+
+  it('manda a mirar el SMTP, que es lo único de afuera en este camino', async () => {
+    supabaseResponde(504, tiempoAgotado);
+
+    await expect(supabase.invitar('alumno@ejemplo.uy', 'https://app.ejemplo.uy')).rejects.toThrow(
+      /SMTP/,
+    );
+  });
+
+  it('avisa que la cuenta puede haber quedado creada igual', async () => {
+    // Un corte a mitad de camino no dice si alcanzó a crearla. Callarlo lleva a
+    // reintentar y recibir «ya tiene cuenta», que parece otro problema.
+    supabaseResponde(504, tiempoAgotado);
+
+    await expect(supabase.invitar('alumno@ejemplo.uy', 'https://app.ejemplo.uy')).rejects.toThrow(
+      /puede haber quedado creada/,
+    );
+  });
+
+  it('ofrece el camino que sí funciona mientras tanto', async () => {
+    supabaseResponde(504, tiempoAgotado);
+
+    await expect(supabase.invitar('alumno@ejemplo.uy', 'https://app.ejemplo.uy')).rejects.toThrow(
+      /WhatsApp/,
+    );
+  });
+
+  it('si no contesta nunca, corta y lo dice, en vez de dejar el panel girando', async () => {
+    supabaseNoContesta();
+
+    await expect(supabase.invitar('alumno@ejemplo.uy', 'https://app.ejemplo.uy')).rejects.toThrow(
+      /no contestó en 60 segundos/,
+    );
+  });
+
+  it('generar el código NO habla de SMTP: ese camino no manda ningún correo', async () => {
+    // Mandar a revisar el servidor de correo cuando el correo no entra en juego
+    // es exactamente el tipo de pista falsa que este arreglo viene a sacar.
+    supabaseResponde(504, tiempoAgotado);
+
+    const mensaje = await mensajeDelFallo(
+      supabase.generarCodigo('alumno@ejemplo.uy', 'https://app.ejemplo.uy', true),
+    );
+
+    expect(mensaje).not.toMatch(/SMTP|WhatsApp/);
+    expect(mensaje).toMatch(/504/);
   });
 });
 
