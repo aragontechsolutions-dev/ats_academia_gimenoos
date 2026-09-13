@@ -5,16 +5,27 @@
  * sin haber firmado la autorización. Eso no es una regla de interfaz, es la
  * diferencia entre publicar una foto y cometer una infracción a la Ley 18.331.
  */
+import { ConfigService } from '@nestjs/config';
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
 import { CategoriaLicencia, RolUsuario } from '@prisma/client';
 
 import { PrismaService } from '../src/common/prisma/prisma.service';
 import { AuditoriaService } from '../src/common/auditoria/auditoria.service';
 import { GraduadosService } from '../src/modules/graduados/graduados.service';
 import { generarCodigo, normalizarCodigo } from '../src/modules/graduados/codigo';
+import { ActualizarGraduadoDto } from '../src/modules/graduados/dto/graduado.dto';
 import type { UsuarioAutenticado } from '../src/common/auth/jwt-payload.interface';
 
 const prisma = new PrismaService();
-const graduados = new GraduadosService(prisma, new AuditoriaService(prisma));
+
+// Un ConfigService mínimo: lo único que el servicio le pide es SUPABASE_URL,
+// para armar la dirección pública de las fotos.
+const config = {
+  get: (clave: string) => (clave === 'SUPABASE_URL' ? 'https://proyecto.supabase.co' : undefined),
+} as unknown as ConfigService;
+
+const graduados = new GraduadosService(prisma, new AuditoriaService(prisma), config);
 
 const ADMIN: UsuarioAutenticado = {
   id: '00000000-0000-4000-f000-000000000001',
@@ -26,6 +37,12 @@ const ID_CLIENTE = '00000000-0000-4000-f000-0000000000aa';
 const ID_CLIENTE_2 = '00000000-0000-4000-f000-0000000000ab';
 
 const creados: string[] = [];
+
+/** Valida un DTO igual que lo haría el ValidationPipe global. */
+async function validarDto<T extends object>(Clase: new () => T, cuerpo: unknown) {
+  const instancia = plainToInstance(Clase, cuerpo, { enableImplicitConversion: false });
+  return validate(instancia as object, { whitelist: true, forbidNonWhitelisted: true });
+}
 
 /** Da de alta un egresado y recuerda su id para limpiarlo después. */
 async function alta(datos: Parameters<typeof graduados.crear>[0]) {
@@ -239,7 +256,7 @@ describe('lo que ve el público', () => {
     expect(filas.length).toBeGreaterThan(0);
     for (const fila of filas) {
       expect(Object.keys(fila).sort()).toEqual(
-        ['anio', 'apellido', 'categoria', 'fotoRuta', 'id', 'nombre'].sort(),
+        ['anio', 'apellido', 'categoria', 'fotoUrl', 'id', 'nombre'].sort(),
       );
     }
   });
@@ -333,6 +350,71 @@ describe('verificación del diploma', () => {
 
   it('un código inventado no existe', async () => {
     await expect(graduados.verificar('ZZZZZZZZ')).rejects.toThrow(/no existe/i);
+  });
+});
+
+describe('la foto', () => {
+  it('solo acepta una ruta dentro del bucket, nunca una dirección externa', async () => {
+    const rechazadas = [
+      'https://sitio-ajeno.com/foto.jpg',
+      '//evil.com/foto.jpg',
+      'javascript:alert(1)',
+      '../../../etc/passwd',
+      'otro-bucket/archivo.jpg',
+      '11111111-1111-4111-8111-111111111111/../fuera.jpg',
+      '11111111-1111-4111-8111-111111111111/script.svg',
+      '11111111-1111-4111-8111-111111111111/foto.html',
+      'no-es-uuid/foto.jpg',
+    ];
+    for (const ruta of rechazadas) {
+      const errores = await validarDto(ActualizarGraduadoDto, { fotoRuta: ruta });
+      expect(errores.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('acepta la ruta con la forma esperada', async () => {
+    const errores = await validarDto(ActualizarGraduadoDto, {
+      fotoRuta: '11111111-1111-4111-8111-111111111111/foto-2026.jpg',
+    });
+    expect(errores).toHaveLength(0);
+  });
+
+  it('permite sacar la foto con cadena vacía', async () => {
+    expect(await validarDto(ActualizarGraduadoDto, { fotoRuta: '' })).toHaveLength(0);
+  });
+
+  it('el sitio recibe la dirección armada, no la ruta cruda', async () => {
+    const graduado = await alta({
+      clienteId: ID_CLIENTE,
+      categoria: CategoriaLicencia.A,
+      fechaEgreso: '2026-02-10',
+      autorizacionAt: '2026-02-10',
+      autorizacionFirmante: 'El propio alumno',
+      publicado: true,
+    });
+    await prisma.graduado.update({
+      where: { id: graduado.id },
+      data: { fotoRuta: `${graduado.id}/foto.jpg` },
+    });
+
+    const { graduados: filas } = await graduados.galeria({ porPagina: 100 });
+    const fila = filas.find((g) => g.id === graduado.id);
+    expect(fila?.fotoUrl).toBe(
+      `https://proyecto.supabase.co/storage/v1/object/public/graduados/${graduado.id}/foto.jpg`,
+    );
+  });
+
+  it('sin foto, la dirección viene en null y no en un texto roto', async () => {
+    const graduado = await alta({
+      clienteId: ID_CLIENTE,
+      categoria: CategoriaLicencia.A,
+      fechaEgreso: '2026-02-11',
+      autorizacionAt: '2026-02-11',
+      autorizacionFirmante: 'El propio alumno',
+      publicado: true,
+    });
+    const { graduados: filas } = await graduados.galeria({ porPagina: 100 });
+    expect(filas.find((g) => g.id === graduado.id)?.fotoUrl).toBeNull();
   });
 });
 

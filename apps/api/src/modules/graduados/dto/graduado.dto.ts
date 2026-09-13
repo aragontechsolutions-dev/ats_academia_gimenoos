@@ -9,7 +9,9 @@ import {
   IsString,
   IsUUID,
   Length,
+  Matches,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { CategoriaLicencia } from '@prisma/client';
 
@@ -51,6 +53,25 @@ export class CrearGraduadoDto {
   @IsString()
   @Length(0, 500)
   notas?: string | null;
+
+  /**
+   * Ruta de la foto DENTRO del bucket, no una dirección completa.
+   *
+   * Se valida la forma exacta a propósito. Si se aceptara una URL cualquiera,
+   * quien tenga acceso al panel podría apuntar la foto de un egresado a
+   * cualquier servidor de internet: una imagen distinta, un rastreador, o algo
+   * peor, servido desde el sitio de la academia como si fuera propio.
+   *
+   * La dirección pública la arma la API a partir de esta ruta.
+   */
+  @IsOptional()
+  @ValidateIf((_objeto, valor) => valor !== null && valor !== '')
+  @IsString()
+  @Length(0, 200)
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[a-z0-9._-]{1,80}\.(jpg|jpeg|webp)$/, {
+    message: 'La ruta de la foto no tiene la forma esperada (<id del egresado>/<archivo>.jpg)',
+  })
+  fotoRuta?: string | null;
 }
 
 export class ActualizarGraduadoDto extends CrearGraduadoDto {

@@ -39,7 +39,8 @@ export interface GraduadoPublico {
   apellido: string;
   categoria: 'A' | 'G1' | 'G2' | 'G3';
   anio: number;
-  fotoRuta: string | null;
+  /** Dirección pública ya armada por la API. Null si no hay foto. */
+  fotoUrl: string | null;
 }
 
 export interface PaginaGraduados {

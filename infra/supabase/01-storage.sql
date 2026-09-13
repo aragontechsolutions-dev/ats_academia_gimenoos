@@ -57,6 +57,28 @@ ON CONFLICT (id) DO UPDATE
       file_size_limit = EXCLUDED.file_size_limit,
       allowed_mime_types = EXCLUDED.allowed_mime_types;
 
+-- Fotos de egresados. Este bucket SI es publico, y es la unica excepcion:
+-- las fotos estan hechas para que las vea cualquiera que entre al sitio, sin
+-- sesion. Publicarlas con signed URLs de corta duracion obligaria a la landing
+-- a pedirle una URL al backend por cada foto de cada pagina, para proteger algo
+-- que por definicion no es secreto.
+--
+-- Lo que SI se restringe es quien escribe: solo un administrador puede subir,
+-- reemplazar o borrar. Ver las politicas mas abajo.
+--
+-- El limite de 3 MB es generoso: el panel reduce cada imagen a 1000 px antes de
+-- subirla, asi que una foto normal pesa bastante menos.
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'graduados', 'graduados', true,
+  3145728,  -- 3 MB
+  ARRAY['image/jpeg', 'image/webp']
+)
+ON CONFLICT (id) DO UPDATE
+  SET public = true,
+      file_size_limit = EXCLUDED.file_size_limit,
+      allowed_mime_types = EXCLUDED.allowed_mime_types;
+
 -- --- Funcion auxiliar: quien es administrador ------------------------------
 -- Lee el rol de la tabla `usuarios` (la misma fuente de verdad que usa la API),
 -- no del JWT: asi revocar un rol tiene efecto inmediato tambien en Storage.
@@ -107,6 +129,34 @@ CREATE POLICY "administrador accede a todo"
   ON storage.objects FOR ALL TO authenticated
   USING (bucket_id IN ('comprobantes', 'expedientes') AND public.es_administrador())
   WITH CHECK (bucket_id IN ('comprobantes', 'expedientes') AND public.es_administrador());
+
+-- --- Politicas del bucket de egresados -------------------------------------
+-- Leer: cualquiera, incluso sin sesion. Es un bucket publico y las fotos estan
+-- para verse en el sitio.
+DROP POLICY IF EXISTS "cualquiera ve las fotos de egresados" ON storage.objects;
+CREATE POLICY "cualquiera ve las fotos de egresados"
+  ON storage.objects FOR SELECT TO public
+  USING (bucket_id = 'graduados');
+
+-- Escribir: solo un administrador. Sin esta politica, cualquier usuario con
+-- sesion podria subir lo que quisiera a un bucket que el sitio publica.
+DROP POLICY IF EXISTS "solo el administrador sube fotos de egresados" ON storage.objects;
+CREATE POLICY "solo el administrador sube fotos de egresados"
+  ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'graduados' AND public.es_administrador());
+
+DROP POLICY IF EXISTS "solo el administrador reemplaza fotos de egresados" ON storage.objects;
+CREATE POLICY "solo el administrador reemplaza fotos de egresados"
+  ON storage.objects FOR UPDATE TO authenticated
+  USING (bucket_id = 'graduados' AND public.es_administrador())
+  WITH CHECK (bucket_id = 'graduados' AND public.es_administrador());
+
+-- Borrar tiene que poder hacerse: si un egresado pide que saquen su foto, hay
+-- que poder sacarla del Storage, no solo dejar de mostrarla.
+DROP POLICY IF EXISTS "solo el administrador borra fotos de egresados" ON storage.objects;
+CREATE POLICY "solo el administrador borra fotos de egresados"
+  ON storage.objects FOR DELETE TO authenticated
+  USING (bucket_id = 'graduados' AND public.es_administrador());
 
 -- NOTA: el backend usa la clave service_role, que ignora RLS por diseño.
 -- Estas politicas protegen los accesos hechos directamente desde el navegador

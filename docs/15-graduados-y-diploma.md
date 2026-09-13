@@ -133,6 +133,74 @@ Un valor inventado en la URL del navegador tampoco se obedece.
 
 ---
 
+## 3b. Las fotos
+
+### Se procesan en el navegador antes de salir
+
+Cuando el administrador elige una foto, el panel la **redibuja y la vuelve a
+codificar** antes de subirla. Eso hace dos cosas:
+
+1. **La achica a 1000 px** en el lado largo. Una foto de celular pesa varios
+   megas; cien de esas en una galería hacen que la página tarde una eternidad en
+   un 4G. En la prueba, 68 KB pasaron a 19 KB, y una foto real de celular baja de
+   varios MB a unos 150 KB.
+
+2. **Le saca los metadatos, y esto es lo que más importa.** Los EXIF de una foto
+   de celular suelen incluir la **ubicación GPS exacta** donde se sacó, además
+   del modelo del teléfono y la fecha. Subir la foto tal cual sale de la cámara
+   publicaría las coordenadas de la academia —o de la casa del alumno— en un
+   archivo que cualquiera puede descargar y abrir.
+
+**Verificado en un navegador real**, con un JPEG construido a propósito con GPS
+(34°57'27"S, 54°56'30"W), marca, modelo y fecha:
+
+| Dato en la foto original | ¿Sobrevive? |
+|---|---|
+| Coordenadas GPS | No |
+| Marca del teléfono | No |
+| Modelo del teléfono | No |
+| Fecha y hora de la toma | No |
+| Segmento EXIF completo | No |
+| Perfil de color ICC | Sí, y está bien: no identifica a nadie y mantiene los colores |
+
+También se verificó la **orientación**. Un celular guarda las fotos verticales
+con los píxeles apaisados y la rotación en los metadatos — que es justo lo que
+este proceso descarta. Sin cuidado, todas las fotos verticales quedarían
+acostadas. El panel aplica la rotación al dibujar: una foto guardada como
+1600×1200 con orientación 6 sale 750×1000, vertical.
+
+### El bucket es público, pero solo el administrador escribe
+
+`graduados` es el único bucket público del proyecto, y es a propósito: las fotos
+están hechas para que las vea cualquiera que entre al sitio, sin sesión. Usar
+signed URLs obligaría a la landing a pedirle una dirección al backend por cada
+foto de cada página, para proteger algo que por definición no es secreto.
+
+Lo que sí está restringido es **quién escribe**: subir, reemplazar y borrar
+requieren rol de administrador, verificado contra la tabla `usuarios` en cada
+operación.
+
+### La base guarda una ruta, no una dirección
+
+En `fotoRuta` va únicamente `<id del egresado>/<archivo>.jpg`, con la forma
+validada en el borde de la API. La dirección pública la arma la API.
+
+**Por qué no aceptar una URL:** si se aceptara, quien tenga acceso al panel
+podría apuntar la foto de un egresado a cualquier servidor de internet —una
+imagen distinta, un rastreador, o algo peor— servido desde el sitio de la
+academia como si fuera propio. Rechazado y verificado: direcciones externas,
+`javascript:`, rutas con `..`, otros buckets, y extensiones que no son imagen
+(`.svg`, `.html`).
+
+### Reemplazar una foto no deja al egresado sin ninguna
+
+La foto nueva se sube primero, después se guarda la ruta, y recién entonces se
+borra la anterior. Si algo falla en el medio, el egresado se queda con la foto
+que tenía. Verificado forzando un fallo de subida: la miniatura anterior sigue
+ahí y la interfaz no queda trabada en «Subiendo…».
+
+---
+
 ## 4. Qué se verificó
 
 | Qué | Resultado |
@@ -152,14 +220,39 @@ Un valor inventado en la URL del navegador tampoco se obedece.
 | Un `porPagina` inventado en la URL cae al de por defecto | OK |
 | Los no autorizados no aparecen en la galería | OK |
 | Sin errores en consola | OK |
+| **Fotos** | |
+| GPS, marca, modelo y fecha no sobreviven al procesado | OK (navegador real) |
+| Una foto de celular apaisada + orientación sale vertical | OK |
+| Reducción a 1000 px y bajada de peso | OK |
+| Archivo que no es imagen, y archivo de 13 MB | Rechazados con mensaje claro |
+| Rutas externas, `javascript:`, `..`, otros buckets, `.svg`, `.html` | 400 |
+| El sitio recibe la dirección armada, nunca la ruta cruda | OK |
+| Un fallo de subida no borra la foto anterior ni traba la interfaz | OK |
 
 ---
 
 ## 5. Lo que todavía no hace
 
-- **Las fotos.** El modelo tiene el campo y la galería lo dibuja, pero la carga de
-  imágenes a Storage no está hecha. Mientras tanto, las tarjetas muestran el
-  nombre, la categoría y el año, que ya es prueba social.
+> ### ⚠️ La subida a Storage no está verificada de punta a punta
+>
+> El entorno donde se desarrolló esto **no puede alcanzar `supabase.co`**: el
+> proxy lo bloquea. Todo lo demás de este módulo se probó corriendo de verdad,
+> pero **una subida exitosa a Storage no**.
+>
+> Lo que sí se verificó: el procesado de la imagen en un navegador real, la
+> validación de la ruta contra la API corriendo, el armado de la dirección
+> pública, y el camino de error cuando Storage no responde.
+>
+> Lo que falta comprobar en el entorno real, después de ejecutar
+> `infra/supabase/01-storage.sql`:
+>
+> 1. Subir una foto desde el panel y ver que aparece la miniatura.
+> 2. Verla en el sitio, en `/graduados`.
+> 3. Reemplazarla y comprobar que se ve la nueva, no la vieja en caché.
+> 4. Quitarla y confirmar que desaparece del sitio **y** del Storage.
+> 5. Entrar con una cuenta que no sea de administrador e intentar subir: tiene
+>    que fallar.
+
 - **Las fotos viejas con la libreta no se publican.** Los egresados anteriores
   pueden recibir su diploma retroactivamente y fotografiarse con él. Aprovechar
   las fotos existentes exigiría difuminar cada libreta y conseguir la

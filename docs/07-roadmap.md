@@ -100,6 +100,13 @@ las fotos y el logo:
 - [ ] **Textos del sitio** → misma pantalla, sección por sección. Ya no hace
       falta tocar código para cambiar un título ni para agregar una pregunta
       frecuente.
+- [ ] **Ejecutar `infra/supabase/01-storage.sql`** de nuevo en Supabase: crea el
+      bucket `graduados` y sus políticas. Sin eso, subir una foto falla con
+      «Falta crear el bucket de fotos en Supabase». Y después hacer las cinco
+      comprobaciones de [`15-graduados-y-diploma.md`](15-graduados-y-diploma.md):
+      **la subida a Storage es lo único del proyecto que no se pudo probar
+      corriendo de verdad**, porque el entorno de desarrollo no alcanza a
+      Supabase.
 - [ ] **Imprimir el formulario de autorización** ([`16-autorizacion-imagen.md`](16-autorizacion-imagen.md))
       y hacerlo firmar a cada egresado antes de publicar su foto. Conviene que lo
       revise un abogado antes de usarlo, sobre todo la parte de menores.

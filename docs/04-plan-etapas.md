@@ -152,7 +152,21 @@ Detalle en [`14-contenido-editable.md`](14-contenido-editable.md).
 Detalle en [`15-graduados-y-diploma.md`](15-graduados-y-diploma.md) y el
 formulario en [`16-autorizacion-imagen.md`](16-autorizacion-imagen.md).
 
-**Pendiente:** la carga de fotos a Storage.
+### Etapa 1.H — Fotos de los egresados ✅ COMPLETADA
+
+| Entregable | Estado |
+|---|---|
+| Subida desde el panel, con reemplazo y borrado | ✅ |
+| Reducción a 1000 px en el navegador | ✅ |
+| Eliminación de metadatos, incluida la ubicación GPS | ✅ verificado en navegador |
+| Orientación del EXIF aplicada (las fotos verticales salen verticales) | ✅ |
+| Bucket público para leer, solo administrador para escribir | ✅ |
+| La base guarda una ruta validada, nunca una dirección externa | ✅ |
+| Pruebas | ✅ 107 + recorrido en navegador |
+
+**No verificado:** una subida exitosa contra el Storage real. El entorno de
+desarrollo no alcanza `supabase.co`. Ver la advertencia en
+[`15-graduados-y-diploma.md`](15-graduados-y-diploma.md).
 
 **Con esto cierra la Etapa 1 completa.**
 

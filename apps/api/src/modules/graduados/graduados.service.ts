@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { ConfigService } from '@nestjs/config';
+
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
 import { generarCodigo, normalizarCodigo } from './codigo';
@@ -34,7 +36,22 @@ export class GraduadosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditoria: AuditoriaService,
+    private readonly config: ConfigService,
   ) {}
+
+  /**
+   * Dirección pública de una foto, armada a partir de la ruta guardada.
+   *
+   * Se compone acá y no se guarda entera en la base: así el dominio de Supabase
+   * vive en la configuración, y mover el proyecto de Storage no obliga a
+   * reescribir una fila por cada egresado.
+   */
+  private urlFoto(ruta: string | null): string | null {
+    if (!ruta) return null;
+    const base = this.config.get<string>('SUPABASE_URL')?.replace(/\/$/, '');
+    if (!base) return null;
+    return `${base}/storage/v1/object/public/graduados/${ruta}`;
+  }
 
   // -------------------------------------------------------------------------
   // Público
@@ -72,7 +89,7 @@ export class GraduadosService {
         apellido: fila.cliente.apellido,
         categoria: fila.categoria,
         anio: fila.anio,
-        fotoRuta: fila.fotoRuta,
+        fotoUrl: this.urlFoto(fila.fotoRuta),
       })),
     };
   }
@@ -196,6 +213,7 @@ export class GraduadosService {
         autorizacionEsTutor: dto.autorizacionEsTutor,
         publicado: dto.publicado,
         notas: datos.notas,
+        fotoRuta: this.aTextoONulo(dto.fotoRuta),
       },
     });
 
