@@ -40,6 +40,18 @@ más importante de esta parte del sistema, y está en el roadmap.
 Mientras tanto, el camino por **WhatsApp no depende de nada de esto**: genera el
 enlace sin mandar correo. Para un alumno con Hotmail, hoy es el camino confiable.
 
+### Una cosa más que hubo que resolver para que el enlace llegue vivo
+
+Los enlaces de acceso se consumen con **una sola visita**, y ni WhatsApp ni los
+antivirus de correo esperan a que la persona los toque: los visitan ellos, para
+armar la vista previa o para revisarlos. El enlace llegaba quemado.
+
+Por eso el enlace apunta a una **pantalla propia del sistema**, que canjea el
+código desde JavaScript —que esos rastreadores no ejecutan—. Está explicado en
+[18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md); acá alcanza con
+saber que **las plantillas de correo dependen de eso** y por eso no usan
+`{{ .ConfirmationURL }}`.
+
 ---
 
 ## 3. Brevo

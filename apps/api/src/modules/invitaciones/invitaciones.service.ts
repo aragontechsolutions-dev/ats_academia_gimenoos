@@ -158,7 +158,8 @@ export class InvitacionesService {
     } else {
       // Primer acceso salvo que la cuenta ya exista en Supabase de un intento
       // anterior: `invite` falla si ya está creada, `magiclink` sirve igual.
-      enlace = await this.generarEnlaceTolerante(invitacion.email, destino);
+      const codigo = await this.generarCodigoTolerante(invitacion.email, destino);
+      enlace = this.armarEnlace(destino, codigo);
     }
 
     const entregada = await this.prisma.invitacion.update({
@@ -180,19 +181,38 @@ export class InvitacionesService {
   }
 
   /**
-   * Pide el enlace como primer acceso y, si la cuenta ya existía, como acceso
+   * Pide el código como primer acceso y, si la cuenta ya existía, como acceso
    * normal.
    *
    * Pasa cuando se invitó por correo y después se quiere mandar el enlace por
    * WhatsApp: la cuenta de Supabase ya quedó creada por el intento anterior, y
    * `invite` la rechaza por duplicada.
    */
-  private async generarEnlaceTolerante(email: string, destino: string): Promise<string> {
+  private async generarCodigoTolerante(email: string, destino: string) {
     try {
-      return await this.supabase.generarEnlace(email, destino, true);
+      return await this.supabase.generarCodigo(email, destino, true);
     } catch {
-      return this.supabase.generarEnlace(email, destino, false);
+      return this.supabase.generarCodigo(email, destino, false);
     }
+  }
+
+  /**
+   * Arma el enlace que se le manda a la persona.
+   *
+   * Apunta a una pantalla NUESTRA, no a la dirección de verificación que arma
+   * Supabase, y eso es todo el punto: esa dirección se consume con una sola
+   * visita, y WhatsApp visita los enlaces para armar la vista previa. El enlace
+   * llegaba quemado y la persona veía «el enlace es inválido o expiró».
+   *
+   * Nuestra pantalla canjea el código desde JavaScript, que los rastreadores de
+   * vista previa no ejecutan. De paso, el enlace se ve como de la academia y no
+   * depende de la lista de direcciones permitidas de Supabase.
+   */
+  private armarEnlace(destino: string, codigo: { tokenHash: string; tipo: string }): string {
+    const url = new URL('/entrar', destino);
+    url.searchParams.set('token_hash', codigo.tokenHash);
+    url.searchParams.set('type', codigo.tipo);
+    return url.toString();
   }
 
   /**

@@ -86,30 +86,42 @@ describe('Cuando Supabase rechaza una invitación', () => {
   });
 });
 
-describe('Al generar el enlace', () => {
-  it('lee el action_link de la raíz, que es donde lo pone la API de Auth', async () => {
-    // El cliente supabase-js lo anida bajo `properties`; la API cruda no. Leerlo
-    // del lugar equivocado hacía fallar SIEMPRE el envío por WhatsApp.
-    supabaseResponde(200, JSON.stringify({ action_link: 'https://proyecto.supabase.co/auth/v1/verify?token=abc' }));
+describe('Al generar el código de acceso', () => {
+  it('lee el hashed_token de la raíz, que es donde lo pone la API de Auth', async () => {
+    // El cliente supabase-js lo anida bajo `properties`; la API cruda no.
+    supabaseResponde(200, JSON.stringify({ hashed_token: 'pkce_abc123', action_link: 'https://no-se-usa' }));
 
-    await expect(supabase.generarEnlace('alumno@ejemplo.uy', 'https://app.ejemplo.uy', true)).resolves.toMatch(
-      /^https:\/\/proyecto\.supabase\.co\/auth\/v1\/verify/,
-    );
+    await expect(
+      supabase.generarCodigo('alumno@ejemplo.uy', 'https://app.ejemplo.uy', true),
+    ).resolves.toEqual({ tokenHash: 'pkce_abc123', tipo: 'invite' });
   });
 
   it('también lo encuentra si alguna versión lo anida', async () => {
-    supabaseResponde(200, JSON.stringify({ properties: { action_link: 'https://ejemplo.uy/anidado' } }));
+    supabaseResponde(200, JSON.stringify({ properties: { hashed_token: 'pkce_anidado' } }));
 
     await expect(
-      supabase.generarEnlace('alumno@ejemplo.uy', 'https://app.ejemplo.uy', true),
-    ).resolves.toBe('https://ejemplo.uy/anidado');
+      supabase.generarCodigo('alumno@ejemplo.uy', 'https://app.ejemplo.uy', false),
+    ).resolves.toEqual({ tokenHash: 'pkce_anidado', tipo: 'magiclink' });
   });
 
-  it('una respuesta sin enlace no se hace pasar por buena', async () => {
+  it('NO devuelve la dirección de verificación de Supabase', async () => {
+    // Esa dirección se consume con una sola visita, y WhatsApp visita los
+    // enlaces para armar la vista previa: llegaba quemada. Si alguien la
+    // volviera a usar, esta prueba lo delata.
+    supabaseResponde(200, JSON.stringify({
+      action_link: 'https://proyecto.supabase.co/auth/v1/verify?token=abc',
+      hashed_token: 'pkce_abc123',
+    }));
+
+    const codigo = await supabase.generarCodigo('alumno@ejemplo.uy', 'https://app.ejemplo.uy', true);
+    expect(JSON.stringify(codigo)).not.toMatch(/supabase\.co|auth\/v1\/verify/);
+  });
+
+  it('una respuesta sin código no se hace pasar por buena', async () => {
     supabaseResponde(200, JSON.stringify({ user: { id: 'abc' } }));
 
     await expect(
-      supabase.generarEnlace('alumno@ejemplo.uy', 'https://app.ejemplo.uy', true),
-    ).rejects.toThrow(/no devolvió un enlace/);
+      supabase.generarCodigo('alumno@ejemplo.uy', 'https://app.ejemplo.uy', true),
+    ).rejects.toThrow(/no devolvió un código/);
   });
 });

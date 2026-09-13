@@ -3,6 +3,7 @@ import { ProveedorSesion } from './lib/sesion';
 import { RutaProtegida } from './componentes/RutaProtegida';
 import { Disposicion } from './componentes/Disposicion';
 import { Ingreso } from './paginas/Ingreso';
+import { Entrar } from './paginas/Entrar';
 import { MisClases } from './paginas/MisClases';
 import { Reservar } from './paginas/Reservar';
 import { MiPerfil } from './paginas/MiPerfil';
@@ -21,6 +22,8 @@ export function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/ingresar" element={<Ingreso />} />
+          {/* Fuera del guard de sesión: es justamente donde se consigue la sesión. */}
+          <Route path="/entrar" element={<Entrar />} />
           <Route path="/" element={<Pagina><MisClases /></Pagina>} />
           <Route path="/reservar" element={<Pagina><Reservar /></Pagina>} />
           <Route path="/perfil" element={<Pagina><MiPerfil /></Pagina>} />
