@@ -1,9 +1,22 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EstadoInvitacion, RolUsuario, type Invitacion, type Usuario } from '@prisma/client';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { AuditoriaService } from '../../common/auditoria/auditoria.service';
+import {
+  armarPagina,
+  normalizarPaginacion,
+} from '../../common/paginacion/paginacion';
 import { normalizarEmail } from '../../common/formato/email';
+import type { ActualizarUsuarioDto, ListarUsuariosDto } from './dto/usuario.dto';
 import type { SupabaseJwtPayload, UsuarioAutenticado } from '../../common/auth/jwt-payload.interface';
 
 @Injectable()
@@ -13,6 +26,7 @@ export class UsuariosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   /**
@@ -185,6 +199,149 @@ export class UsuariosService {
       });
       return usuario;
     });
+  }
+
+  // --- Administración de cuentas --------------------------------------------
+
+  /**
+   * Cuentas del sistema, para la pantalla de administración.
+   *
+   * Devuelve la ficha vinculada de cada una: sin eso, la lista muestra correos
+   * sueltos y no se puede saber de quién es cada cuenta.
+   */
+  async listar(consulta: ListarUsuariosDto) {
+    const { pagina, porPagina, saltar } = normalizarPaginacion(consulta);
+    const texto = consulta.q?.trim();
+
+    const where = {
+      ...(consulta.rol ? { rol: consulta.rol } : {}),
+      ...(consulta.incluirInactivos ? {} : { activo: true }),
+      ...(texto
+        ? {
+            OR: [
+              { nombre: { contains: texto, mode: 'insensitive' as const } },
+              { apellido: { contains: texto, mode: 'insensitive' as const } },
+              { email: { contains: texto, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const [total, datos] = await Promise.all([
+      this.prisma.usuario.count({ where }),
+      this.prisma.usuario.findMany({
+        where,
+        orderBy: [{ rol: 'asc' }, { apellido: 'asc' }, { email: 'asc' }],
+        skip: saltar,
+        take: porPagina,
+        select: {
+          id: true,
+          email: true,
+          nombre: true,
+          apellido: true,
+          rol: true,
+          activo: true,
+          createdAt: true,
+          cliente: { select: { id: true, nombre: true, apellido: true } },
+          instructor: { select: { id: true, nombre: true, apellido: true } },
+        },
+      }),
+    ]);
+
+    return armarPagina(datos, total, pagina, porPagina);
+  }
+
+  /**
+   * Cambia el rol o da de baja una cuenta.
+   *
+   * Tres cosas que no se permiten, y las tres son para que nadie se deje afuera
+   * del sistema sin querer:
+   *
+   *   - Tocar la propia cuenta. Quien quiere irse, cierra sesión; quien se
+   *     equivoca acá se queda sin panel y sin forma de volver a entrar.
+   *   - Sacar al último administrador activo, por rol o por baja. Sin ningún
+   *     administrador ya no se puede invitar a nadie, y la única salida sería
+   *     entrar a la base a mano.
+   *   - Ascender a ADMIN a alguien con ficha de alumno o de instructor: la
+   *     cuenta veria datos de todos los demás desde la ficha de uno.
+   */
+  async actualizar(id: string, dto: ActualizarUsuarioDto, administradorId: string) {
+    if (id === administradorId) {
+      throw new BadRequestException(
+        'No podés cambiar tu propia cuenta desde acá. Pedíselo a otro administrador.',
+      );
+    }
+
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        rol: true,
+        activo: true,
+        cliente: { select: { id: true } },
+        instructor: { select: { id: true } },
+      },
+    });
+    if (!usuario) throw new NotFoundException('La cuenta no existe');
+
+    const rolNuevo = dto.rol ?? usuario.rol;
+    const activoNuevo = dto.activo ?? usuario.activo;
+
+    if (rolNuevo === RolUsuario.ADMIN && (usuario.cliente || usuario.instructor)) {
+      throw new ConflictException(
+        'Esa cuenta está vinculada a una ficha de alumno o instructor. Un administrador no puede tener ficha.',
+      );
+    }
+
+    const dejaDeSerAdministrador =
+      usuario.rol === RolUsuario.ADMIN && usuario.activo && (rolNuevo !== RolUsuario.ADMIN || !activoNuevo);
+
+    if (dejaDeSerAdministrador) {
+      const quedan = await this.prisma.usuario.count({
+        where: { rol: RolUsuario.ADMIN, activo: true, id: { not: id } },
+      });
+      if (quedan === 0) {
+        throw new ConflictException(
+          'Es el único administrador activo. Nombrá otro antes de sacarle el acceso.',
+        );
+      }
+    }
+
+    const actualizado = await this.prisma.usuario.update({
+      where: { id },
+      data: { rol: rolNuevo, activo: activoNuevo },
+      select: {
+        id: true,
+        email: true,
+        nombre: true,
+        apellido: true,
+        rol: true,
+        activo: true,
+        createdAt: true,
+        cliente: { select: { id: true, nombre: true, apellido: true } },
+        instructor: { select: { id: true, nombre: true, apellido: true } },
+      },
+    });
+
+    if (rolNuevo !== usuario.rol) {
+      await this.auditoria.registrar({
+        usuarioId: administradorId,
+        accion: 'USUARIO_ROL_CAMBIADO',
+        entidad: 'Usuario',
+        entidadId: id,
+        detalle: { de: usuario.rol, a: rolNuevo },
+      });
+    }
+    if (activoNuevo !== usuario.activo) {
+      await this.auditoria.registrar({
+        usuarioId: administradorId,
+        accion: activoNuevo ? 'USUARIO_REACTIVADO' : 'USUARIO_DESACTIVADO',
+        entidad: 'Usuario',
+        entidadId: id,
+      });
+    }
+
+    return actualizado;
   }
 
   /** Perfil completo del usuario autenticado, con su ficha de cliente o instructor. */

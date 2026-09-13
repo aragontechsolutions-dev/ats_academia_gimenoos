@@ -12,7 +12,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
 import { SupabaseAdminService } from '../../common/supabase/supabase-admin.service';
 import { exigirEmail, normalizarEmail } from '../../common/formato/email';
-import type { CrearInvitacionDto } from './dto/invitacion.dto';
+import type { CrearInvitacionDto, ListarInvitacionesDto } from './dto/invitacion.dto';
 
 @Injectable()
 export class InvitacionesService {
@@ -101,11 +101,25 @@ export class InvitacionesService {
     return revocada;
   }
 
-  /** Invitaciones de una ficha, para mostrar su estado en el panel. */
-  listarDeCliente(clienteId: string) {
+  /**
+   * Invitaciones, filtrables.
+   *
+   * Sin filtros devuelve todas: es lo que usa la pantalla de cuentas para
+   * mostrar a quién se invitó y todavía no entró. Con `clienteId`, las de una
+   * ficha, que es lo que muestra la ficha del alumno.
+   */
+  listar(filtros: ListarInvitacionesDto) {
     return this.prisma.invitacion.findMany({
-      where: { clienteId },
+      where: {
+        ...(filtros.clienteId ? { clienteId: filtros.clienteId } : {}),
+        ...(filtros.instructorId ? { instructorId: filtros.instructorId } : {}),
+        ...(filtros.estado ? { estado: filtros.estado } : {}),
+      },
       orderBy: { createdAt: 'desc' },
+      include: {
+        cliente: { select: { id: true, nombre: true, apellido: true } },
+        instructor: { select: { id: true, nombre: true, apellido: true } },
+      },
     });
   }
 

@@ -36,6 +36,8 @@ export interface Instructor {
   habilitaAuto: boolean;
   activo: boolean;
   colorAgenda: string;
+  /** Cuenta de acceso vinculada. Null = el instructor no entra al sistema. */
+  usuarioId?: string | null;
   disponibilidades?: Franja[];
   excepciones?: Excepcion[];
 }
@@ -108,17 +110,41 @@ export interface CompraDelHistorial {
   servicio: { nombre: string; tipoVehiculo: TipoVehiculo | null; duracionMin: number };
 }
 
+export type Rol = 'ADMIN' | 'INSTRUCTOR' | 'CLIENTE';
+
+export const ETIQUETA_ROL: Record<Rol, string> = {
+  ADMIN: 'Administración',
+  INSTRUCTOR: 'Instructor',
+  CLIENTE: 'Alumno',
+};
+
+/** Una cuenta de acceso, con la ficha de la persona a la que pertenece. */
+export interface CuentaUsuario {
+  id: string;
+  email: string;
+  nombre: string;
+  apellido: string;
+  rol: Rol;
+  activo: boolean;
+  /** Cuándo entró por primera vez. */
+  createdAt: string;
+  cliente: { id: string; nombre: string; apellido: string } | null;
+  instructor: { id: string; nombre: string; apellido: string } | null;
+}
+
 export type EstadoInvitacion = 'PENDIENTE' | 'ACEPTADA' | 'REVOCADA';
 
 export interface Invitacion {
   id: string;
   email: string;
-  rol: 'ADMIN' | 'INSTRUCTOR' | 'CLIENTE';
+  rol: Rol;
   estado: EstadoInvitacion;
   /** Null = la fila existe pero el correo no salió, y hay que reintentar. */
   enviadaAt: string | null;
   aceptadaAt: string | null;
   createdAt: string;
+  cliente?: { id: string; nombre: string; apellido: string } | null;
+  instructor?: { id: string; nombre: string; apellido: string } | null;
 }
 
 export interface FichaCliente extends Cliente {

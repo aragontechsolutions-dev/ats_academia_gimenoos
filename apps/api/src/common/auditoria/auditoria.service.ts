@@ -27,7 +27,10 @@ export type AccionAuditada =
   | 'INVITACION_ENVIADA'
   | 'INVITACION_REVOCADA'
   | 'INVITACION_ACEPTADA'
-  | 'ADMIN_INICIAL_CREADO';
+  | 'ADMIN_INICIAL_CREADO'
+  | 'USUARIO_ROL_CAMBIADO'
+  | 'USUARIO_DESACTIVADO'
+  | 'USUARIO_REACTIVADO';
 
 export interface EventoAuditoria {
   usuarioId: string | null;

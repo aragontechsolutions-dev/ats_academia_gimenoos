@@ -217,10 +217,17 @@ real. Ver [`17-fotos.md`](17-fotos.md#5-qué-se-verificó).
 **No verificado:** el envío real del correo de invitación. El entorno de
 desarrollo no alcanza `supabase.co`.
 
-### Etapa 2.C — Pantalla de cuentas en el panel ⏳ PENDIENTE
+### Etapa 2.C — Pantalla de cuentas en el panel ✅ COMPLETADA
 
-Ver rol y estado de cada cuenta, invitar instructores y administradores,
-desactivar una cuenta sin borrar su historial.
+| Entregable | Estado |
+|---|---|
+| Listado de cuentas con rol, estado y ficha vinculada, paginado y filtrable | ✅ |
+| Invitaciones sin usar a la vista, con reenviar y dar de baja | ✅ |
+| Invitar instructores y administradores desde el panel | ✅ |
+| Cambiar rol y dar de baja sin borrar el historial | ✅ |
+| Tres bloqueos contra quedarse sin acceso, en el servidor | ✅ |
+| Todo auditado | ✅ |
+| Pruebas | ✅ 169 + recorridos HTTP y en navegador |
 
 ### Etapa 2.D — PWA del instructor ⏳ PENDIENTE
 

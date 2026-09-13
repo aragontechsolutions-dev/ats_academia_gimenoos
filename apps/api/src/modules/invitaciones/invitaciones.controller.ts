@@ -3,7 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario } from '@prisma/client';
 
 import { InvitacionesService } from './invitaciones.service';
-import { CrearInvitacionDto } from './dto/invitacion.dto';
+import { CrearInvitacionDto, ListarInvitacionesDto } from './dto/invitacion.dto';
 import { Roles } from '../../common/auth/roles.decorator';
 import { UsuarioActual } from '../../common/auth/usuario-actual.decorator';
 import type { UsuarioAutenticado } from '../../common/auth/jwt-payload.interface';
@@ -15,9 +15,9 @@ export class InvitacionesController {
 
   @Get()
   @Roles(RolUsuario.ADMIN)
-  @ApiOperation({ summary: 'Invitaciones de una ficha de alumno' })
-  listar(@Query('clienteId', ParseUUIDPipe) clienteId: string) {
-    return this.invitaciones.listarDeCliente(clienteId);
+  @ApiOperation({ summary: 'Invitaciones, filtrables por ficha y estado' })
+  listar(@Query() filtros: ListarInvitacionesDto) {
+    return this.invitaciones.listar(filtros);
   }
 
   @Post()
