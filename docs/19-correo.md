@@ -173,7 +173,57 @@ cada mensaje.
 
 ---
 
-## 7. El día que haya dominio propio
+## 7. Cuando el envío no se completa (504)
+
+Este es el error que apareció en la primera prueba con SMTP propio, y conviene
+saber leerlo porque los dos números que se ven **no son dos problemas**:
+
+| Dónde se ve | Qué dice | Qué es |
+|---|---|---|
+| Consola del navegador | `POST .../reenviar 503` | El **nuestro**. La API contesta 503 cuando no puede completar algo que depende de un servicio de afuera |
+| Registro del servidor | `Supabase respondió 504 al invitar: upstream request timeout` | El **de Supabase**. Su portón de entrada se cansó de esperar a que Auth le contestara |
+
+Un **504** no es un rechazo: el pedido estaba bien, lo que pasó es que del otro
+lado no se completó a tiempo. Por eso el mensaje ya no dice «Supabase rechazó la
+invitación» —decía eso antes, y mandaba a revisar el pedido, que era justamente
+lo que no estaba fallando—.
+
+### Por dónde empezar
+
+Al mandar la invitación, **lo único que depende de un servicio de afuera es el
+servidor SMTP**: Supabase Auth se queda esperando el envío del correo y, si esa
+conversación no avanza, el portón corta con 504. Ahí es donde hay que mirar:
+
+1. **El registro de Auth en Supabase** (*Logs → Auth*). Es el único lugar que
+   dice el error exacto del SMTP: credenciales rechazadas, remitente no
+   verificado, puerto que no contesta. Todo lo demás es adivinar.
+2. **Authentication → Emails**, la configuración de SMTP: que el servidor sea
+   `smtp-relay.brevo.com`, el puerto `587`, el usuario el login de Brevo
+   (`xxxxx@smtp-brevo.com`, **no** el correo propio) y la contraseña **la clave
+   SMTP** de Brevo, que no es la clave de la API ni la de la cuenta.
+3. **En Brevo, que el remitente esté verificado.** Si no lo está, Brevo rechaza
+   el envío.
+4. **Que la cuenta de Brevo esté habilitada para transaccional.** Las cuentas
+   nuevas pueden quedar en revisión, y mientras tanto el envío no sale.
+
+Si el registro de Auth no muestra nada de SMTP, entonces era un problema
+puntual del lado de Supabase y alcanza con reintentar.
+
+### Dos cosas que conviene tener presentes
+
+**La cuenta puede haber quedado creada igual.** Un corte a mitad de camino no
+dice si Supabase alcanzó a crear el usuario antes de trabarse con el correo. Por
+eso, al reintentar, el mensaje puede pasar a ser *«esa dirección ya tiene
+cuenta»*: no es un problema nuevo, es el rastro del intento anterior. Desde ahí,
+el enlace por WhatsApp sirve igual.
+
+**El enlace por WhatsApp no pasa por el correo.** Usa otro camino de Supabase,
+que solo devuelve el código y no manda nada. Así que mientras el SMTP esté
+trabado, ese botón sigue siendo la forma de dar acceso.
+
+---
+
+## 8. El día que haya dominio propio
 
 Es el cambio que mejora todo lo de la sección 2, y no toca nada del código.
 
