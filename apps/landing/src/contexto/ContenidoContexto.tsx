@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
 
-import { coordenadasDe, type Coordenadas } from '@gimenoos/shared';
+import { coordenadasDe, digitosParaWhatsApp, type Coordenadas } from '@gimenoos/shared';
 
 import { negocio as negocioPorDefecto, MENSAJE_WHATSAPP } from '../contenido';
 import {
@@ -164,8 +164,15 @@ export function construirEnlaceWhatsApp(
   whatsapp: string | null,
   mensaje: string = MENSAJE_WHATSAPP,
 ): string | null {
-  if (!whatsapp) return null;
-  return `https://wa.me/${whatsapp}?text=${encodeURIComponent(mensaje)}`;
+  // El número se normaliza acá y no se usa tal cual como está guardado.
+  //
+  // `wa.me` quiere dígitos con código de país. Un `092331784` —como se escribe
+  // un celular en Uruguay— pasado tal cual abre un chat con un número de otro
+  // país, y nadie ve un error: el botón existe y no lleva a nadie. Normalizado
+  // queda `59892331784`.
+  const digitos = digitosParaWhatsApp(whatsapp);
+  if (!digitos) return null;
+  return `https://wa.me/${digitos}?text=${encodeURIComponent(mensaje)}`;
 }
 
 /** Destino del CTA principal: WhatsApp si está configurado, si no el formulario. */

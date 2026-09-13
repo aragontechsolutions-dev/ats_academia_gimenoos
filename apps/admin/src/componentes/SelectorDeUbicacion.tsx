@@ -288,11 +288,16 @@ export function SelectorDeUbicacion({
         </div>
       )}
 
+      {/*
+        `z-0`, por lo mismo que en el sitio: Leaflet apila hasta z-index 1000 y
+        los diálogos del panel están en 50. Sin esto, un diálogo abierto sobre
+        una pantalla con mapa quedaría debajo de los controles de zoom.
+      */}
       <div
         ref={contenedor}
         role="application"
         aria-label="Mapa para marcar la ubicación de la academia"
-        className="mt-3 h-80 w-full rounded-xl border border-slate-300"
+        className="z-0 mt-3 h-80 w-full rounded-xl border border-slate-300"
       />
 
       <p className="mt-2 text-xs text-slate-500">

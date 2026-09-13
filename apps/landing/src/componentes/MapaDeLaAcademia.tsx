@@ -87,11 +87,22 @@ export default function MapaDeLaAcademia({
   }, [punto.latitud, punto.longitud, etiqueta]);
 
   return (
-    <div
-      ref={contenedor}
-      role="application"
-      aria-label={`Mapa con la ubicación de ${etiqueta}`}
-      className="h-80 w-full rounded-2xl lg:h-[26rem]"
-    />
+    <>
+      {/*
+        `z-0` no es decorativo: encierra al mapa en su propia pila.
+
+        Leaflet apila sus capas internas hasta z-index 1000 —los controles de
+        zoom y la atribución—, y la barra de navegación del sitio está en 50. Sin
+        esto, el mapa se dibuja POR ENCIMA del menú al bajar la página. Con un
+        z-index propio, todo lo de adentro queda contenido acá y esta caja
+        compite con el resto como un solo bloque, en 0.
+      */}
+      <div
+        ref={contenedor}
+        role="application"
+        aria-label={`Mapa con la ubicación de ${etiqueta}`}
+        className="z-0 h-80 w-full rounded-2xl lg:h-[26rem]"
+      />
+    </>
   );
 }

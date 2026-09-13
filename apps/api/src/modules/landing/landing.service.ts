@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import type { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { normalizarTelefono } from '../../common/formato/telefono';
+import { normalizarEmail } from '../../common/formato/email';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
 import { SECCIONES_LANDING, ordenPorDefecto } from './claves';
 import type { ActualizarSeccionDto } from './dto/seccion.dto';
@@ -164,9 +166,12 @@ export class LandingService {
         direccion: dto.direccion,
         ciudad: dto.ciudad,
         departamento: dto.departamento,
-        telefono: this.aNulo(dto.telefono),
-        whatsapp: this.aNulo(dto.whatsapp),
-        email: this.aNulo(dto.email),
+        // Las mismas funciones que usan las fichas de alumnos e instructores.
+        // El teléfono de la academia no es un dato de otra naturaleza: si allá
+        // se guarda `+598 98663201`, acá tiene que quedar igual.
+        telefono: this.aTelefono(dto.telefono),
+        whatsapp: this.aTelefono(dto.whatsapp),
+        email: dto.email === undefined ? undefined : normalizarEmail(dto.email),
         horarios: this.aNulo(dto.horarios),
         mapaUrl: this.aNulo(dto.mapaUrl),
         latitud: dto.latitud,
@@ -210,6 +215,17 @@ export class LandingService {
         'La ubicación en el mapa necesita latitud y longitud. Marcá el punto en el mapa o quitá las dos.',
       );
     }
+  }
+
+  /**
+   * Un teléfono, con las mismas reglas que en las fichas.
+   *
+   * `undefined` se ignora —no se tocó el campo—; cualquier otra cosa pasa por
+   * `normalizarTelefono`, que deja `+598 98663201` o rechaza con un mensaje que
+   * explica qué se esperaba.
+   */
+  private aTelefono(valor: string | undefined): string | null | undefined {
+    return valor === undefined ? undefined : normalizarTelefono(valor);
   }
 
   /** `undefined` se ignora (no se tocó el campo); `''` borra el dato. */

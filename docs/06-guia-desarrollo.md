@@ -95,6 +95,36 @@ que llega un número.
 
 **Nunca** editar una migración ya aplicada en producción. Se crea una nueva.
 
+## `packages/shared`: qué puede consumirlo y qué no
+
+El paquete se publica como **TypeScript crudo**, sin compilar. Eso tiene una
+consecuencia que no se ve hasta que el servidor no arranca:
+
+| Quién | ¿Puede importar `@gimenoos/shared`? |
+|---|---|
+| El sitio y el panel (Vite) | **Sí.** Vite transpila el TypeScript al empaquetar |
+| Las pruebas de la API (Jest) | **Sí**, porque `ts-jest` transforma todo |
+| **La API en ejecución (Node)** | **No.** Node no sabe leer un `.ts` |
+
+Los `.json` del paquete (`paises.json`, `secciones-landing.json`) sí los puede
+leer cualquiera, y son los únicos que la API usaba hasta ahora.
+
+**En qué se traduce esto al escribir código:** una regla que necesiten el
+servidor *y* los frontends **no puede** vivir en `packages/shared` y ser
+importada por la API. O vive en la API y los frontends consumen el resultado ya
+procesado, o se duplica —que es peor—. Pasó con la normalización de teléfonos:
+las reglas quedaron en `apps/api/src/common/formato/telefono.ts`, que es donde se
+guardan los datos, y en el paquete compartido quedó solo `digitosParaWhatsApp`,
+que **convierte** lo ya guardado y no repite ninguna regla.
+
+Si algún día hace falta de verdad, la salida es darle al paquete un paso de
+compilación y apuntar `main` al resultado. No es gratis: habría que ordenar el
+build antes que el de cada aplicación, incluido el de Vercel.
+
+Un detalle relacionado: los imports internos del paquete llevan extensión `.js`
+—es lo que exige Node para módulos ESM—, y Jest la resuelve literalmente. Por eso
+`apps/api/package.json` tiene un `moduleNameMapper` que se la saca.
+
 ## Antes de cada commit
 
 - [ ] `pnpm typecheck` sin errores

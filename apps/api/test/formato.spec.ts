@@ -8,6 +8,7 @@
 import { TipoIdentificacion } from '@prisma/client';
 
 import { normalizarTelefono } from '../src/common/formato/telefono';
+import { digitosParaWhatsApp } from '@gimenoos/shared';
 import { normalizarDocumento, PAISES } from '../src/common/formato/documento';
 
 describe('teléfono', () => {
@@ -156,6 +157,50 @@ describe('lista de países', () => {
     for (const pais of PAISES) {
       expect(pais.codigo).toMatch(/^[A-Z]{2}$/);
       expect(pais.nombre.length).toBeGreaterThan(1);
+    }
+  });
+});
+
+describe('el número que se le pasa a wa.me', () => {
+  // Esta función NO normaliza: convierte lo que ya está guardado. Las reglas de
+  // qué es un teléfono válido viven en `normalizarTelefono`, del lado de la API,
+  // que es donde se guarda. Acá lo que importa es que nunca arme un enlace que
+  // abra un chat con quien no es.
+
+  it('un teléfono guardado como corresponde sale listo para wa.me', () => {
+    expect(digitosParaWhatsApp('+598 98663201')).toBe('59898663201');
+    expect(digitosParaWhatsApp('+5511999999999')).toBe('5511999999999');
+  });
+
+  it('sin código de país devuelve null, en vez de un enlace que abre otro chat', () => {
+    // Este es el error concreto: `092331784` es un celular uruguayo bien
+    // escrito, y quitándole los símbolos quedan nueve dígitos que wa.me toma
+    // como un número de otro país. El botón existía y no llevaba a nadie.
+    expect(digitosParaWhatsApp('092331784')).toBeNull();
+    expect(digitosParaWhatsApp('092 331 784')).toBeNull();
+    expect(digitosParaWhatsApp('98663201')).toBeNull();
+  });
+
+  it('un número sin «+» pero con código de país sí sirve', () => {
+    // Diez dígitos o más ya no dejan lugar a dudas: ningún país tiene números
+    // nacionales tan largos sin código.
+    expect(digitosParaWhatsApp('59899123456')).toBe('59899123456');
+  });
+
+  it('devuelve null cuando no hay nada utilizable, en vez de inventar', () => {
+    for (const entrada of [null, undefined, '', '   ', '123', 'no es un teléfono', '+', '9'.repeat(16)]) {
+      expect(digitosParaWhatsApp(entrada)).toBeNull();
+    }
+  });
+
+  it('lo que guarda la API siempre se puede convertir', () => {
+    // El contrato entre las dos piezas: lo que sale de `normalizarTelefono`
+    // tiene que entrar en `digitosParaWhatsApp`. Si alguien cambia el formato de
+    // guardado y se olvida de esto, el enlace desaparece sin ningún error.
+    for (const escrito of ['098663201', '098 663 201', '+598 98663201', '42660000', '+55 11 99999 9999']) {
+      const guardado = normalizarTelefono(escrito);
+      expect(guardado).not.toBeNull();
+      expect(digitosParaWhatsApp(guardado)).not.toBeNull();
     }
   });
 });

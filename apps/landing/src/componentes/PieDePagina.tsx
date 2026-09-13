@@ -1,9 +1,28 @@
-import { Facebook, Instagram, Mail, MapPin, Phone } from 'lucide-react';
+import { useMemo } from 'react';
+import { Facebook, Instagram, Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
+
 import { legal, navegacion } from '../contenido';
-import { useNegocio } from '../contexto/ContenidoContexto';
+import { useEnlaceWhatsApp, useNegocio, useSeccionVisible } from '../contexto/ContenidoContexto';
+import { useEgresados } from '../lib/egresados';
 
 export function PieDePagina() {
   const negocio = useNegocio();
+  const wa = useEnlaceWhatsApp();
+
+  // La misma regla que en la barra de arriba: un enlace del pie que apunta a una
+  // sección que no existe deja a la persona donde estaba, sin ningún aviso.
+  const esVisible = useSeccionVisible();
+  const egresados = useEgresados();
+  const enlaces = useMemo(
+    () =>
+      navegacion.filter((enlace) => {
+        if (enlace.seccion && !esVisible(enlace.seccion)) return false;
+        if (enlace.soloConEgresados && egresados.total === 0) return false;
+        return true;
+      }),
+    [esVisible, egresados.total],
+  );
+
   const redes = [
     { url: negocio.instagram, Icono: Instagram, nombre: 'Instagram' },
     { url: negocio.facebook, Icono: Facebook, nombre: 'Facebook' },
@@ -46,7 +65,7 @@ export function PieDePagina() {
         <nav aria-label="Secciones del sitio">
           <h2 className="text-sm font-bold uppercase tracking-widest text-white">Secciones</h2>
           <ul className="mt-4 space-y-2 text-sm">
-            {navegacion.map((item) => (
+            {enlaces.map((item) => (
               <li key={item.destino}>
                 <a href={item.destino} className="transition hover:text-white">
                   {item.texto}
@@ -63,6 +82,30 @@ export function PieDePagina() {
               <MapPin size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-marca-500" />
               {negocio.direccion ?? `${negocio.ciudad}, ${negocio.departamento}`}
             </li>
+            {/*
+              El WhatsApp es el canal por el que la academia atiende de verdad, y
+              faltaba acá: estaba cargado en el panel y el pie no lo mostraba en
+              ningún lado. El enlace se arma con las mismas reglas que el resto
+              del sitio, así que no aparece si el número no sirve.
+            */}
+            {wa && negocio.whatsapp && (
+              <li className="flex items-start gap-2">
+                <MessageCircle
+                  size={16}
+                  aria-hidden="true"
+                  className="mt-0.5 shrink-0 text-marca-500"
+                />
+                <a
+                  href={wa}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition hover:text-white"
+                >
+                  {negocio.whatsapp}
+                  <span className="sr-only"> (escribir por WhatsApp)</span>
+                </a>
+              </li>
+            )}
             {negocio.telefono && (
               <li className="flex items-start gap-2">
                 <Phone size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-marca-500" />
