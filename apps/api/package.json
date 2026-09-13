@@ -73,6 +73,9 @@
     },
     "testEnvironment": "node",
     "maxWorkers": 1,
-    "testTimeout": 30000
+    "testTimeout": 30000,
+    "setupFiles": [
+      "<rootDir>/test/preparar.ts"
+    ]
   }
 }

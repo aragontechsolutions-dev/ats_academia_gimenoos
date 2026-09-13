@@ -1,8 +1,9 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
-  IsDate, IsEnum, IsInt, IsOptional, IsString, Length, Matches, Max, Min,
+  IsBoolean, IsDate, IsEnum, IsInt, IsOptional, IsString, Length, Matches, Max, Min,
 } from 'class-validator';
 import { EstadoVehiculo, TipoVehiculo } from '@prisma/client';
+import { ConsultaPaginadaDto } from '../../../common/paginacion/paginacion';
 
 export class CrearVehiculoDto {
   /** Matrícula uruguaya, sin espacios ni guiones. Se normaliza a mayúsculas. */
@@ -51,4 +52,17 @@ export class ActualizarVehiculoDto extends CrearVehiculoDto {
   @IsOptional()
   @IsEnum(EstadoVehiculo)
   estado?: EstadoVehiculo;
+}
+
+/**
+ * Parámetros del listado de vehículos.
+ *
+ * Declara todos los que acepta el endpoint: `@Query()` valida el objeto entero
+ * contra este DTO y cualquiera que falte devuelve 400.
+ */
+export class ListarVehiculosDto extends ConsultaPaginadaDto {
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  incluirInactivos?: boolean;
 }

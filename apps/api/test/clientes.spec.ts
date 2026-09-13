@@ -106,15 +106,15 @@ describe('Cada rol ve solo los datos que necesita', () => {
   // falle por algo que no tiene nada que ver con lo que verifica.
   it('el instructor no puede encontrar a un alumno por su cédula', async () => {
     const comoAdmin = await clientes.listar({ q: '12345678' }, ADMIN);
-    expect(comoAdmin.map((c) => c.id)).toContain(ID.cliente);
+    expect(comoAdmin.datos.map((c) => c.id)).toContain(ID.cliente);
 
     const comoInstructor = await clientes.listar({ q: '12345678' }, INSTRUCTOR);
-    expect(comoInstructor.map((c) => c.id)).not.toContain(ID.cliente);
+    expect(comoInstructor.datos.map((c) => c.id)).not.toContain(ID.cliente);
   });
 
   it('la búsqueda por nombre funciona para ambos', async () => {
     const comoInstructor = await clientes.listar({ q: 'Pereira' }, INSTRUCTOR);
-    expect(comoInstructor.map((c) => c.id)).toContain(ID.cliente);
+    expect(comoInstructor.datos.map((c) => c.id)).toContain(ID.cliente);
   });
 });
 

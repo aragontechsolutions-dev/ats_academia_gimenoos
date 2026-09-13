@@ -3,6 +3,7 @@ import { Prisma, RolUsuario } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { normalizarTelefono } from '../../common/formato/telefono';
 import { normalizarDocumento } from '../../common/formato/documento';
+import { armarPagina, normalizarPaginacion } from '../../common/paginacion/paginacion';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
 import type { UsuarioAutenticado } from '../../common/auth/jwt-payload.interface';
 import type {
@@ -95,12 +96,20 @@ export class ClientesService {
         : {}),
     };
 
-    return this.prisma.cliente.findMany({
-      where,
-      select: this.campos(usuario.rol),
-      orderBy: [{ apellido: 'asc' }, { nombre: 'asc' }],
-      take: 100,
-    });
+    const { pagina, porPagina, saltar } = normalizarPaginacion(dto);
+
+    const [total, datos] = await Promise.all([
+      this.prisma.cliente.count({ where }),
+      this.prisma.cliente.findMany({
+        where,
+        select: this.campos(usuario.rol),
+        orderBy: [{ apellido: 'asc' }, { nombre: 'asc' }],
+        skip: saltar,
+        take: porPagina,
+      }),
+    ]);
+
+    return armarPagina(datos, total, pagina, porPagina);
   }
 
   /** Ficha con el historial de clases, de la más reciente a la más antigua. */

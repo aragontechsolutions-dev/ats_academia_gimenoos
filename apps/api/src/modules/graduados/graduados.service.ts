@@ -6,7 +6,11 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
 import { generarCodigo, normalizarCodigo } from './codigo';
-import { TAMANOS_PAGINA } from './dto/graduado.dto';
+import {
+  armarPagina,
+  normalizarPaginacion,
+  type ConsultaPaginadaDto,
+} from '../../common/paginacion/paginacion';
 import type {
   ActualizarGraduadoDto,
   ConsultaGaleriaDto,
@@ -28,8 +32,6 @@ const CAMPOS_PUBLICOS = {
   fotoRuta: true,
   cliente: { select: { nombre: true, apellido: true } },
 } as const;
-
-const POR_PAGINA_POR_DEFECTO = 10;
 
 @Injectable()
 export class GraduadosService {
@@ -59,8 +61,7 @@ export class GraduadosService {
 
   /** Galería pública: solo egresados publicados, paginados. */
   async galeria(consulta: ConsultaGaleriaDto) {
-    const porPagina = this.tamanoValido(consulta.porPagina);
-    const pagina = Math.max(1, consulta.pagina ?? 1);
+    const { pagina, porPagina, saltar } = normalizarPaginacion(consulta);
 
     const where: Prisma.GraduadoWhereInput = {
       publicado: true,
@@ -73,17 +74,14 @@ export class GraduadosService {
         where,
         select: CAMPOS_PUBLICOS,
         orderBy: [{ anio: 'desc' }, { fechaEgreso: 'desc' }],
-        skip: (pagina - 1) * porPagina,
+        skip: saltar,
         take: porPagina,
       }),
     ]);
 
-    return {
-      total,
-      pagina,
-      porPagina,
-      paginas: Math.max(1, Math.ceil(total / porPagina)),
-      graduados: filas.map((fila) => ({
+    // Misma forma de página que el resto de los listados de la API.
+    return armarPagina(
+      filas.map((fila) => ({
         id: fila.id,
         nombre: fila.cliente.nombre,
         apellido: fila.cliente.apellido,
@@ -91,7 +89,10 @@ export class GraduadosService {
         anio: fila.anio,
         fotoUrl: this.urlFoto(fila.fotoRuta),
       })),
-    };
+      total,
+      pagina,
+      porPagina,
+    );
   }
 
   /** Años con egresados publicados, para el filtro de la galería. */
@@ -140,15 +141,45 @@ export class GraduadosService {
   // Panel
   // -------------------------------------------------------------------------
 
-  listar(filtros: { anio?: number; soloSinAutorizacion?: boolean }) {
-    return this.prisma.graduado.findMany({
-      where: {
-        ...(filtros.anio ? { anio: filtros.anio } : {}),
-        ...(filtros.soloSinAutorizacion ? { autorizacionAt: null } : {}),
-      },
-      orderBy: [{ anio: 'desc' }, { fechaEgreso: 'desc' }],
-      include: { cliente: { select: { id: true, nombre: true, apellido: true } } },
-    });
+  async listar(
+    filtros: { anio?: number; soloSinAutorizacion?: boolean },
+    consulta: ConsultaPaginadaDto,
+  ) {
+    const { pagina, porPagina, saltar } = normalizarPaginacion(consulta);
+    const where = {
+      ...(filtros.anio ? { anio: filtros.anio } : {}),
+      ...(filtros.soloSinAutorizacion ? { autorizacionAt: null } : {}),
+    };
+
+    const [total, datos] = await Promise.all([
+      this.prisma.graduado.count({ where }),
+      this.prisma.graduado.findMany({
+        where,
+        orderBy: [{ anio: 'desc' }, { fechaEgreso: 'desc' }],
+        include: { cliente: { select: { id: true, nombre: true, apellido: true } } },
+        skip: saltar,
+        take: porPagina,
+      }),
+    ]);
+
+    return armarPagina(datos, total, pagina, porPagina);
+  }
+
+  /**
+   * Lo que el encabezado del panel necesita saber sobre TODOS los egresados, no
+   * solo sobre la página que se está viendo.
+   *
+   * Con el listado paginado, calcular esto en el navegador daba resultados
+   * distintos según en qué página estuviera parado quien mira: el filtro de años
+   * solo ofrecía los años de esa página, y el aviso de autorizaciones faltantes
+   * contaba de a diez.
+   */
+  async resumen() {
+    const [sinAutorizacion, anios] = await Promise.all([
+      this.prisma.graduado.count({ where: { autorizacionAt: null } }),
+      this.prisma.graduado.groupBy({ by: ['anio'], orderBy: { anio: 'desc' } }),
+    ]);
+    return { sinAutorizacion, anios: anios.map((fila) => fila.anio) };
   }
 
   async obtener(id: string) {
@@ -270,13 +301,6 @@ export class GraduadosService {
   }
 
   // -------------------------------------------------------------------------
-
-  private tamanoValido(pedido: number | undefined): number {
-    if (!pedido) return POR_PAGINA_POR_DEFECTO;
-    return (TAMANOS_PAGINA as readonly number[]).includes(pedido)
-      ? pedido
-      : POR_PAGINA_POR_DEFECTO;
-  }
 
   /** Campos derivados y normalizados, compartidos por crear y actualizar. */
   private datos(dto: Partial<CrearGraduadoDto>) {

@@ -53,8 +53,10 @@ export function NuevaClase({
     }
     const temporizador = setTimeout(() => {
       void apiClientes
-        .listar({ q: busqueda.trim() })
-        .then(setResultados)
+        // Es un buscador: se pide el máximo porque quien escribe espera ver
+        // todo lo que coincide, no los primeros diez.
+        .listar({ q: busqueda.trim(), porPagina: 100 })
+        .then((pagina) => setResultados(pagina.datos))
         .catch(() => setResultados([]));
     }, 300);
     return () => clearTimeout(temporizador);

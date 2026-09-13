@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
@@ -14,6 +14,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { CategoriaLicencia } from '@prisma/client';
+import { ConsultaPaginadaDto } from '../../../common/paginacion/paginacion';
 
 export class CrearGraduadoDto {
   @IsUUID()
@@ -116,4 +117,23 @@ export class ConsultaGaleriaDto {
   @IsInt()
   @Min(1900)
   anio?: number;
+}
+
+/**
+ * Parámetros del listado de egresados del panel.
+ *
+ * Declara todos los que acepta el endpoint, no solo la paginación: `@Query()`
+ * valida el objeto entero de parámetros contra este DTO.
+ */
+export class ListarGraduadosDto extends ConsultaPaginadaDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1900)
+  anio?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  sinAutorizacion?: boolean;
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Modal } from '../componentes/ui/Modal';
+import { Paginacion, PAGINA_VACIA, type Pagina } from '../componentes/ui/Paginacion';
 import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
@@ -25,7 +26,13 @@ const fecha = (iso: string) =>
   );
 
 export function Graduados() {
-  const [lista, setLista] = useState<Graduado[]>([]);
+  const [pagina, setPagina] = useState<Pagina<Graduado>>(PAGINA_VACIA as Pagina<Graduado>);
+  const [consulta, setConsulta] = useState({ pagina: 1, porPagina: 10 });
+  const [resumen, setResumen] = useState<{ sinAutorizacion: number; anios: number[] }>({
+    sinAutorizacion: 0,
+    anios: [],
+  });
+  const lista = pagina.datos;
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [anio, setAnio] = useState<string>('');
@@ -35,16 +42,20 @@ export function Graduados() {
   const cargar = useCallback(() => {
     setCargando(true);
     void api
-      .listar({ anio: anio ? Number(anio) : undefined })
-      .then(setLista)
+      .listar({ anio: anio ? Number(anio) : undefined, ...consulta })
+      .then(setPagina)
       .catch((problema: Error) => setError(problema.message))
       .finally(() => setCargando(false));
-  }, [anio]);
+
+    // El aviso de "faltan autorizaciones" cuenta sobre TODOS los egresados, no
+    // sobre la página que se está viendo: si no, avisaría distinto según en qué
+    // página esté parado quien mira.
+    void api.resumen().then(setResumen).catch(() => undefined);
+  }, [anio, consulta]);
 
   useEffect(cargar, [cargar]);
 
-  const anios = [...new Set(lista.map((g) => g.anio))].sort((a, b) => b - a);
-  const sinAutorizacion = lista.filter((g) => !g.autorizacionAt);
+  const { anios, sinAutorizacion } = resumen;
 
   const accion = (promesa: Promise<unknown>) => {
     void promesa.then(cargar).catch((problema: Error) => setError(problema.message));
@@ -63,12 +74,12 @@ export function Graduados() {
         <Boton onClick={() => setNuevo(true)}>Registrar egresado</Boton>
       </div>
 
-      {sinAutorizacion.length > 0 && (
+      {sinAutorizacion > 0 && (
         <div className="mt-4">
           <Aviso>
-            {sinAutorizacion.length === 1
+            {sinAutorizacion === 1
               ? 'Hay 1 egresado sin autorización firmada.'
-              : `Hay ${sinAutorizacion.length} egresados sin autorización firmada.`}{' '}
+              : `Hay ${sinAutorizacion} egresados sin autorización firmada.`}{' '}
             Su diploma se puede emitir igual, pero no pueden aparecer en la galería del sitio
             hasta que la firma esté cargada.
           </Aviso>
@@ -217,6 +228,12 @@ export function Graduados() {
           </table>
         </div>
       )}
+      <Paginacion
+        pagina={pagina}
+        etiqueta="egresados"
+        onCambio={(cambios) => setConsulta((actual) => ({ ...actual, ...cambios }))}
+      />
+
 
       {nuevo && (
         <FormularioEgresado
@@ -260,7 +277,11 @@ function FormularioEgresado({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void apiClientes.listar().then(setAlumnos).catch(() => setAlumnos([]));
+    // Desplegable: necesita la lista completa, no una página.
+    void apiClientes
+      .listar({ porPagina: 100 })
+      .then((pagina) => setAlumnos(pagina.datos))
+      .catch(() => setAlumnos([]));
   }, []);
 
   const guardar = () => {

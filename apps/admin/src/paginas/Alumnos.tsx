@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { Modal } from '../componentes/ui/Modal';
+import { Paginacion, PAGINA_VACIA, type Pagina } from '../componentes/ui/Paginacion';
 import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
@@ -14,7 +15,9 @@ export function Alumnos() {
   const { perfil } = useSesion();
   const esAdmin = perfil?.rol === 'ADMIN';
 
-  const [lista, setLista] = useState<Cliente[]>([]);
+  const [pagina, setPagina] = useState<Pagina<Cliente>>(PAGINA_VACIA as Pagina<Cliente>);
+  const [consulta, setConsulta] = useState({ pagina: 1, porPagina: 10 });
+  const lista = pagina.datos;
   const [busqueda, setBusqueda] = useState('');
   const [incluirInactivos, setIncluirInactivos] = useState(false);
   const [cargando, setCargando] = useState(true);
@@ -24,11 +27,11 @@ export function Alumnos() {
   const cargar = useCallback(() => {
     setCargando(true);
     void api
-      .listar({ q: busqueda.trim() || undefined, incluirInactivos })
-      .then(setLista)
+      .listar({ q: busqueda.trim() || undefined, incluirInactivos, ...consulta })
+      .then(setPagina)
       .catch((problema: Error) => setError(problema.message))
       .finally(() => setCargando(false));
-  }, [busqueda, incluirInactivos]);
+  }, [busqueda, incluirInactivos, consulta]);
 
   // Espera antes de consultar, para no disparar una búsqueda por cada tecla.
   useEffect(() => {
@@ -123,6 +126,12 @@ export function Alumnos() {
           </p>
         )}
       </div>
+      <Paginacion
+        pagina={pagina}
+        etiqueta="alumnos"
+        onCambio={(cambios) => setConsulta((actual) => ({ ...actual, ...cambios }))}
+      />
+
 
       {editando && (
         <FormularioAlumno

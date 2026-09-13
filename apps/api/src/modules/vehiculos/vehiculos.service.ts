@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EstadoVehiculo } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import {
+  armarPagina,
+  normalizarPaginacion,
+  type ConsultaPaginadaDto,
+} from '../../common/paginacion/paginacion';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
 import type { ActualizarVehiculoDto, CrearVehiculoDto } from './dto/vehiculo.dto';
 
@@ -11,11 +16,21 @@ export class VehiculosService {
     private readonly auditoria: AuditoriaService,
   ) {}
 
-  listar(incluirInactivos: boolean) {
-    return this.prisma.vehiculo.findMany({
-      where: incluirInactivos ? {} : { estado: EstadoVehiculo.ACTIVO },
-      orderBy: [{ tipo: 'asc' }, { patente: 'asc' }],
-    });
+  async listar(incluirInactivos: boolean, consulta: ConsultaPaginadaDto) {
+    const { pagina, porPagina, saltar } = normalizarPaginacion(consulta);
+    const where = incluirInactivos ? {} : { estado: EstadoVehiculo.ACTIVO };
+
+    const [total, datos] = await Promise.all([
+      this.prisma.vehiculo.count({ where }),
+      this.prisma.vehiculo.findMany({
+        where,
+        orderBy: [{ tipo: 'asc' }, { patente: 'asc' }],
+        skip: saltar,
+        take: porPagina,
+      }),
+    ]);
+
+    return armarPagina(datos, total, pagina, porPagina);
   }
 
   async obtener(id: string) {

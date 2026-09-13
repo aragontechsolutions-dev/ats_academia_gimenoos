@@ -3,6 +3,7 @@ import {
   IsBoolean, IsDate, IsEmail, IsEnum, IsOptional, IsString, Length, MaxLength,
 } from 'class-validator';
 import { TipoIdentificacion } from '@prisma/client';
+import { ConsultaPaginadaDto } from '../../../common/paginacion/paginacion';
 
 export class CrearClienteDto {
   @IsString()
@@ -75,7 +76,7 @@ export class ActualizarClienteDto extends CrearClienteDto {
   activo?: boolean;
 }
 
-export class BuscarClientesDto {
+export class BuscarClientesDto extends ConsultaPaginadaDto {
   /** Busca por nombre, apellido, correo o cédula. */
   @IsOptional()
   @IsString()

@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseBoolPipe, ParseUUIDPipe,
+  Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe,
   Patch, Post, Put, Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -7,7 +7,8 @@ import { RolUsuario } from '@prisma/client';
 
 import { InstructoresService } from './instructores.service';
 import {
-  ActualizarInstructorDto, CrearExcepcionDto, CrearInstructorDto, ReemplazarDisponibilidadDto,
+  ActualizarInstructorDto, CrearExcepcionDto, CrearInstructorDto, ListarInstructoresDto,
+  ReemplazarDisponibilidadDto,
 } from './dto/instructor.dto';
 import { Roles } from '../../common/auth/roles.decorator';
 import { UsuarioActual } from '../../common/auth/usuario-actual.decorator';
@@ -21,10 +22,8 @@ export class InstructoresController {
   @Get()
   @Roles(RolUsuario.ADMIN, RolUsuario.INSTRUCTOR)
   @ApiOperation({ summary: 'Instructores de la academia' })
-  listar(
-    @Query('incluirInactivos', new ParseBoolPipe({ optional: true })) incluirInactivos?: boolean,
-  ) {
-    return this.instructores.listar(incluirInactivos ?? false);
+  listar(@Query() consulta: ListarInstructoresDto) {
+    return this.instructores.listar(consulta.incluirInactivos ?? false, consulta);
   }
 
   @Get(':id')

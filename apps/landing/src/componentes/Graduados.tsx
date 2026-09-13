@@ -30,7 +30,7 @@ export function Graduados() {
     let vigente = true;
     void obtenerGraduados({ porPagina: 10 }).then((pagina) => {
       if (!vigente) return;
-      setLista(pagina.graduados.slice(0, EN_PORTADA));
+      setLista(pagina.datos.slice(0, EN_PORTADA));
       setTotal(pagina.total);
     });
     return () => {
