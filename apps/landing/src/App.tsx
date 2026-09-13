@@ -13,7 +13,6 @@ import { Tramite } from './componentes/Tramite';
 import { Instructores } from './componentes/Instructores';
 import { Graduados } from './componentes/Graduados';
 import { Testimonios } from './componentes/Testimonios';
-import { Galeria } from './componentes/Galeria';
 import { Ubicacion } from './componentes/Ubicacion';
 import { Preguntas } from './componentes/Preguntas';
 import { Contacto } from './componentes/Contacto';
@@ -50,7 +49,6 @@ const COMPONENTES: Record<string, ReactNode> = {
   instructores: <Instructores />,
   graduados: <Graduados />,
   testimonios: <Testimonios />,
-  galeria: <Galeria />,
   ubicacion: <Ubicacion />,
   preguntas: <Preguntas />,
   contacto: <Contacto />,
@@ -71,7 +69,7 @@ if (import.meta.env.DEV) {
 
 /**
  * Cada sección decide sola si se dibuja: las que dependen de datos reales
- * (vehículos, instructores, egresados, testimonios, galería) devuelven null
+ * (vehículos, instructores, egresados, testimonios) devuelven null
  * mientras no haya contenido, y todas devuelven null si se las ocultó.
  */
 function Secciones() {

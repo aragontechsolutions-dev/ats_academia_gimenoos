@@ -1,20 +1,38 @@
-import { Clock, Mail, MapPin, Phone } from 'lucide-react';
+import { Suspense, lazy } from 'react';
+import { Clock, Mail, MapPin, Navigation, Phone } from 'lucide-react';
+
+import { enlaceDeRuta } from '@gimenoos/shared';
+
 import { useNegocio, useSeccion } from '../contexto/ContenidoContexto';
 import { texto } from '../lib/contenidoRemoto';
 import { Seccion, TituloSeccion } from './ui/Seccion';
 import { clasesBoton } from './ui/Boton';
 
 /**
+ * El mapa se descarga solo si hay un punto que mostrar.
+ *
+ * Leaflet y su hoja de estilos pesan bastante para una página de venta. Con
+ * `lazy` no entran en el paquete inicial: se piden recién cuando esta sección se
+ * dibuja con coordenadas cargadas.
+ */
+const MapaDeLaAcademia = lazy(() => import('./MapaDeLaAcademia'));
+
+/**
  * Dónde estamos y cómo contactarnos.
  *
- * Cada dato se muestra solo si está cargado en `contenido.ts`. No hay valores
- * de ejemplo: una dirección o un horario inventados hacen que alguien viaje al
- * lugar equivocado.
+ * Cada dato se muestra solo si está cargado. No hay valores de ejemplo: una
+ * dirección, un horario o un punto en el mapa inventados hacen que alguien
+ * viaje al lugar equivocado.
  */
 export function Ubicacion() {
   const negocio = useNegocio();
   const config = useSeccion('ubicacion');
   if (!config.visible) return null;
+
+  const punto = negocio.coordenadas;
+  const nombreDelLugar = negocio.direccion
+    ? `${negocio.nombre} — ${negocio.direccion}`
+    : negocio.nombre;
 
   return (
     <Seccion id="ubicacion">
@@ -85,62 +103,97 @@ export function Ubicacion() {
             )}
           </dl>
 
-          {negocio.mapaUrl && (
+          {/*
+            Con el punto marcado, este botón reemplaza al de «Cómo llegar»: los
+            dos abren Google Maps y tener dos botones casi iguales solo obliga a
+            elegir. Este es el que sirve, porque además de mostrar el lugar traza
+            la ruta y arranca la navegación desde donde esté la persona.
+
+            El origen no lo pone el sitio: lo resuelve Google con la ubicación de
+            quien toca el enlace. Así la página nunca tiene que pedir permiso de
+            geolocalización a un visitante.
+          */}
+          {punto ? (
             <a
-              href={negocio.mapaUrl}
+              href={enlaceDeRuta(punto)}
               target="_blank"
               rel="noopener noreferrer"
-              className={`${clasesBoton('contornoOscuro')} mt-8`}
+              className={`${clasesBoton('primario')} mt-8`}
             >
-              <MapPin size={18} aria-hidden="true" />
-              Cómo llegar
+              <Navigation size={18} aria-hidden="true" />
+              Llevame hasta allí
             </a>
+          ) : (
+            negocio.mapaUrl && (
+              <a
+                href={negocio.mapaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${clasesBoton('contornoOscuro')} mt-8`}
+              >
+                <MapPin size={18} aria-hidden="true" />
+                Cómo llegar
+              </a>
+            )
           )}
         </div>
 
-        {/* Mapa ilustrativo de la zona de cobertura: no marca una dirección que
-            todavía no está confirmada, solo ubica la ciudad. */}
-        <div className="aparece relative overflow-hidden rounded-2xl bg-carbon-950 p-10 text-white">
-          <div
-            aria-hidden="true"
-            className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-marca-500/25 blur-3xl"
-          />
-          <svg
-            viewBox="0 0 400 260"
-            className="relative w-full"
-            role="img"
-            aria-label={`Ilustración de la zona de cobertura: ${negocio.ciudad} y alrededores`}
-          >
-            <g stroke="currentColor" strokeWidth="1" className="text-white/10" fill="none">
-              <path d="M0 60h400M0 130h400M0 200h400M90 0v260M200 0v260M310 0v260" />
-            </g>
-            <path
-              d="M20 220 C 120 200, 130 120, 200 110 S 300 70, 380 50"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="6"
-              strokeLinecap="round"
-              className="text-marca-500"
+        {punto ? (
+          <div className="aparece overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+            <Suspense
+              fallback={
+                <div className="flex h-80 w-full items-center justify-center bg-slate-100 text-sm text-slate-500 lg:h-[26rem]">
+                  Cargando el mapa…
+                </div>
+              }
+            >
+              <MapaDeLaAcademia punto={punto} etiqueta={nombreDelLugar} />
+            </Suspense>
+          </div>
+        ) : (
+          /* Sin punto cargado se dibuja la zona de cobertura, que no señala
+             ninguna dirección concreta. Marcar una al azar sería peor que no
+             tener mapa: manda gente a la puerta equivocada. */
+          <div className="aparece relative overflow-hidden rounded-2xl bg-carbon-950 p-10 text-white">
+            <div
+              aria-hidden="true"
+              className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-marca-500/25 blur-3xl"
             />
-            <path
-              d="M20 220 C 120 200, 130 120, 200 110 S 300 70, 380 50"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeDasharray="10 12"
-              strokeLinecap="round"
-              className="text-acento-400"
-            />
-            <circle cx="200" cy="110" r="10" className="fill-acento-400" />
-            <circle cx="200" cy="110" r="20" className="fill-acento-400/20" />
-          </svg>
-          <p className="relative mt-6 text-lg font-bold">
-            {negocio.ciudad}, {negocio.departamento}
-          </p>
-          <p className="relative mt-1 text-sm text-slate-400">
-            Clases en la ciudad y en la zona.
-          </p>
-        </div>
+            <svg
+              viewBox="0 0 400 260"
+              className="relative w-full"
+              role="img"
+              aria-label={`Ilustración de la zona de cobertura: ${negocio.ciudad} y alrededores`}
+            >
+              <g stroke="currentColor" strokeWidth="1" className="text-white/10" fill="none">
+                <path d="M0 60h400M0 130h400M0 200h400M90 0v260M200 0v260M310 0v260" />
+              </g>
+              <path
+                d="M20 220 C 120 200, 130 120, 200 110 S 300 70, 380 50"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="6"
+                strokeLinecap="round"
+                className="text-marca-500"
+              />
+              <path
+                d="M20 220 C 120 200, 130 120, 200 110 S 300 70, 380 50"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeDasharray="10 12"
+                strokeLinecap="round"
+                className="text-acento-400"
+              />
+              <circle cx="200" cy="110" r="10" className="fill-acento-400" />
+              <circle cx="200" cy="110" r="20" className="fill-acento-400/20" />
+            </svg>
+            <p className="relative mt-6 text-lg font-bold">
+              {negocio.ciudad}, {negocio.departamento}
+            </p>
+            <p className="relative mt-1 text-sm text-slate-400">Clases en la ciudad y en la zona.</p>
+          </div>
+        )}
       </div>
     </Seccion>
   );

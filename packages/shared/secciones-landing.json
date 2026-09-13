@@ -27,7 +27,6 @@
     { "clave": "instructores", "nombre": "Instructores", "items": false, "enElSitio": true },
     { "clave": "graduados", "nombre": "Egresados", "items": false, "enElSitio": true },
     { "clave": "testimonios", "nombre": "Testimonios", "items": false, "enElSitio": true },
-    { "clave": "galeria", "nombre": "Galería", "items": false, "enElSitio": true },
     { "clave": "ubicacion", "nombre": "Dónde estamos", "items": false, "enElSitio": true },
     { "clave": "preguntas", "nombre": "Preguntas frecuentes", "items": true, "enElSitio": true },
     { "clave": "contacto", "nombre": "Contacto", "items": false, "enElSitio": true },

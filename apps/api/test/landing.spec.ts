@@ -35,7 +35,7 @@ const ADMIN: UsuarioAutenticado = {
 };
 
 /** Secciones que tocan las pruebas, para poder dejar la base como estaba. */
-const CLAVES_DE_PRUEBA = ['preguntas', 'hero', 'galeria'] as const;
+const CLAVES_DE_PRUEBA = ['preguntas', 'hero', 'testimonios'] as const;
 
 /** Valida un DTO igual que lo haría el ValidationPipe global. */
 async function validarDto<T extends object>(Clase: new () => T, cuerpo: unknown) {
@@ -134,6 +134,81 @@ describe('validación de los datos del negocio', () => {
   });
 });
 
+describe('el punto de la academia en el mapa', () => {
+  const PUNTO = { latitud: -34.795123, longitud: -54.918456 };
+
+  afterEach(async () => {
+    await prisma.configuracionAcademia.update({
+      where: { id: 1 },
+      data: { latitud: null, longitud: null },
+    });
+  });
+
+  it('acepta un punto dentro del planeta', async () => {
+    expect(await validarDto(ActualizarNegocioDto, PUNTO)).toHaveLength(0);
+  });
+
+  it('rechaza coordenadas fuera de rango', async () => {
+    // Una latitud de 91 no existe. Suele ser latitud y longitud invertidas.
+    expect((await validarDto(ActualizarNegocioDto, { latitud: 91, longitud: 0 })).length)
+      .toBeGreaterThan(0);
+    expect((await validarDto(ActualizarNegocioDto, { latitud: 0, longitud: 181 })).length)
+      .toBeGreaterThan(0);
+  });
+
+  it('rechaza una coordenada escrita como texto', async () => {
+    // El panel manda números. Un texto acá significa que algo se armó mal, y
+    // Prisma lo rechazaría después con un error mucho menos claro.
+    expect((await validarDto(ActualizarNegocioDto, { latitud: '-34.79', longitud: '-54.91' })).length)
+      .toBeGreaterThan(0);
+  });
+
+  it('se guarda y vuelve en el contenido público', async () => {
+    await servicio.actualizarNegocio(PUNTO, ADMIN.id);
+
+    const publico = await servicio.contenidoPublico();
+    expect(publico.negocio?.latitud).toBeCloseTo(PUNTO.latitud, 6);
+    expect(publico.negocio?.longitud).toBeCloseTo(PUNTO.longitud, 6);
+  });
+
+  it('media coordenada se rechaza con un mensaje entendible', async () => {
+    // La base tiene un CHECK que también lo impide, pero su error llega en
+    // inglés y con el nombre de la restricción adentro.
+    await expect(servicio.actualizarNegocio({ latitud: -34.79 }, ADMIN.id)).rejects.toThrow(
+      /latitud y longitud/i,
+    );
+    await expect(servicio.actualizarNegocio({ longitud: -54.91 }, ADMIN.id)).rejects.toThrow(
+      /latitud y longitud/i,
+    );
+  });
+
+  it('guardar otro dato no obliga a tener el punto marcado', async () => {
+    // Sin esto, tocar el teléfono de una academia sin ubicación fallaría.
+    await expect(servicio.actualizarNegocio({ horarios: 'Lunes a viernes' }, ADMIN.id))
+      .resolves.toBeDefined();
+  });
+
+  it('se puede borrar el punto mandando las dos en null', async () => {
+    await servicio.actualizarNegocio(PUNTO, ADMIN.id);
+    const sinPunto = await servicio.actualizarNegocio(
+      { latitud: null, longitud: null },
+      ADMIN.id,
+    );
+
+    expect(sinPunto.latitud).toBeNull();
+    expect(sinPunto.longitud).toBeNull();
+  });
+
+  it('la base impide media coordenada aunque se la salteara la API', async () => {
+    await expect(
+      prisma.configuracionAcademia.update({
+        where: { id: 1 },
+        data: { latitud: -34.79, longitud: null },
+      }),
+    ).rejects.toThrow();
+  });
+});
+
 describe('validación del contenido de una sección', () => {
   it('rechaza un título desmedido', async () => {
     const errores = await validarDto(ActualizarSeccionDto, { titulo: 'x'.repeat(201) });
@@ -161,9 +236,9 @@ describe('validación del contenido de una sección', () => {
 
 describe('guardado de secciones', () => {
   it('crea la sección con su posición por defecto si no se indica orden', async () => {
-    await servicio.actualizarSeccion('galeria', { titulo: 'Nuestra galería' }, ADMIN.id);
-    const guardada = await prisma.seccionLanding.findUnique({ where: { clave: 'galeria' } });
-    expect(guardada?.orden).toBe(ordenPorDefecto('galeria'));
+    await servicio.actualizarSeccion('testimonios', { titulo: 'Lo que dicen' }, ADMIN.id);
+    const guardada = await prisma.seccionLanding.findUnique({ where: { clave: 'testimonios' } });
+    expect(guardada?.orden).toBe(ordenPorDefecto('testimonios'));
     expect(guardada?.orden).toBeGreaterThan(0);
   });
 
@@ -198,9 +273,9 @@ describe('guardado de secciones', () => {
   });
 
   it('deja rastro en la auditoría', async () => {
-    await servicio.actualizarSeccion('galeria', { visible: false }, ADMIN.id);
+    await servicio.actualizarSeccion('testimonios', { visible: false }, ADMIN.id);
     const registro = await prisma.registroAuditoria.findFirst({
-      where: { accion: 'LANDING_SECCION_ACTUALIZADA', entidadId: 'galeria' },
+      where: { accion: 'LANDING_SECCION_ACTUALIZADA', entidadId: 'testimonios' },
       orderBy: { createdAt: 'desc' },
     });
     expect(registro).not.toBeNull();
@@ -244,10 +319,10 @@ describe('lo que llega al sitio público', () => {
   });
 
   it('incluye las secciones ocultas con su bandera, para que el sitio decida', async () => {
-    await servicio.actualizarSeccion('galeria', { visible: false }, ADMIN.id);
+    await servicio.actualizarSeccion('testimonios', { visible: false }, ADMIN.id);
     const { secciones } = await servicio.contenidoPublico();
-    const galeria = secciones.find((s) => s.clave === 'galeria');
-    expect(galeria?.visible).toBe(false);
+    const testimonios = secciones.find((s) => s.clave === 'testimonios');
+    expect(testimonios?.visible).toBe(false);
   });
 
   it('no filtra quién editó cada sección', async () => {

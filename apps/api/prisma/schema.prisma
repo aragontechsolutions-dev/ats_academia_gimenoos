@@ -603,6 +603,13 @@ model ConfiguracionAcademia {
   horarios  String?
   /// Enlace de Google Maps para el boton "Como llegar".
   mapaUrl   String? @map("mapa_url")
+
+  /// Coordenadas exactas del local, para dibujar el mapa y trazar la ruta.
+  /// Van las dos o ninguna: media coordenada no ubica nada. Lo obliga un CHECK.
+  /// Mientras esten en null el sitio NO inventa un punto: muestra la
+  /// ilustracion de la zona y no ofrece el boton de "llevame hasta alli".
+  latitud  Float?
+  longitud Float?
   instagram String?
   facebook  String?
 

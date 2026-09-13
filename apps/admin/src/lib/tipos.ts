@@ -241,6 +241,9 @@ export interface NegocioLanding {
   email: string | null;
   horarios: string | null;
   mapaUrl: string | null;
+  /** Punto del local en el mapa. Las dos o ninguna: lo obliga la base. */
+  latitud: number | null;
+  longitud: number | null;
   instagram: string | null;
   facebook: string | null;
 }

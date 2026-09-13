@@ -14,6 +14,13 @@ Aplicación: `apps/admin` · Roles que entran: `ADMIN` e `INSTRUCTOR`
 | **Vehículos** | solo admin | Alta, foto, estado y vencimiento del SOA |
 | **Precios** | solo admin | Catálogo de servicios y sus dos precios |
 | **Cuentas** | solo admin | Quién puede entrar, con qué permisos, e invitaciones sin usar |
+| **Sitio público** | solo admin | Datos de contacto, ubicación en el mapa, y textos y orden de las secciones |
+
+En **Sitio público** se marca además la **ubicación de la academia**, tocando el
+mapa, arrastrando el marcador o con «Usar mi ubicación» estando en el local. Con
+el punto marcado, el sitio muestra un mapa de verdad y el botón «Llevame hasta
+allí»; sin marcar, muestra la ilustración de la zona y no inventa una dirección.
+Ver [20-mapa.md](20-mapa.md).
 
 El acceso de un **alumno** se habilita desde su ficha, o desde «Dar acceso» en el
 listado, y se le puede mandar por correo o por WhatsApp. Ver

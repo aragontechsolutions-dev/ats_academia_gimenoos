@@ -3,12 +3,26 @@ import { useCallback, useEffect, useState } from 'react';
 import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
+import {
+  SelectorDeUbicacion,
+  coordenadasDelNegocio,
+} from '../componentes/SelectorDeUbicacion';
 import { sitio as api } from '../lib/recursos';
+import type { Coordenadas } from '@gimenoos/shared';
 import type { ItemSeccion, NegocioLanding, SeccionLanding } from '../lib/tipos';
+
+/**
+ * Los campos de contacto que son texto.
+ *
+ * El punto del mapa queda afuera a propósito: son dos números y se eligen
+ * tocando el mapa, no escribiéndolos. Excluirlos del tipo hace que el
+ * formulario de texto no pueda tocarlos ni por accidente.
+ */
+type CampoDeTexto = Exclude<keyof NegocioLanding, 'latitud' | 'longitud'>;
 
 /** Campos de contacto, con la ayuda que evita los errores más comunes. */
 const CAMPOS_NEGOCIO: Array<{
-  clave: keyof NegocioLanding;
+  clave: CampoDeTexto;
   etiqueta: string;
   ayuda?: string;
   tipo?: string;
@@ -25,7 +39,12 @@ const CAMPOS_NEGOCIO: Array<{
   { clave: 'ciudad', etiqueta: 'Ciudad' },
   { clave: 'departamento', etiqueta: 'Departamento' },
   { clave: 'horarios', etiqueta: 'Horarios de atención', ayuda: 'Ejemplo: Lunes a viernes de 9 a 19' },
-  { clave: 'mapaUrl', etiqueta: 'Enlace de Google Maps', ayuda: 'Tiene que empezar con https://' },
+  {
+    clave: 'mapaUrl',
+    etiqueta: 'Enlace de Google Maps',
+    ayuda:
+      'Opcional. Solo se usa si no marcaste el punto en el mapa de abajo. Tiene que empezar con https://',
+  },
   { clave: 'instagram', etiqueta: 'Instagram', ayuda: 'Dirección completa, empezando con https://' },
   { clave: 'facebook', etiqueta: 'Facebook', ayuda: 'Dirección completa, empezando con https://' },
 ];
@@ -96,7 +115,7 @@ export function Sitio() {
         <h2 className="text-lg font-bold text-slate-900">Secciones</h2>
         <p className="mt-1 text-sm text-slate-600">
           Podés ocultar una sección, cambiar sus textos o reordenarla. Las secciones de fotos
-          (vehículos, instructores, testimonios, galería) solo aparecen cuando hay contenido real
+          (vehículos, instructores, egresados, testimonios) solo aparecen cuando hay contenido real
           cargado.
         </p>
 
@@ -134,12 +153,20 @@ function FormularioNegocio({
   const [valores, setValores] = useState<Record<string, string>>(() =>
     Object.fromEntries(CAMPOS_NEGOCIO.map((c) => [c.clave, negocio[c.clave] ?? ''])),
   );
+  // El punto del mapa va aparte del resto: es un par de números, no un texto.
+  const [punto, setPunto] = useState<Coordenadas | null>(() => coordenadasDelNegocio(negocio));
   const [guardando, setGuardando] = useState(false);
 
   const guardar = () => {
     setGuardando(true);
     void api
-      .guardarNegocio(valores)
+      .guardarNegocio({
+        ...valores,
+        // Null borra el punto. Las dos coordenadas viajan siempre juntas: la API
+        // rechaza media, y la base también.
+        latitud: punto?.latitud ?? null,
+        longitud: punto?.longitud ?? null,
+      })
       .then((actualizado) => onGuardado(actualizado))
       .catch((problema: Error) => onError(problema.message))
       .finally(() => setGuardando(false));
@@ -173,6 +200,18 @@ function FormularioNegocio({
             />
           </Campo>
         ))}
+      </div>
+
+      <div className="mt-6 border-t border-slate-200 pt-5">
+        <h3 className="text-sm font-bold text-slate-900">Ubicación en el mapa</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          Con el punto marcado, el sitio muestra el mapa de la academia y un botón «Llevame hasta
+          allí» que abre Google Maps y traza la ruta desde donde esté la persona. Sin punto, el sitio
+          muestra la ilustración de la zona: nunca inventa una dirección.
+        </p>
+        <div className="mt-4">
+          <SelectorDeUbicacion valor={punto} onCambio={setPunto} />
+        </div>
       </div>
 
       <div className="mt-5">

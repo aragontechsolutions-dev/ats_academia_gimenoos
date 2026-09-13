@@ -1,14 +1,10 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, GraduationCap } from 'lucide-react';
 
-import { obtenerGraduados, type GraduadoPublico } from '../lib/api';
 import { Seccion, TituloSeccion } from './ui/Seccion';
 import { useSeccion } from '../contexto/ContenidoContexto';
 import { texto } from '../lib/contenidoRemoto';
-
-/** Cuántos egresados se muestran en la portada antes del enlace al histórico. */
-const EN_PORTADA = 6;
+import { EGRESADOS_EN_PORTADA, useEgresados } from '../lib/egresados';
 
 /**
  * Los egresados más recientes, en la portada.
@@ -22,21 +18,9 @@ const EN_PORTADA = 6;
  * se vaya antes de leer nada.
  */
 export function Graduados() {
-  const [lista, setLista] = useState<GraduadoPublico[]>([]);
-  const [total, setTotal] = useState(0);
+  // La misma petición que usa el enlace del navbar: se pide una sola vez.
+  const { lista, total } = useEgresados();
   const config = useSeccion('graduados');
-
-  useEffect(() => {
-    let vigente = true;
-    void obtenerGraduados({ porPagina: 10 }).then((pagina) => {
-      if (!vigente) return;
-      setLista(pagina.datos.slice(0, EN_PORTADA));
-      setTotal(pagina.total);
-    });
-    return () => {
-      vigente = false;
-    };
-  }, []);
 
   // Sin egresados publicados la sección no existe: una galería vacía dice menos
   // que ninguna galería.
@@ -82,7 +66,7 @@ export function Graduados() {
         ))}
       </ul>
 
-      {total > EN_PORTADA && (
+      {total > EGRESADOS_EN_PORTADA && (
         <div className="aparece mt-10">
           <Link
             to="/graduados"

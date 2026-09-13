@@ -51,6 +51,13 @@ export const negocio = {
   // en Google Maps y usando Compartir > Copiar vínculo.
   mapaUrl: null as string | null,
 
+  // El punto del mapa NO tiene valor por defecto y no lo va a tener: se marca
+  // desde el panel, sobre el mapa. Una coordenada escrita a mano en el código
+  // manda a la gente a la esquina equivocada y nadie se entera hasta que alguien
+  // llega a la puerta de otra casa.
+  latitud: null as number | null,
+  longitud: null as number | null,
+
   // TODO(datos-reales): redes sociales. Dejar en null las que no existan.
   instagram: null as string | null,
   facebook: null as string | null,
@@ -223,8 +230,6 @@ export const vehiculos: Array<{
   foto: string | null;
 }> = [];
 
-/** TODO(datos-reales): fotos reales de la academia, las clases y los vehículos. */
-export const galeria: Array<{ src: string; alt: string }> = [];
 
 /** TODO(datos-reales): instructores reales, con su autorización para publicar foto. */
 export const instructores: Array<{
@@ -313,11 +318,25 @@ export const legal = {
  * secciones en `App.tsx`: es lo que espera quien lo lee de arriba abajo.
  * (El indicador de sección activa no depende de este orden, pero la persona sí.)
  */
-export const navegacion = [
+export interface EnlaceDeNavegacion {
+  texto: string;
+  destino: string;
+  /**
+   * Clave de la sección a la que lleva. El enlace desaparece si la academia
+   * oculta esa sección desde el panel: un menú que lleva a un ancla que no
+   * existe deja a la persona en cualquier lado de la página.
+   */
+  seccion?: string;
+  /** El enlace solo aparece si hay egresados publicados. */
+  soloConEgresados?: boolean;
+}
+
+export const navegacion: readonly EnlaceDeNavegacion[] = [
   { texto: 'Inicio', destino: '#inicio' },
-  { texto: 'Por qué', destino: '#por-que' },
-  { texto: 'Clases', destino: '#clases' },
-  { texto: 'Planes', destino: '#planes' },
-  { texto: 'Preguntas', destino: '#preguntas' },
-  { texto: 'Contacto', destino: '#contacto' },
-] as const;
+  { texto: 'Por qué', destino: '#por-que', seccion: 'porQue' },
+  { texto: 'Clases', destino: '#clases', seccion: 'modalidades' },
+  { texto: 'Planes', destino: '#planes', seccion: 'planes' },
+  { texto: 'Egresados', destino: '#graduados', seccion: 'graduados', soloConEgresados: true },
+  { texto: 'Preguntas', destino: '#preguntas', seccion: 'preguntas' },
+  { texto: 'Contacto', destino: '#contacto', seccion: 'contacto' },
+];

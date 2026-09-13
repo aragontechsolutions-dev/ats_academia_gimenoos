@@ -1,4 +1,4 @@
-import { IsOptional, IsString, Length, Matches, ValidateIf } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Length, Matches, Max, Min, ValidateIf } from 'class-validator';
 
 /**
  * Datos de contacto del negocio.
@@ -72,6 +72,27 @@ export class ActualizarNegocioDto {
   @Length(0, 500)
   @Matches(/^https?:\/\/[^\s]+$/i, { message: 'El enlace tiene que empezar con http:// o https://' })
   mapaUrl?: string;
+
+  /**
+   * Coordenadas del local.
+   *
+   * `null` borra el punto del mapa; `undefined` lo deja como está. Que vengan
+   * las dos o ninguna lo comprueba el servicio, porque es una regla entre dos
+   * campos y acá cada uno se valida por separado.
+   *
+   * Son números, no texto: llegan de un clic en el mapa del panel.
+   */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 8 })
+  @Min(-90)
+  @Max(90)
+  latitud?: number | null;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 8 })
+  @Min(-180)
+  @Max(180)
+  longitud?: number | null;
 
   @IsOptional()
   @ValidateIf((_objeto, valor) => valor !== '')

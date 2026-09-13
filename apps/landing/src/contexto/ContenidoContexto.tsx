@@ -1,4 +1,6 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
+
+import { coordenadasDe, type Coordenadas } from '@gimenoos/shared';
 
 import { negocio as negocioPorDefecto, MENSAJE_WHATSAPP } from '../contenido';
 import {
@@ -25,6 +27,8 @@ export interface NegocioResuelto {
   direccion: string | null;
   horarios: string | null;
   mapaUrl: string | null;
+  /** Punto exacto del local, o null mientras nadie lo haya marcado en el panel. */
+  coordenadas: Coordenadas | null;
   instagram: string | null;
   facebook: string | null;
   sitioUrl: string;
@@ -63,6 +67,13 @@ export function ProveedorContenido({ children }: { children: ReactNode }) {
         direccion: dato(remoto?.direccion, negocioPorDefecto.direccion),
         horarios: dato(remoto?.horarios, negocioPorDefecto.horarios),
         mapaUrl: dato(remoto?.mapaUrl, negocioPorDefecto.mapaUrl),
+
+        // `coordenadasDe` devuelve null si falta una de las dos o si están fuera
+        // de rango, así que el sitio nunca intenta dibujar medio punto.
+        coordenadas: coordenadasDe(
+          remoto?.latitud ?? negocioPorDefecto.latitud,
+          remoto?.longitud ?? negocioPorDefecto.longitud,
+        ),
         instagram: dato(remoto?.instagram, negocioPorDefecto.instagram),
         facebook: dato(remoto?.facebook, negocioPorDefecto.facebook),
       },
@@ -107,6 +118,18 @@ export function useSeccion(clave: string): {
     accion: seccion?.accion ?? null,
     items: seccion?.items ?? [],
   };
+}
+
+/**
+ * Si una sección está visible, como función.
+ *
+ * Es una función y no un hook por clave porque quien la usa —el navbar— tiene
+ * que preguntar por varias dentro de un `filter`, y ahí no se pueden llamar
+ * hooks.
+ */
+export function useSeccionVisible(): (clave: string) => boolean {
+  const { secciones } = usarContexto();
+  return useCallback((clave: string) => secciones[clave]?.visible ?? true, [secciones]);
 }
 
 /** El orden configurado de una sección, o null si nadie lo tocó. */
