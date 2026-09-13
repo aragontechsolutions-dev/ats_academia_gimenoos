@@ -75,8 +75,8 @@ aparece recién cuando ya se entendió qué se está comprando.
 | 8 | Trámite | La libreta ante la Intendencia |
 | 9 | Instructores / Testimonios / Galería | *(solo si hay datos reales)* |
 | 10 | Ubicación | Dónde estamos y cómo llegar |
-| 11 | Contacto | El formulario |
-| 12 | Preguntas | Objeciones frecuentes, antes del último empujón |
+| 11 | Preguntas | Se responden las objeciones antes de pedir el contacto |
+| 12 | Contacto | El formulario |
 | 13 | CTA final | Una sola idea y dos formas de actuar |
 | 14 | Pie | Contacto, secciones y legales |
 
@@ -150,6 +150,59 @@ sería afirmar algo que no es cierto. Cuando haya fotos reales, van en
 
 ---
 
+## 5b. Indicador de sección en la navegación
+
+La barra marca en qué sección está la persona: subrayado amarillo en escritorio,
+barra lateral en el menú móvil, y `aria-current="true"` para los lectores de
+pantalla.
+
+**Cómo se calcula** (`src/lib/seccionActiva.ts`): la sección activa es la que
+tiene su borde superior más cerca de la línea de la barra fija, entre las que ya
+la pasaron. El cálculo se agrupa por cuadro de animación con
+`requestAnimationFrame`, así el scroll no dispara trabajo de layout decenas de
+veces por segundo.
+
+Dos detalles que no son obvios:
+
+- **No se usa un `IntersectionObserver`.** La pregunta acá no es "¿esta sección
+  se ve?" sino "¿en cuál estoy?", y son cosas distintas: con dos secciones
+  visibles a la vez el observador marcaría las dos, y dentro de una sección más
+  alta que la pantalla no marcaría ninguna.
+- **No se recorre el menú en orden.** Se comparan posiciones reales. Escrito de
+  la otra forma el indicador fallaba apenas el orden del menú dejaba de coincidir
+  con el de la página — que fue exactamente lo que pasó al escribirlo.
+
+Al final de la página se marca la última sección, que de otro modo podría ser
+demasiado baja como para llegar nunca a la línea.
+
+---
+
+## 5c. Acceso al panel desde el sitio (atajo oculto)
+
+El sitio público **no enlaza** el panel de administración. El personal entra con
+**Ctrl + Shift + clic en el logo**, que abre el ingreso al panel en una pestaña
+nueva. Con teclado, la misma combinación sobre Enter con el logo enfocado. Sin
+los dos modificadores el logo se comporta como siempre y lleva al inicio.
+
+La dirección del panel se configura en `VITE_PANEL_URL`.
+
+### Esto es discreción, no seguridad
+
+Conviene que quede escrito, porque es fácil confundirlo:
+
+> Esconder el enlace **no protege nada**. La dirección del panel es pública
+> igual y quien la conozca puede abrirla y ver la pantalla de ingreso.
+
+Lo que protege el panel es lo de siempre: la autenticación de Supabase, y la
+verificación del rol **contra la base** en cada petición, no contra el token. Un
+usuario sin rol de administrador que llegue al panel no puede hacer nada, con
+atajo o sin él.
+
+Lo que sí aporta: el sitio público queda enfocado en quien busca clases, sin un
+botón de "ingresar" que confunde a los visitantes e invita a probar credenciales.
+
+---
+
 ## 6. Accesibilidad y movimiento
 
 - **Reducir movimiento**: quien lo pidió en su sistema operativo no recibe ni el
@@ -202,6 +255,11 @@ Todo en un Chromium real, contra la API y la base corriendo de verdad, a
 | Campo obligatorio frena el envío | OK |
 | Escape cierra el menú móvil | OK |
 | Reducir movimiento muestra todo el contenido | OK |
+| Indicador de sección acompaña el scroll en las 6 secciones | OK |
+| Nunca hay dos secciones marcadas a la vez | OK |
+| El sitio no tiene ningún enlace al panel | OK |
+| Clic normal, o solo Ctrl, o solo Shift: no abren el panel | OK |
+| Ctrl + Shift + clic, y Ctrl + Shift + Enter: abren el ingreso | OK |
 | Sin errores en consola | OK |
 
 ---

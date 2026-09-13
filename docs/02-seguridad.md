@@ -65,6 +65,18 @@ Permisos previstos:
 Los guards del frontend (`RutaProtegida`) son **comodidad de interfaz, no
 seguridad**. Quien fuerce la ruta en el navegador igual recibe 401/403.
 
+### El atajo al panel desde la landing NO es un control de seguridad
+
+El sitio público no enlaza el panel; se llega con Ctrl + Shift + clic en el logo.
+**Eso es discreción, no seguridad**: la dirección del panel es pública y quien la
+conozca puede abrirla igual.
+
+Nada en el sistema puede depender de que ese atajo sea secreto. Lo que protege el
+panel es la autenticación más la verificación del rol contra la base, descrita
+arriba. Si en algún momento hace falta que el panel no sea alcanzable desde
+internet, eso se resuelve en el despliegue (restricción por red o por dominio),
+nunca escondiendo un enlace.
+
 ## Protecciones HTTP
 
 Configuradas en `apps/api/src/main.ts`:

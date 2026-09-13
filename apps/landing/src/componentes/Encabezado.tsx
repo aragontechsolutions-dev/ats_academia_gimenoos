@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { Menu, MessageCircle, X } from 'lucide-react';
 
 import { navegacion, negocio } from '../contenido';
 import { enlaceWhatsApp, destinoPrincipal } from '../lib/whatsapp';
+import { useSeccionActiva } from '../lib/seccionActiva';
+import { esAtajoDePanel, urlIngresoPanel } from '../lib/panel';
 import { clasesBoton } from './ui/Boton';
 
 /**
@@ -18,6 +20,11 @@ export function Encabezado() {
   const wa = enlaceWhatsApp();
   const principal = destinoPrincipal();
 
+  // `navegacion` es una constante del módulo, pero el hook recibe un array y
+  // useMemo evita volver a suscribir el listener en cada render.
+  const destinos = useMemo(() => navegacion.map((enlace) => enlace.destino), []);
+  const activa = useSeccionActiva(destinos);
+
   useEffect(() => {
     const alDesplazar = () => setBajado(window.scrollY > 24);
     alDesplazar();
@@ -29,12 +36,35 @@ export function Encabezado() {
   // buscar el botón de cerrar.
   useEffect(() => {
     if (!menuAbierto) return;
-    const alPresionar = (evento: KeyboardEvent) => {
+    const alPresionar = (evento: globalThis.KeyboardEvent) => {
       if (evento.key === 'Escape') setMenuAbierto(false);
     };
     window.addEventListener('keydown', alPresionar);
     return () => window.removeEventListener('keydown', alPresionar);
   }, [menuAbierto]);
+
+  /**
+   * Atajo del personal: Ctrl + Shift + clic en el logo abre el ingreso al panel.
+   * Sin esa combinación el logo se comporta como siempre y lleva al inicio.
+   * Ver `lib/panel.ts`: esto es discreción, no un control de seguridad.
+   */
+  const abrirPanel = () => {
+    window.open(urlIngresoPanel(), '_blank', 'noopener,noreferrer');
+  };
+
+  const alHacerClicEnLogo = (evento: MouseEvent<HTMLAnchorElement>) => {
+    if (!esAtajoDePanel(evento)) return;
+    evento.preventDefault();
+    abrirPanel();
+  };
+
+  // Con teclado no existe el "clic con modificadores": quien navega así llega al
+  // logo con Tab y usa la misma combinación sobre Enter.
+  const alPresionarEnLogo = (evento: KeyboardEvent<HTMLAnchorElement>) => {
+    if (evento.key !== 'Enter' || !esAtajoDePanel(evento)) return;
+    evento.preventDefault();
+    abrirPanel();
+  };
 
   return (
     <header
@@ -46,22 +76,41 @@ export function Encabezado() {
         className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4"
         aria-label="Navegación principal"
       >
-        <a href="#inicio" className="flex items-baseline gap-1 text-xl font-extrabold tracking-tight text-white">
+        <a
+          href="#inicio"
+          onClick={alHacerClicEnLogo}
+          onKeyDown={alPresionarEnLogo}
+          className="flex items-baseline gap-1 text-xl font-extrabold tracking-tight text-white"
+        >
           {negocio.nombreCorto}
           <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-marca-500" />
         </a>
 
         <ul className="hidden items-center gap-7 lg:flex">
-          {navegacion.map((enlace) => (
-            <li key={enlace.destino}>
-              <a
-                href={enlace.destino}
-                className="text-sm font-medium text-slate-200 transition hover:text-acento-400"
-              >
-                {enlace.texto}
-              </a>
-            </li>
-          ))}
+          {navegacion.map((enlace) => {
+            const esActiva = activa === enlace.destino;
+            return (
+              <li key={enlace.destino}>
+                <a
+                  href={enlace.destino}
+                  aria-current={esActiva ? 'true' : undefined}
+                  className={`relative block py-1 text-sm font-medium transition ${
+                    esActiva ? 'text-white' : 'text-slate-200 hover:text-acento-400'
+                  }`}
+                >
+                  {enlace.texto}
+                  {/* La barrita se renderiza siempre y se escala: así la
+                      transición se ve, en vez de aparecer de golpe. */}
+                  <span
+                    aria-hidden="true"
+                    className={`absolute -bottom-0.5 left-0 h-0.5 w-full origin-left rounded-full bg-acento-400 transition-transform duration-300 ${
+                      esActiva ? 'scale-x-100' : 'scale-x-0'
+                    }`}
+                  />
+                </a>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="flex items-center gap-2">
@@ -92,17 +141,25 @@ export function Encabezado() {
            el menú con transparencia se vuelve difícil de leer. */
         <div id="menu-movil" className="border-t border-white/10 bg-carbon-950 lg:hidden">
           <ul className="mx-auto max-w-6xl px-4 py-2">
-            {navegacion.map((enlace) => (
-              <li key={enlace.destino}>
-                <a
-                  href={enlace.destino}
-                  onClick={() => setMenuAbierto(false)}
-                  className="block py-3 font-medium text-slate-200"
-                >
-                  {enlace.texto}
-                </a>
-              </li>
-            ))}
+            {navegacion.map((enlace) => {
+              const esActiva = activa === enlace.destino;
+              return (
+                <li key={enlace.destino}>
+                  <a
+                    href={enlace.destino}
+                    onClick={() => setMenuAbierto(false)}
+                    aria-current={esActiva ? 'true' : undefined}
+                    className={`flex items-center gap-3 border-l-2 py-3 pl-3 font-medium transition ${
+                      esActiva
+                        ? 'border-acento-400 text-white'
+                        : 'border-transparent text-slate-200'
+                    }`}
+                  >
+                    {enlace.texto}
+                  </a>
+                </li>
+              );
+            })}
             <li className="py-3">
               <a
                 href={principal.href}

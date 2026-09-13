@@ -308,6 +308,11 @@ export const legal = {
   terminos: '/terminos-y-condiciones',
 };
 
+/**
+ * Menú principal. Conviene mantenerlo en el mismo orden en que aparecen las
+ * secciones en `App.tsx`: es lo que espera quien lo lee de arriba abajo.
+ * (El indicador de sección activa no depende de este orden, pero la persona sí.)
+ */
 export const navegacion = [
   { texto: 'Inicio', destino: '#inicio' },
   { texto: 'Por qué', destino: '#por-que' },

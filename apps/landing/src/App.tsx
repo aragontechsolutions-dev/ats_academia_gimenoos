@@ -51,8 +51,8 @@ export function App() {
         <Testimonios />
         <Galeria />
         <Ubicacion />
-        <Contacto />
         <Preguntas />
+        <Contacto />
         <CtaFinal />
       </main>
       <PieDePagina />
