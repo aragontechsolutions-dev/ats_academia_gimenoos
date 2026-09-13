@@ -25,7 +25,9 @@ export default defineConfig({
         scope: '/',
         display: 'standalone',
         background_color: '#ffffff',
-        theme_color: '#1d4ed8',
+        // El negro de la barra de la app, no el rojo de la marca: este color pinta
+        // la barra de estado del teléfono, que queda pegada al encabezado.
+        theme_color: '#0b0b0d',
         // TODO(datos-reales): reemplazar por los iconos con el logo de la academia.
         // Hacen falta 192x192, 512x512 y una version "maskable" de 512x512.
         icons: [],

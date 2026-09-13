@@ -20,6 +20,38 @@ alcanza con el pulgar sin cambiar el agarre.
 
 ---
 
+## Identidad visual
+
+La app usa **los mismos colores que el sitio y el panel**: rojo `marca-*`,
+amarillo `acento-*` y los negros `carbon-*`, con los tokens nombrados igual en
+las tres aplicaciones, así una clase copiada de cualquiera funciona en las otras.
+El alumno entra al sitio, después a la app y después pisa la academia: si las
+tres cosas no se parecen, parecen tres empresas distintas.
+
+Tres detalles que no son decorativos:
+
+- **El rojo de la marca NO se usa para «confirmada».** Quedó reservado para
+  `AUSENTE`, que es el único estado que el alumno tiene que leer como un
+  problema. Con la marca en rojo, «confirmada» y «faltó» se veían casi iguales.
+  Confirmada va en celeste, igual que en el panel.
+- **El `theme-color` es el negro, no el rojo.** Ese color pinta la barra de
+  estado del teléfono cuando la app está instalada, y así se funde con la barra
+  de arriba en vez de cortarla.
+- **Contraste verificado.** El texto auxiliar sobre el negro va en `slate-400`
+  (7.67) y no en `slate-500`, que da **4.13** y no llega al 4.5 que pide el
+  criterio AA. El punto rojo del logotipo da 3.75, pero es decorativo
+  (`aria-hidden`) y le rige el 3:1 de los elementos no textuales.
+
+### Un detalle que no depende del código
+
+El campo de fecha es el nativo del navegador (`<input type="date">`), y **el
+formato en que se muestra lo decide el idioma del navegador del alumno**, no la
+página: un teléfono en español muestra dd/mm/aaaa y uno en inglés mm/dd/yyyy.
+No se pudo comprobar acá: el Chromium de pruebas no trae el paquete de idioma
+español y muestra el formato inglés aunque se lo fuerce. Es igual en el panel.
+
+---
+
 ## Reservar
 
 El alumno elige qué quiere manejar, cuánto dura la clase y qué día. La app
@@ -90,6 +122,27 @@ Verificado a nivel HTTP contra la API en ejecución:
 
 Y a la inversa: un administrador recibe **403** en `/clientes/me`. Esas rutas son
 del alumno, y cada rol usa las suyas.
+
+---
+
+## Cómo entra el alumno, hoy
+
+El formulario de ingreso **no habla con la API ni con el panel**. Llama a
+`supabase.auth.signInWithOtp()`, que va del navegador directo a Supabase Auth.
+
+La conexión con el panel ocurre **después**, en el primer llamado a la API
+(`UsuariosService.resolverDesdeToken`): se crea el usuario local y, si es su
+primer acceso, se busca una ficha de alumno **con ese mismo correo y sin cuenta**.
+Si hay exactamente una, la vincula; si hay dos, no adivina; si no hay ninguna,
+crea una ficha nueva.
+
+> **Pendiente, y es el objetivo de la etapa siguiente.** En
+> `@supabase/auth-js@2.116.0` el alta de usuario viene activada por defecto
+> (`create_user: options?.shouldCreateUser ?? true`), y el formulario no la
+> apaga. Hoy **cualquier persona** que escriba un correo recibe el enlace, entra,
+> y el sistema le crea cuenta y una ficha de alumno vacía. Además, la
+> vinculación por correo falla en silencio si el alumno se cargó sin correo o
+> usa otro distinto al que registró la academia.
 
 ---
 

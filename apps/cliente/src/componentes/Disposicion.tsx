@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 
+import { Logotipo } from './Logotipo';
+
 const SECCIONES = [
   {
     ruta: '/',
@@ -16,15 +18,26 @@ const SECCIONES = [
 ];
 
 /**
- * Disposición de la PWA: barra inferior fija.
+ * Disposición de la PWA: barra de marca arriba, navegación abajo.
  *
  * La navegación va abajo y no arriba porque en el teléfono es la zona que se
- * alcanza con el pulgar sin cambiar el agarre.
+ * alcanza con el pulgar sin cambiar el agarre. La barra de arriba no navega:
+ * está para que la app se reconozca como de la academia, con el mismo logotipo
+ * del sitio y del panel.
+ *
+ * Las dos barras respetan las zonas seguras del teléfono (`safe-area-inset`):
+ * sin eso, en un iPhone la barra de abajo queda tapada por la franja de gestos.
  */
 export function Disposicion({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen pb-20">
-      <main className="mx-auto max-w-lg px-4 py-6">{children}</main>
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-10 bg-carbon-950 pt-[env(safe-area-inset-top)] text-white">
+        <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
+          <Logotipo etiqueta="Alumnos" className="text-lg" />
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-lg px-4 pb-24 pt-6">{children}</main>
 
       <nav
         className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)]"
@@ -37,21 +50,33 @@ export function Disposicion({ children }: { children: ReactNode }) {
                 to={seccion.ruta}
                 end={seccion.ruta === '/'}
                 className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 py-2.5 text-xs ${
+                  `relative flex flex-col items-center gap-1 py-2.5 text-xs transition ${
                     isActive ? 'font-semibold text-marca-600' : 'text-slate-500'
                   }`
                 }
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d={seccion.icono}
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {seccion.texto}
+                {({ isActive }) => (
+                  <>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path
+                        d={seccion.icono}
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    {seccion.texto}
+                    {/* Marca de sección activa, como la del panel. El color no es
+                        el único indicador: el texto también pasa a negrita. */}
+                    <span
+                      aria-hidden="true"
+                      className={`absolute inset-x-6 top-0 h-0.5 rounded-full bg-marca-600 transition-transform duration-300 ${
+                        isActive ? 'scale-x-100' : 'scale-x-0'
+                      }`}
+                    />
+                  </>
+                )}
               </NavLink>
             </li>
           ))}

@@ -1,13 +1,49 @@
 @import 'tailwindcss';
 
+/*
+  La app del alumno comparte la identidad del sitio público y del panel: mismo
+  rojo, mismo amarillo, mismos negros. El alumno llega al sitio, entra a la app y
+  después pisa la academia: si las tres cosas no se parecen, parecen tres
+  empresas distintas.
+
+  Los tokens se llaman igual que en la landing y el panel (`marca-*`, `acento-*`,
+  `carbon-*`), así una clase copiada de cualquiera de los tres funciona acá.
+
+  Contraste verificado, criterio AA (4.5 para texto normal):
+  blanco sobre marca-600 da 6.30; marca-600 sobre blanco, 6.30; acento-400 sobre
+  carbon-950, 12.31. El naranja acento-500 nunca va de fondo con texto claro:
+  blanco encima queda en 2.61 y no alcanza.
+*/
 @theme {
-  --color-marca-50: #eff6ff;
-  --color-marca-100: #dbeafe;
-  --color-marca-600: #1d4ed8;
-  --color-marca-700: #1e40af;
-  --color-marca-900: #172554;
+  /* Rojo: el color protagonista */
+  --color-marca-50: #fef2f3;
+  --color-marca-100: #fee2e4;
+  --color-marca-200: #fbc9ce;
+  --color-marca-500: #d90429;
+  --color-marca-600: #c20325;
+  --color-marca-700: #a50220;
+  --color-marca-900: #8d001c;
+
+  /* Acentos: nunca como superficie grande con texto claro encima */
+  --color-acento-400: #ffc400;
+  --color-acento-500: #ff7a00;
+
+  /* Negros y grafito para las zonas de peso */
+  --color-carbon-950: #0b0b0d;
+  --color-carbon-900: #1b1d21;
+  --color-carbon-800: #2a2d33;
 }
 
 body {
   @apply bg-slate-50 text-slate-800 antialiased;
+}
+
+/*
+  El teclado del teléfono tapa el campo enfocado si el navegador hace zoom al
+  entrar en un input, cosa que iOS hace cuando la letra mide menos de 16px.
+*/
+input,
+select,
+textarea {
+  font-size: max(16px, 1rem);
 }
