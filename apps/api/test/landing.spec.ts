@@ -52,6 +52,21 @@ let negocioOriginal: Awaited<ReturnType<typeof servicio.obtenerNegocio>>;
 beforeAll(async () => {
   await prisma.$connect();
 
+  // La fila de configuración tiene que existir: es única —id fijo en 1— y el
+  // servicio la exige.
+  //
+  // Este archivo la daba por hecha, y funcionaba de casualidad: otras pruebas la
+  // crean en su propio `beforeAll`, así que alcanzaba con que alguna corriera
+  // antes. Sobre una base recién migrada y sin datos —que es como arranca la
+  // CI—, el archivo entero fallaba o pasaba según el orden en que jest tomara
+  // los archivos, y ese orden depende del tamaño de cada uno. Agrandar este
+  // archivo fue suficiente para darlo vuelta.
+  await prisma.configuracionAcademia.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1 },
+  });
+
   // El registro de auditoría tiene clave foránea a `usuarios`. Sin este usuario
   // el insert falla, el servicio se traga el error a propósito —auditar nunca
   // debe tumbar la operación— y la prueba de auditoría no vería nada.
