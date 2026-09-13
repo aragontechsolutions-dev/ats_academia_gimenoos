@@ -249,18 +249,52 @@ corta con un mensaje que nombra la variable que falta, en vez de generar un
 enlace que no lleva a ninguna parte. En desarrollo `localhost` es lo normal y no
 molesta.
 
-### Los correos: en español y con la identidad del sistema
+### El correo: hace falta un servidor propio, y no es opcional
 
-Los que manda Supabase de fábrica vienen en inglés y sin ningún estilo. En
-`infra/supabase/plantillas-correo/` están reescritos:
+**Con la configuración de fábrica, a un alumno no le llega nada.** Esto no es un
+detalle de terminación: es lo que separa un sistema que anda de uno que no.
+
+Todo proyecto de Supabase trae un remitente incluido, pero está pensado para
+probar, no para funcionar:
+
+| Límite del remitente de fábrica | Qué significa acá |
+|---|---|
+| **Solo le escribe a las cuentas del equipo del proyecto** | La invitación a un alumno falla con *«Email address not authorized»*. Al dueño del proyecto sí le llega, y por eso el problema aparece recién cuando se invita a otra persona |
+| **2 correos por hora** | Dos altas y el resto de la tarde esperando |
+| **Las plantillas no se pueden editar** en proyectos nuevos del plan gratuito | Los correos quedan en inglés y sin identidad |
+
+Las tres cosas se arreglan con lo mismo: **configurar un servidor de correo
+propio (SMTP)**. Con eso, además, el correo sale desde la dirección de la
+academia y no desde una de Supabase.
+
+#### Cómo se configura
+
+1. Abrir cuenta en un proveedor de correo transaccional. Cualquiera sirve; con
+   plan gratuito alcanza de sobra para el volumen de una academia —se manda un
+   puñado de invitaciones por día—. Brevo, por ejemplo, permite 300 por día sin
+   costo y no exige verificar un dominio para empezar, aunque **conviene
+   verificarlo**: sin eso reescribe el remitente y el correo llega desde una
+   dirección que no es la de la academia.
+2. En el panel de Supabase, **Authentication → Emails → Set up SMTP**, con los
+   datos que da el proveedor (servidor, puerto, usuario y clave) y la dirección
+   y el nombre del remitente.
+3. Recién ahí se habilitan las plantillas. Pegar las dos:
 
 | Archivo | Dónde se pega | Quién lo recibe |
 |---|---|---|
 | `invitacion.html` | **Invite user** | Alguien a quien la academia habilitó |
 | `ingreso.html` | **Magic Link** | Quien ya tiene cuenta y pidió entrar |
 
-Se pegan a mano en **Authentication → Emails**, una vez. El detalle de por qué
-están escritas con tablas y estilos en línea está en el README de esa carpeta.
+Están en `infra/supabase/plantillas-correo/`. El detalle de por qué están
+escritas con tablas y estilos en línea está en el README de esa carpeta.
+
+#### Mientras tanto
+
+Sin SMTP propio, el **botón de WhatsApp sigue funcionando igual**: ese camino
+genera el enlace y no manda ningún correo, así que no lo tocan ninguno de los
+tres límites de arriba. Es una salida razonable para arrancar, pero no reemplaza
+la configuración: el ingreso desde la app —cuando alguien que ya tiene cuenta
+pide su enlace— sí depende del correo.
 
 ### El plazo de validez
 
@@ -301,7 +335,9 @@ correo puede crearse un administrador.
 | «Supabase no devolvió un enlace utilizable» | Ya no debería pasar: era un error de lectura de la respuesta, corregido | Si vuelve, revisar `supabase-admin.service.ts` |
 | «Falta configurar APP_ALUMNO_URL…» | La variable no está cargada en el servidor | Cargarla en Render, ver más arriba |
 | El enlace lleva a `localhost:3000` | El destino no está en las URLs permitidas de Supabase, y cayó en el Site URL | Ver «La configuración de Supabase» |
-| El correo llega en inglés | Faltan pegar las plantillas | Ver `infra/supabase/plantillas-correo/` |
+| El correo llega en inglés | Las plantillas no se pueden editar sin SMTP propio | Ver «El correo: hace falta un servidor propio» |
+| «Supabase no tiene permitido escribirle a esa dirección» | El remitente de fábrica solo le entrega al equipo del proyecto | Configurar SMTP propio |
+| El correo le llega al dueño del proyecto pero no a un alumno | Lo mismo de arriba, visto desde el otro lado | Configurar SMTP propio |
 | «Esa dirección ya tiene cuenta» | Ya existe el usuario | No hace falta invitar: entra con el enlace desde la app |
 | «Ya hay una cuenta con ese correo registrada con otro identificador» | Se rehizo el proyecto de Supabase y la fila vieja apunta a una cuenta que ya no existe | Ver abajo |
 

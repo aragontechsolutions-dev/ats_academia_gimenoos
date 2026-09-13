@@ -74,16 +74,38 @@ export class SupabaseAdminService {
     // personal, y el mensaje que ve quien atiende dice qué hacer.
     this.logger.error(`Supabase respondió ${respuesta.status} al invitar: ${cuerpo.slice(0, 300)}`);
 
-    if (respuesta.status === 422 || /already.*registered|already been registered/i.test(cuerpo)) {
+    // Se mira QUÉ dijo Supabase, no solo el código.
+    //
+    // Antes, cualquier 422 se traducía a «ya tiene cuenta», y Supabase usa ese
+    // código para varias cosas distintas. Invitar a un alumno de verdad
+    // respondía que ya tenía cuenta, que es falso y manda a buscar el problema
+    // donde no está.
+
+    // El remitente que trae Supabase de fábrica SOLO le escribe a los correos
+    // del equipo del proyecto. A un alumno no le llega nada. Es la causa más
+    // probable de este error y la que menos se adivina sola.
+    if (/not authorized|not_authorized/i.test(cuerpo)) {
+      throw new ServiceUnavailableException(
+        'Supabase no tiene permitido escribirle a esa dirección: el remitente que viene de fábrica ' +
+          'solo le entrega a las cuentas del equipo del proyecto. Hay que configurar un servidor de ' +
+          'correo propio (SMTP). Ver docs/18-cuentas-e-invitaciones.md.',
+      );
+    }
+
+    if (/already.*registered|already been registered|user already exists/i.test(cuerpo)) {
       throw new ServiceUnavailableException(
         'Esa dirección ya tiene cuenta en el sistema. No hace falta invitarla: puede ingresar con el enlace por correo desde la app.',
       );
     }
-    if (respuesta.status === 429) {
+
+    if (respuesta.status === 429 || /rate limit/i.test(cuerpo)) {
       throw new ServiceUnavailableException(
-        'Supabase está limitando el envío de correos. Esperá unos minutos y volvé a intentar.',
+        'Supabase está limitando el envío de correos. El remitente de fábrica permite apenas ' +
+          '2 por hora; con un servidor de correo propio ese tope desaparece. ' +
+          'Ver docs/18-cuentas-e-invitaciones.md.',
       );
     }
+
     throw new ServiceUnavailableException(
       `Supabase rechazó la invitación (${respuesta.status}). Revisá la configuración de correo del proyecto.`,
     );

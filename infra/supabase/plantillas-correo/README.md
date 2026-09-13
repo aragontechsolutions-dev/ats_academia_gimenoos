@@ -8,6 +8,20 @@ están reescritos en español y con los colores del sistema.
 | `invitacion.html` | **Invite user** | La academia le habilitó el acceso |
 | `ingreso.html` | **Magic Link** | Ya tiene cuenta y pidió entrar desde la app |
 
+## Antes: hace falta un servidor de correo propio
+
+**Sin eso no se pueden editar las plantillas**, y tampoco le llega nada a un
+alumno. El remitente que trae Supabase de fábrica solo le entrega a las cuentas
+del equipo del proyecto, permite 2 correos por hora, y en proyectos nuevos del
+plan gratuito no deja tocar las plantillas. El panel lo dice así:
+
+> *Set up custom SMTP to edit templates. Emails will be sent using the default
+> templates.*
+
+Configurar un servidor propio (**Authentication → Emails → Set up SMTP**)
+resuelve las tres cosas de una. El paso a paso está en
+[`docs/18-cuentas-e-invitaciones.md`](../../../docs/18-cuentas-e-invitaciones.md).
+
 ## Cómo se cargan
 
 Supabase **no** lee estos archivos: hay que pegarlos a mano, una vez.

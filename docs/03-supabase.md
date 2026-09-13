@@ -127,9 +127,17 @@ En **Authentication → URL Configuration**:
 - **Site URL**: la dirección de la app del alumno.
 - **Redirect URLs**: la app del alumno **y** el panel.
 
-Y pegar las plantillas de correo en español desde
-`infra/supabase/plantillas-correo/` (**Authentication → Emails**), y dejar el
-vencimiento del enlace en 24 horas.
+### El correo no funciona de fábrica
+
+El remitente incluido **solo le escribe a las cuentas del equipo del proyecto**,
+permite 2 correos por hora y no deja editar las plantillas. A un alumno no le
+llega nada.
+
+Hay que configurar un **servidor de correo propio** en
+**Authentication → Emails → Set up SMTP**. Recién después se pueden pegar las
+plantillas en español de `infra/supabase/plantillas-correo/` y dejar el
+vencimiento del enlace en 24 horas. Paso a paso en
+[18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md).
 
 Todo el detalle, con qué pasa si falta cada cosa, está en
 [18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md).

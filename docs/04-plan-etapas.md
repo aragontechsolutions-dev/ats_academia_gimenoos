@@ -256,6 +256,22 @@ Tres problemas que aparecieron al probar el envío real.
 | Documentación de la configuración de Supabase que faltaba | ✅ |
 | Pruebas | ✅ 174 |
 
+### Etapa 2.G — El correo de fábrica no sirve para producción ✅ COMPLETADA
+
+Al probar el envío real apareció que el remitente incluido de Supabase solo le
+entrega a las cuentas del equipo del proyecto: al dueño le llegaba, a un alumno
+no le llegaría nunca.
+
+| Entregable | Estado |
+|---|---|
+| Arreglo: un 422 ya no se traduce siempre a «ya tiene cuenta» | ✅ |
+| Mensajes que nombran la causa real y qué hacer | ✅ |
+| Documentado que el SMTP propio es obligatorio, con el paso a paso | ✅ |
+
+**Queda del lado de la academia:** configurar el servidor de correo. Hasta
+entonces, el envío por WhatsApp funciona igual —no usa correo—, pero el ingreso
+desde la app no.
+
 ### Etapa 2.D — PWA del instructor ⏳ PENDIENTE
 
 App propia para los instructores, y cerrar el acceso del rol `INSTRUCTOR` al
