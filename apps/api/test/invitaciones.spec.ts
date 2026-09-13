@@ -239,3 +239,54 @@ describe('Cuentas que ya existen', () => {
     );
   });
 });
+
+describe('Entrega del acceso por enlace, para mandar por WhatsApp', () => {
+  /**
+   * El enlace es una credencial: quien lo tenga entra como esa persona. Estas
+   * pruebas verifican que quede constancia de QUE se entregó y por dónde, y que
+   * el enlace en sí no aparezca en ningún lado.
+   */
+  it('la invitación guarda el canal, pero nunca el enlace', async () => {
+    const email = `porenlace${SUFIJO}`;
+    const cliente = await prisma.cliente.create({
+      data: { nombre: 'Por', apellido: 'Enlace', email, telefono: '+598 98663201' },
+    });
+    const invitacion = await prisma.invitacion.create({
+      data: {
+        email,
+        rol: RolUsuario.CLIENTE,
+        clienteId: cliente.id,
+        enviadaAt: new Date(),
+        canal: 'ENLACE',
+      },
+    });
+
+    const guardada = await prisma.invitacion.findUniqueOrThrow({ where: { id: invitacion.id } });
+    expect(guardada.canal).toBe('ENLACE');
+
+    // Ninguna columna de texto puede estar guardando una dirección: si mañana
+    // alguien agrega un campo y mete el enlace ahí, esta prueba lo delata.
+    const comoTexto = JSON.stringify(guardada);
+    expect(comoTexto).not.toMatch(/https?:\/\//);
+    expect(comoTexto).not.toMatch(/access_token|token_hash/);
+  });
+
+  it('la base no acepta una entrega sin canal, ni un canal sin entrega', async () => {
+    const email = `incoherente${SUFIJO}`;
+    const cliente = await prisma.cliente.create({
+      data: { nombre: 'In', apellido: 'Coherente', email },
+    });
+
+    await expect(
+      prisma.invitacion.create({
+        data: { email, rol: RolUsuario.CLIENTE, clienteId: cliente.id, enviadaAt: new Date() },
+      }),
+    ).rejects.toThrow();
+
+    await expect(
+      prisma.invitacion.create({
+        data: { email, rol: RolUsuario.CLIENTE, clienteId: cliente.id, canal: 'CORREO' },
+      }),
+    ).rejects.toThrow();
+  });
+});

@@ -1,5 +1,5 @@
 import { IsEmail, IsEnum, IsOptional, IsUUID, MaxLength } from 'class-validator';
-import { EstadoInvitacion, RolUsuario } from '@prisma/client';
+import { CanalInvitacion, EstadoInvitacion, RolUsuario } from '@prisma/client';
 
 export class CrearInvitacionDto {
   /**
@@ -23,6 +23,24 @@ export class CrearInvitacionDto {
   @IsOptional()
   @IsUUID()
   instructorId?: string;
+
+  /**
+   * Por dónde se le hace llegar el acceso.
+   *
+   * `CORREO` (por defecto) hace que Supabase mande el correo. `ENLACE` devuelve
+   * el enlace una sola vez para que la academia lo mande por su cuenta, que es
+   * lo que se usa cuando la persona llegó por WhatsApp.
+   */
+  @IsOptional()
+  @IsEnum(CanalInvitacion)
+  canal?: CanalInvitacion;
+}
+
+/** Cuerpo de un reenvío: permite cambiar de canal sin crear otra invitación. */
+export class ReenviarInvitacionDto {
+  @IsOptional()
+  @IsEnum(CanalInvitacion)
+  canal?: CanalInvitacion;
 }
 
 /**
