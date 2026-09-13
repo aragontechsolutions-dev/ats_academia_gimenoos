@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Check, Clock } from 'lucide-react';
 import { obtenerServicios, type ServicioPublico } from '../lib/api';
 import { Seccion, TituloSeccion } from './ui/Seccion';
-import { destinoPrincipal } from '../lib/whatsapp';
+import { useDestinoPrincipal, useSeccion } from '../contexto/ContenidoContexto';
+import { texto } from '../lib/contenidoRemoto';
 import { clasesBoton } from './ui/Boton';
 
 const formateador = new Intl.NumberFormat('es-UY', {
@@ -44,7 +45,8 @@ function indiceDestacado(servicios: ServicioPublico[]): number {
 export function Planes() {
   const [servicios, setServicios] = useState<ServicioPublico[]>([]);
   const [cargando, setCargando] = useState(true);
-  const principal = destinoPrincipal();
+  const principal = useDestinoPrincipal();
+  const config = useSeccion('planes');
 
   useEffect(() => {
     let vigente = true;
@@ -63,9 +65,12 @@ export function Planes() {
   return (
     <Seccion id="planes">
       <TituloSeccion
-        sobretitulo="Planes"
-        titulo="Clases y precios"
-        bajada="Los precios los actualiza la academia desde su panel, así que lo que ves acá es lo que vale hoy. El valor de contado o transferencia puede diferir del de tarjeta."
+        sobretitulo={texto(config.etiqueta, 'Planes')}
+        titulo={texto(config.titulo, 'Clases y precios')}
+        bajada={texto(
+          config.bajada,
+          'Los precios los actualiza la academia desde su panel, así que lo que ves acá es lo que vale hoy. El valor de contado o transferencia puede diferir del de tarjeta.',
+        )}
       />
 
       {cargando && <p className="mt-10 text-slate-500">Cargando precios…</p>}

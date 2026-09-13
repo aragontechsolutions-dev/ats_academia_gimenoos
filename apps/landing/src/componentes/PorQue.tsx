@@ -1,5 +1,7 @@
 import { Route, ShieldCheck, UserCheck, Gauge } from 'lucide-react';
 import { porQue } from '../contenido';
+import { useSeccion } from '../contexto/ContenidoContexto';
+import { items as resolverItems, texto } from '../lib/contenidoRemoto';
 import { Seccion, TituloSeccion } from './ui/Seccion';
 
 const ICONOS = {
@@ -9,13 +11,31 @@ const ICONOS = {
   carretera: Route,
 } as const;
 
+const ORDEN_ICONOS = ['volante', 'escudo', 'instructor', 'carretera'] as const;
+
 export function PorQue() {
+  const config = useSeccion('porQue');
+  if (!config.visible) return null;
+
+  // Las tarjetas configuradas desde el panel no traen ícono: se reparten los
+  // mismos íconos del diseño en orden, que es lo que mantiene la sección
+  // reconocible sin pedirle a nadie que elija un ícono.
+  const tarjetas = resolverItems(config.items, [...porQue.tarjetas], (item, indice) => ({
+    icono: ORDEN_ICONOS[indice % ORDEN_ICONOS.length],
+    titulo: item.titulo,
+    detalle: item.detalle ?? '',
+  }));
+
   return (
     <Seccion id="por-que">
-      <TituloSeccion sobretitulo="Por qué Gimenoos" titulo={porQue.titulo} bajada={porQue.texto} />
+      <TituloSeccion
+        sobretitulo={texto(config.etiqueta, 'Por qué Gimenoos')}
+        titulo={texto(config.titulo, porQue.titulo)}
+        bajada={texto(config.bajada, porQue.texto)}
+      />
 
       <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {porQue.tarjetas.map((tarjeta, indice) => {
+        {tarjetas.map((tarjeta, indice) => {
           const Icono = ICONOS[tarjeta.icono];
           return (
             <article

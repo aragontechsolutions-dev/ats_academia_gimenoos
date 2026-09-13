@@ -87,15 +87,19 @@ bloque tiene su pantalla.
       «Consultanos el precio» en vez de un importe falso.
 - [ ] **Alumnos** → sección Alumnos, o se registran solos al crearse una cuenta.
 
-Lo único que sigue necesitando tocar código:
+Casi todo se carga desde el panel. Lo único que todavía necesita tocar código son
+las fotos y el logo:
 
-- [ ] **El número de WhatsApp** → `apps/landing/src/contenido.ts`, campo
-      `whatsapp`. **Es el dato más importante del sitio público.** Sin él no hay
-      botón flotante, ni formulario de contacto, ni CTA de WhatsApp: el sitio
-      queda sin forma de convertir una visita en una consulta.
-- [ ] **Resto del contacto** → mismo archivo: dirección, teléfono, correo,
-      horarios de atención y el enlace de Google Maps. Lo que falte, no se
+- [ ] **El número de WhatsApp** → Panel → **Sitio web** → Datos de contacto.
+      **Es el dato más importante del sitio público.** Sin él no hay botón
+      flotante, ni formulario de contacto, ni CTA de WhatsApp: el sitio queda sin
+      forma de convertir una visita en una consulta.
+- [ ] **Resto del contacto** → misma pantalla: dirección, teléfono, correo,
+      horarios de atención, enlace de Google Maps y redes. Lo que falte, no se
       muestra; no hay datos de relleno.
+- [ ] **Textos del sitio** → misma pantalla, sección por sección. Ya no hace
+      falta tocar código para cambiar un título ni para agregar una pregunta
+      frecuente.
 - [ ] **Fotos propias** de la academia, las clases y los vehículos → `galeria` y
       `vehiculos` en el mismo archivo. Las secciones aparecen solas cuando hay
       fotos. No se usan imágenes de banco: mostrar un auto que no es el de la

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { Menu, MessageCircle, X } from 'lucide-react';
 
-import { navegacion, negocio } from '../contenido';
-import { enlaceWhatsApp, destinoPrincipal } from '../lib/whatsapp';
+import { navegacion } from '../contenido';
+import { useEnlaceWhatsApp, useDestinoPrincipal, useNegocio } from '../contexto/ContenidoContexto';
 import { useSeccionActiva } from '../lib/seccionActiva';
 import { esAtajoDePanel, urlIngresoPanel } from '../lib/panel';
 import { clasesBoton } from './ui/Boton';
@@ -17,8 +17,9 @@ import { clasesBoton } from './ui/Boton';
 export function Encabezado() {
   const [bajado, setBajado] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
-  const wa = enlaceWhatsApp();
-  const principal = destinoPrincipal();
+  const negocio = useNegocio();
+  const wa = useEnlaceWhatsApp();
+  const principal = useDestinoPrincipal();
 
   // `navegacion` es una constante del módulo, pero el hook recibe un array y
   // useMemo evita volver a suscribir el listener en cada render.

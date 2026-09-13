@@ -1,6 +1,8 @@
 import { Quote } from 'lucide-react';
 import { testimonios } from '../contenido';
 import { Seccion, TituloSeccion } from './ui/Seccion';
+import { useSeccion } from '../contexto/ContenidoContexto';
+import { texto } from '../lib/contenidoRemoto';
 
 /**
  * Testimonios.
@@ -10,11 +12,17 @@ import { Seccion, TituloSeccion } from './ui/Seccion';
  * cargada, la sección simplemente no está.
  */
 export function Testimonios() {
-  if (testimonios.length === 0) return null;
+  const config = useSeccion('testimonios');
+  if (!config.visible || testimonios.length === 0) return null;
 
   return (
     <Seccion id="testimonios" oscura>
-      <TituloSeccion sobretitulo="Alumnos" titulo="Lo que cuentan quienes ya manejan" claro />
+      <TituloSeccion
+        sobretitulo={texto(config.etiqueta, 'Alumnos')}
+        titulo={texto(config.titulo, 'Lo que cuentan quienes ya manejan')}
+        bajada={config.bajada ?? undefined}
+        claro
+      />
 
       <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {testimonios.map((testimonio, indice) => (

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Encabezado } from './componentes/Encabezado';
 import { Hero } from './componentes/Hero';
 import { BarraConfianza } from './componentes/BarraConfianza';
@@ -12,21 +12,66 @@ import { Instructores } from './componentes/Instructores';
 import { Testimonios } from './componentes/Testimonios';
 import { Galeria } from './componentes/Galeria';
 import { Ubicacion } from './componentes/Ubicacion';
-import { Contacto } from './componentes/Contacto';
 import { Preguntas } from './componentes/Preguntas';
+import { Contacto } from './componentes/Contacto';
 import { CtaFinal } from './componentes/CtaFinal';
 import { PieDePagina } from './componentes/PieDePagina';
 import { BotonWhatsApp } from './componentes/BotonWhatsApp';
 import { observarEntradas } from './lib/animacion';
+import { ProveedorContenido, useOrdenSecciones } from './contexto/ContenidoContexto';
 
 /**
- * Orden de la página: primero convencer, después informar, y el precio recién
- * cuando ya se entendió qué se está comprando.
+ * Secciones de contenido, en su orden por defecto.
  *
- * Vehiculos, Instructores, Testimonios y Galeria se renderizan solas o no según
- * haya datos reales cargados: no hay secciones vacías ni contenido de relleno.
+ * El hero va aparte y siempre primero: es la apertura de la página, no una
+ * sección más. El resto se puede reordenar desde el panel.
  */
-export function App() {
+const SECCIONES: Array<{ clave: string; elemento: ReactNode }> = [
+  { clave: 'beneficios', elemento: <BarraConfianza /> },
+  { clave: 'porQue', elemento: <PorQue /> },
+  { clave: 'modalidades', elemento: <Modalidades /> },
+  { clave: 'proceso', elemento: <Proceso /> },
+  { clave: 'vehiculos', elemento: <Vehiculos /> },
+  { clave: 'planes', elemento: <Planes /> },
+  { clave: 'tramite', elemento: <Tramite /> },
+  { clave: 'instructores', elemento: <Instructores /> },
+  { clave: 'testimonios', elemento: <Testimonios /> },
+  { clave: 'galeria', elemento: <Galeria /> },
+  { clave: 'ubicacion', elemento: <Ubicacion /> },
+  { clave: 'preguntas', elemento: <Preguntas /> },
+  { clave: 'contacto', elemento: <Contacto /> },
+];
+
+/**
+ * Cada sección decide sola si se dibuja: las que dependen de fotos reales
+ * (vehículos, instructores, testimonios, galería) devuelven null mientras no
+ * haya datos cargados, y todas devuelven null si se las ocultó desde el panel.
+ */
+function Secciones() {
+  const orden = useOrdenSecciones();
+
+  // La API devuelve el orden de TODAS las secciones, así que o vienen todas o no
+  // viene ninguna (API caída). Por eso alcanza con caer a la posición de esta
+  // lista: nunca se mezclan las dos numeraciones. Esta lista tiene que quedar en
+  // el mismo orden que SECCIONES_LANDING en la API.
+  const ordenadas = SECCIONES.map((seccion, indice) => ({
+    ...seccion,
+    posicion: orden[seccion.clave] ?? indice,
+  })).sort((a, b) => a.posicion - b.posicion);
+
+  return (
+    <>
+      {ordenadas.map((seccion) => (
+        <div key={seccion.clave}>{seccion.elemento}</div>
+      ))}
+    </>
+  );
+}
+
+function Pagina() {
+  // Se vuelve a observar cuando cambia el contenido remoto: las secciones que
+  // llegan después del primer render traen bloques animados que, sin esto,
+  // nacerían invisibles.
   useEffect(() => observarEntradas(), []);
 
   return (
@@ -40,23 +85,19 @@ export function App() {
       <Encabezado />
       <main id="contenido">
         <Hero />
-        <BarraConfianza />
-        <PorQue />
-        <Modalidades />
-        <Proceso />
-        <Vehiculos />
-        <Planes />
-        <Tramite />
-        <Instructores />
-        <Testimonios />
-        <Galeria />
-        <Ubicacion />
-        <Preguntas />
-        <Contacto />
+        <Secciones />
         <CtaFinal />
       </main>
       <PieDePagina />
       <BotonWhatsApp />
     </>
+  );
+}
+
+export function App() {
+  return (
+    <ProveedorContenido>
+      <Pagina />
+    </ProveedorContenido>
   );
 }

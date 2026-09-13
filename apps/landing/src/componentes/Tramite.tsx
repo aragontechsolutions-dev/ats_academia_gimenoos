@@ -1,11 +1,24 @@
 import { ExternalLink, FileText, Info } from 'lucide-react';
 import { tramite } from '../contenido';
+import { useSeccion } from '../contexto/ContenidoContexto';
+import { items as resolverItems, texto } from '../lib/contenidoRemoto';
 import { Seccion, TituloSeccion } from './ui/Seccion';
 
 export function Tramite() {
+  const config = useSeccion('tramite');
+  if (!config.visible) return null;
+
+  // Los requisitos del trámite son una lista de frases: se toma el título de
+  // cada ítem y se ignora el detalle.
+  const requisitos = resolverItems(config.items, [...tramite.requisitos], (item) => item.titulo);
+
   return (
     <Seccion id="tramite" className="bg-slate-50">
-      <TituloSeccion sobretitulo="Libreta" titulo={tramite.titulo} bajada={tramite.introduccion} />
+      <TituloSeccion
+        sobretitulo={texto(config.etiqueta, 'Libreta')}
+        titulo={texto(config.titulo, tramite.titulo)}
+        bajada={texto(config.bajada, tramite.introduccion)}
+      />
 
       <div className="mt-12 grid gap-6 lg:grid-cols-5">
         <div className="aparece rounded-2xl border border-slate-200 bg-white p-7 lg:col-span-3">
@@ -14,7 +27,7 @@ export function Tramite() {
             Qué necesitás
           </h3>
           <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-            {tramite.requisitos.map((requisito) => (
+            {requisitos.map((requisito) => (
               <li key={requisito} className="flex items-start gap-2 text-sm text-slate-700">
                 <span
                   aria-hidden="true"

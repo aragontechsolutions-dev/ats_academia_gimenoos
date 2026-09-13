@@ -1,7 +1,9 @@
 import { Facebook, Instagram, Mail, MapPin, Phone } from 'lucide-react';
-import { legal, navegacion, negocio } from '../contenido';
+import { legal, navegacion } from '../contenido';
+import { useNegocio } from '../contexto/ContenidoContexto';
 
 export function PieDePagina() {
+  const negocio = useNegocio();
   const redes = [
     { url: negocio.instagram, Icono: Instagram, nombre: 'Instagram' },
     { url: negocio.facebook, Icono: Facebook, nombre: 'Facebook' },

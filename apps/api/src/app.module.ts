@@ -19,6 +19,7 @@ import { AgendaModule } from './modules/agenda/agenda.module';
 import { InstructoresModule } from './modules/instructores/instructores.module';
 import { VehiculosModule } from './modules/vehiculos/vehiculos.module';
 import { ClientesModule } from './modules/clientes/clientes.module';
+import { LandingModule } from './modules/landing/landing.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ClientesModule } from './modules/clientes/clientes.module';
     InstructoresModule,
     VehiculosModule,
     ClientesModule,
+    LandingModule,
   ],
   providers: [
     // El orden importa: primero se limita la tasa, luego se autentica, luego se autoriza.

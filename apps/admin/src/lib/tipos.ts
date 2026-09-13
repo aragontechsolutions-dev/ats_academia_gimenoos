@@ -140,10 +140,55 @@ export const ETIQUETA_ESTADO: Record<EstadoReserva, string> = {
   AUSENTE: 'No asistió',
 };
 
+/**
+ * Colores de la agenda.
+ *
+ * El rojo está reservado para AUSENTE, que es el único estado que señala un
+ * problema. CONFIRMADA no usa el rojo de la marca aunque sea el color del
+ * sistema: al pasar la paleta del panel de azul a rojo, una clase confirmada y
+ * un alumno que no se presentó quedaban del mismo color, y son los dos
+ * desenlaces más opuestos que puede tener una clase.
+ */
 export const COLOR_ESTADO: Record<EstadoReserva, string> = {
-  PENDIENTE: 'bg-amber-100 text-amber-800 border-amber-300',
-  CONFIRMADA: 'bg-marca-100 text-marca-900 border-marca-600',
-  COMPLETADA: 'bg-green-100 text-green-800 border-green-300',
+  PENDIENTE: 'bg-amber-100 text-amber-900 border-amber-400',
+  CONFIRMADA: 'bg-sky-100 text-sky-900 border-sky-500',
+  COMPLETADA: 'bg-green-100 text-green-900 border-green-500',
   CANCELADA: 'bg-slate-100 text-slate-500 border-slate-300 line-through',
-  AUSENTE: 'bg-red-100 text-red-800 border-red-300',
+  AUSENTE: 'bg-red-100 text-red-900 border-red-500',
 };
+
+// --- Sitio público ---------------------------------------------------------
+
+export interface ItemSeccion {
+  titulo: string;
+  detalle?: string;
+}
+
+export interface SeccionLanding {
+  clave: string;
+  nombre: string;
+  admiteItems: boolean;
+  visible: boolean;
+  orden: number;
+  titulo: string | null;
+  bajada: string | null;
+  etiqueta: string | null;
+  accion: string | null;
+  items: ItemSeccion[];
+  /** true si alguien ya guardó contenido propio para esta sección. */
+  personalizada: boolean;
+}
+
+export interface NegocioLanding {
+  nombre: string;
+  direccion: string | null;
+  ciudad: string;
+  departamento: string;
+  telefono: string | null;
+  whatsapp: string | null;
+  email: string | null;
+  horarios: string | null;
+  mapaUrl: string | null;
+  instagram: string | null;
+  facebook: string | null;
+}

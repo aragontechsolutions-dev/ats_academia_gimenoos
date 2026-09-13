@@ -1,19 +1,28 @@
 import { Bike, Car, Check } from 'lucide-react';
 import { modalidades, opciones } from '../contenido';
 import { Seccion, TituloSeccion } from './ui/Seccion';
-import { destinoPrincipal } from '../lib/whatsapp';
+import { useDestinoPrincipal, useSeccion } from '../contexto/ContenidoContexto';
+import { items as resolverItems, texto } from '../lib/contenidoRemoto';
 
 const ICONOS_MODALIDAD = { auto: Car, moto: Bike } as const;
 
 export function Modalidades() {
-  const principal = destinoPrincipal();
+  const principal = useDestinoPrincipal();
+  const config = useSeccion('modalidades');
+  const configOpciones = useSeccion('opciones');
+  if (!config.visible) return null;
+
+  const listaOpciones = resolverItems(configOpciones.items, [...opciones], (item) => ({
+    titulo: item.titulo,
+    detalle: item.detalle ?? '',
+  }));
 
   return (
     <Seccion id="clases" className="bg-slate-50">
       <TituloSeccion
-        sobretitulo="Clases"
-        titulo="Moto y auto, desde cero o para mejorar"
-        bajada="Elegí con qué querés empezar. Los vehículos los pone la academia."
+        sobretitulo={texto(config.etiqueta, 'Clases')}
+        titulo={texto(config.titulo, 'Moto y auto, desde cero o para mejorar')}
+        bajada={texto(config.bajada, 'Elegí con qué querés empezar. Los vehículos los pone la academia.')}
       />
 
       <div className="mt-12 grid gap-6 lg:grid-cols-2">
@@ -51,10 +60,10 @@ export function Modalidades() {
 
       <div className="mt-14">
         <h3 className="aparece text-xl font-bold text-carbon-950">
-          Encontrá la opción que necesitás
+          {texto(configOpciones.titulo, 'Encontrá la opción que necesitás')}
         </h3>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {opciones.map((opcion, indice) => (
+          {listaOpciones.map((opcion, indice) => (
             <article
               key={opcion.titulo}
               className="aparece flex flex-col rounded-xl border border-slate-200 bg-white p-5"

@@ -1,11 +1,33 @@
 @import 'tailwindcss';
 
+/*
+  El panel comparte la identidad del sitio público: mismo rojo, mismo amarillo,
+  mismos negros. Quien atiende la academia pasa de una pantalla a la otra, y dos
+  paletas distintas hacen que parezcan dos sistemas.
+
+  Los tokens se llaman igual que en la landing (`marca-*`, `acento-*`,
+  `carbon-*`), así una clase copiada de un lado funciona igual del otro.
+
+  Contraste verificado: blanco sobre marca-600 da 6.30 y rojo marca-600 sobre
+  blanco también 6.30, los dos por encima del 4.5 que pide el criterio AA. El
+  amarillo solo se usa como marca de sección activa sobre fondo oscuro (12.31),
+  nunca como fondo de texto claro.
+*/
 @theme {
-  --color-marca-50: #eff6ff;
-  --color-marca-100: #dbeafe;
-  --color-marca-600: #1d4ed8;
-  --color-marca-700: #1e40af;
-  --color-marca-900: #172554;
+  --color-marca-50: #fef2f3;
+  --color-marca-100: #fee2e4;
+  --color-marca-200: #fbc9ce;
+  --color-marca-500: #d90429;
+  --color-marca-600: #c20325;
+  --color-marca-700: #a50220;
+  --color-marca-900: #8d001c;
+
+  --color-acento-400: #ffc400;
+  --color-acento-500: #ff7a00;
+
+  --color-carbon-950: #0b0b0d;
+  --color-carbon-900: #1b1d21;
+  --color-carbon-800: #2a2d33;
 }
 
 body {

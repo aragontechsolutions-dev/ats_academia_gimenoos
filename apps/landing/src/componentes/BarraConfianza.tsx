@@ -1,4 +1,6 @@
 import { beneficios } from '../contenido';
+import { useSeccion } from '../contexto/ContenidoContexto';
+import { items as resolverItems } from '../lib/contenidoRemoto';
 
 /**
  * Barra de confianza con beneficios, no con cifras.
@@ -8,10 +10,18 @@ import { beneficios } from '../contenido';
  * confianza que la sección busca construir.
  */
 export function BarraConfianza() {
+  const config = useSeccion('beneficios');
+  if (!config.visible) return null;
+
+  const lista = resolverItems(config.items, [...beneficios], (item) => ({
+    titulo: item.titulo,
+    detalle: item.detalle ?? '',
+  }));
+
   return (
     <section className="border-b border-slate-200 bg-white">
       <ul className="mx-auto grid max-w-6xl grid-cols-2 gap-px overflow-hidden px-4 py-8 sm:gap-8 lg:grid-cols-4">
-        {beneficios.map((beneficio, indice) => (
+        {lista.map((beneficio, indice) => (
           <li
             key={beneficio.titulo}
             className="aparece px-2 py-3 sm:px-0"

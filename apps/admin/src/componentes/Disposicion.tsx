@@ -8,6 +8,7 @@ const SECCIONES = [
   { ruta: '/instructores', texto: 'Instructores', exacto: false, soloAdmin: true },
   { ruta: '/vehiculos', texto: 'Vehículos', exacto: false, soloAdmin: true },
   { ruta: '/servicios', texto: 'Precios', exacto: false, soloAdmin: true },
+  { ruta: '/sitio', texto: 'Sitio web', exacto: false, soloAdmin: true },
 ];
 
 export function Disposicion({ children }: { children: ReactNode }) {
@@ -25,12 +26,22 @@ export function Disposicion({ children }: { children: ReactNode }) {
           end={seccion.exacto}
           onClick={() => setMenuAbierto(false)}
           className={({ isActive }) =>
-            `block py-2 text-sm md:py-0 ${
-              isActive ? 'font-semibold text-marca-600' : 'text-slate-600 hover:text-slate-900'
+            `relative block py-2 text-sm transition md:py-0 ${
+              isActive ? 'font-semibold text-white' : 'text-slate-300 hover:text-acento-400'
             }`
           }
         >
-          {seccion.texto}
+          {({ isActive }) => (
+            <>
+              {seccion.texto}
+              <span
+                aria-hidden="true"
+                className={`absolute -bottom-0.5 left-0 h-0.5 w-full origin-left rounded-full bg-acento-400 transition-transform duration-300 ${
+                  isActive ? 'scale-x-100' : 'scale-x-0'
+                }`}
+              />
+            </>
+          )}
         </NavLink>
       ))}
     </>
@@ -38,26 +49,33 @@ export function Disposicion({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="bg-carbon-950 text-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <span className="font-bold text-marca-900">Gimenoos</span>
+          {/* El mismo logotipo que el sitio público: la academia es una sola. */}
+          <span className="flex items-baseline gap-1 text-lg font-extrabold tracking-tight">
+            GIMENOOS
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-marca-500" />
+            <span className="ml-2 hidden text-xs font-medium uppercase tracking-widest text-slate-400 sm:inline">
+              Panel
+            </span>
+          </span>
 
           <nav className="hidden flex-1 gap-6 md:flex" aria-label="Secciones del panel">
             {enlaces}
           </nav>
 
           <div className="flex items-center gap-3 text-sm">
-            {perfil && <span className="hidden text-slate-500 lg:inline">{perfil.email}</span>}
+            {perfil && <span className="hidden text-slate-400 lg:inline">{perfil.email}</span>}
             <button
               type="button"
               onClick={() => void cerrarSesion()}
-              className="rounded border border-slate-300 px-3 py-1.5 text-slate-700 hover:border-slate-400"
+              className="rounded-lg border border-white/25 px-3 py-1.5 text-white transition hover:border-white hover:bg-white/10"
             >
               Salir
             </button>
             <button
               type="button"
-              className="rounded p-1 text-slate-600 md:hidden"
+              className="rounded p-1 text-white md:hidden"
               aria-expanded={menuAbierto}
               onClick={() => setMenuAbierto((abierto) => !abierto)}
             >
@@ -75,7 +93,7 @@ export function Disposicion({ children }: { children: ReactNode }) {
         </div>
 
         {menuAbierto && (
-          <nav className="border-t border-slate-200 px-4 py-2 md:hidden" aria-label="Secciones">
+          <nav className="border-t border-white/10 px-4 py-2 md:hidden" aria-label="Secciones">
             {enlaces}
           </nav>
         )}
