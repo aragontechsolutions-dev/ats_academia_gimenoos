@@ -157,7 +157,8 @@ Antes de dar por terminada cualquier funcionalidad:
 | Rate limiting | ✅ Implementado |
 | Validación de entorno | ✅ Implementado |
 | Integridad en la base (EXCLUDE + CHECK) | ✅ Implementado y probado |
+| Verificación de pertenencia en agenda (anti-IDOR) | ✅ Implementado y probado |
 | RLS de Storage | 📄 SQL escrito, pendiente de aplicar en Supabase |
-| Registro de auditoría | 🟡 Tabla creada, servicio pendiente (Etapa 1) |
+| Registro de auditoría | ✅ Conectado a reservas, instructores, vehículos y precios |
 | Seguridad de pagos | ⬜ Etapa 2 |
 | Cifrado de campos sensibles en reposo | ⬜ A evaluar en Etapa 3 |
