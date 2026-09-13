@@ -114,9 +114,14 @@ las fotos y el logo:
          la app del alumno, y *Redirect URLs* con la app **y** el panel. De
          fábrica el Site URL es `http://localhost:3000`, que es adonde llevaba
          el primer enlace de prueba.
-      2. **Authentication → Emails**: pegar `invitacion.html` en *Invite user* y
-         `ingreso.html` en *Magic Link*, desde
-         `infra/supabase/plantillas-correo/`. Los de fábrica están en inglés.
+      2. **Configurar un servidor de correo propio (SMTP)**, en
+         *Authentication → Emails → Set up SMTP*. **Esto no es opcional:** el
+         remitente que trae Supabase solo le escribe a las cuentas del equipo
+         del proyecto, así que a un alumno no le llega nada; permite 2 correos
+         por hora; y sin SMTP propio no deja editar las plantillas. Con plan
+         gratuito de cualquier proveedor alcanza de sobra. Recién después, pegar
+         `invitacion.html` en *Invite user* y `ingreso.html` en *Magic Link*,
+         desde `infra/supabase/plantillas-correo/`.
       3. Dejar el **vencimiento del enlace en 24 horas**.
 
       Y en Render: `ADMIN_INICIAL_EMAIL`, `APP_ALUMNO_URL` y `APP_PANEL_URL`.
