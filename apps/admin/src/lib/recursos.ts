@@ -2,7 +2,7 @@
 import { llamarApi } from './api';
 import type {
   Cliente, FichaCliente, Excepcion, Franja, Hueco, Instructor, Reserva, Servicio, TipoVehiculo,
-  Vehiculo, EstadoReserva, SeccionLanding, NegocioLanding,
+  Vehiculo, EstadoReserva, SeccionLanding, NegocioLanding, Graduado,
 } from './tipos';
 
 const query = (parametros: Record<string, string | number | boolean | undefined>): string => {
@@ -181,4 +181,23 @@ export const sitio = {
       method: 'PATCH',
       body: JSON.stringify(cuerpo),
     }),
+};
+
+// --- Egresados -------------------------------------------------------------
+
+export const graduados = {
+  listar: (p: { anio?: number; sinAutorizacion?: boolean } = {}) =>
+    llamarApi<Graduado[]>(`/graduados${query({ anio: p.anio, sinAutorizacion: p.sinAutorizacion })}`),
+
+  crear: (cuerpo: Record<string, unknown>) =>
+    llamarApi<Graduado>('/graduados', { method: 'POST', body: JSON.stringify(cuerpo) }),
+
+  actualizar: (id: string, cuerpo: Record<string, unknown>) =>
+    llamarApi<Graduado>(`/graduados/${id}`, { method: 'PATCH', body: JSON.stringify(cuerpo) }),
+
+  retirarAutorizacion: (id: string) =>
+    llamarApi<Graduado>(`/graduados/${id}/retirar-autorizacion`, { method: 'POST' }),
+
+  eliminar: (id: string) =>
+    llamarApi<{ eliminado: boolean }>(`/graduados/${id}`, { method: 'DELETE' }),
 };

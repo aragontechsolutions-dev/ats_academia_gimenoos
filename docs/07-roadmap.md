@@ -100,6 +100,9 @@ las fotos y el logo:
 - [ ] **Textos del sitio** → misma pantalla, sección por sección. Ya no hace
       falta tocar código para cambiar un título ni para agregar una pregunta
       frecuente.
+- [ ] **Imprimir el formulario de autorización** ([`16-autorizacion-imagen.md`](16-autorizacion-imagen.md))
+      y hacerlo firmar a cada egresado antes de publicar su foto. Conviene que lo
+      revise un abogado antes de usarlo, sobre todo la parte de menores.
 - [ ] **Fotos propias** de la academia, las clases y los vehículos → `galeria` y
       `vehiculos` en el mismo archivo. Las secciones aparecen solas cuando hay
       fotos. No se usan imágenes de banco: mostrar un auto que no es el de la

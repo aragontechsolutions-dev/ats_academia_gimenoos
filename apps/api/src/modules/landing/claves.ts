@@ -1,39 +1,30 @@
+import definicion from '@gimenoos/shared/secciones-landing.json';
+
 /**
- * Secciones del sitio público que se pueden configurar desde el panel.
+ * Secciones configurables del sitio.
  *
- * La lista es cerrada a propósito: la API rechaza cualquier clave que no esté
- * acá. Si fuera abierta, un error de tipeo crearía una sección fantasma que el
- * sitio nunca lee y que nadie encuentra después para borrar.
+ * La lista vive en `packages/shared/secciones-landing.json`, compartida con el
+ * sitio: el orden por defecto tiene que ser el mismo en los dos lados y una
+ * lista duplicada se desincroniza sola. Ya pasó una vez —el formulario de
+ * contacto apareció antes que las preguntas frecuentes— y el síntoma es una
+ * página desordenada, sin ningún error que lo delate.
  *
- * El orden de esta lista es el orden por defecto de las secciones en el sitio.
+ * Acá se le ponen los tipos; el dato es uno solo.
  */
-export const SECCIONES_LANDING = [
-  { clave: 'hero', nombre: 'Portada', items: false },
-  { clave: 'beneficios', nombre: 'Barra de confianza', items: true },
-  { clave: 'porQue', nombre: 'Por qué Gimenoos', items: true },
-  { clave: 'modalidades', nombre: 'Clases de moto y auto', items: false },
-  { clave: 'opciones', nombre: 'Opciones dentro de las clases', items: true },
-  { clave: 'proceso', nombre: 'Cómo funciona', items: true },
-  { clave: 'vehiculos', nombre: 'Vehículos', items: false },
-  { clave: 'planes', nombre: 'Planes y precios', items: false },
-  { clave: 'tramite', nombre: 'Trámite de la libreta', items: true },
-  { clave: 'instructores', nombre: 'Instructores', items: false },
-  { clave: 'testimonios', nombre: 'Testimonios', items: false },
-  { clave: 'galeria', nombre: 'Galería', items: false },
-  { clave: 'ubicacion', nombre: 'Dónde estamos', items: false },
-  // Las preguntas van antes del formulario: se responden las objeciones y
-  // recién ahí se pide el contacto. Este orden tiene que coincidir con el de
-  // `SECCIONES` en apps/landing/src/App.tsx, que es el respaldo si la API cae.
-  { clave: 'preguntas', nombre: 'Preguntas frecuentes', items: true },
-  { clave: 'contacto', nombre: 'Contacto', items: false },
-  { clave: 'ctaFinal', nombre: 'Llamada final a la acción', items: false },
-] as const;
+export interface DefinicionSeccion {
+  clave: string;
+  nombre: string;
+  /** Si la sección admite una lista de ítems editables. */
+  items: boolean;
+  /** Si el sitio la dibuja como un bloque propio y participa del orden. */
+  enElSitio: boolean;
+}
 
-export type ClaveSeccion = (typeof SECCIONES_LANDING)[number]['clave'];
+export const SECCIONES_LANDING: readonly DefinicionSeccion[] = definicion.secciones;
 
-const CLAVES = new Set<string>(SECCIONES_LANDING.map((seccion) => seccion.clave));
+const CLAVES: ReadonlySet<string> = new Set(SECCIONES_LANDING.map((seccion) => seccion.clave));
 
-export function esClaveValida(clave: string): clave is ClaveSeccion {
+export function esClaveValida(clave: string): boolean {
   return CLAVES.has(clave);
 }
 

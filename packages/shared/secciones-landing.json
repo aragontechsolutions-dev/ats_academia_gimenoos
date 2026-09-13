@@ -1,0 +1,36 @@
+{
+  "_comentario": [
+    "Secciones configurables del sitio publico. Es la UNICA lista: la leen la API",
+    "(para validar claves y fijar el orden por defecto) y el sitio (para saber en",
+    "que orden dibujar los bloques si la API no responde).",
+    "",
+    "Es un JSON y no un modulo TypeScript a proposito. Lo consumen cuatro runtimes",
+    "distintos -Vite, tsc, ts-node y Jest- y un modulo TS con sintaxis ESM se",
+    "comporta distinto en cada uno: con extension .js falla Jest, sin extension",
+    "falla Node, y Node ademas reclasifica el archivo como ESM por su sintaxis sin",
+    "importar el campo type. Un JSON no tiene ese problema en ningun lado.",
+    "",
+    "El ORDEN de este archivo es el orden por defecto de las secciones en la pagina.",
+    "enElSitio: false marca las que se editan pero no se dibujan como bloque propio",
+    "(opciones va dentro de las clases; hero y ctaFinal tienen posicion fija)."
+  ],
+  "secciones": [
+    { "clave": "hero", "nombre": "Portada", "items": false, "enElSitio": false },
+    { "clave": "beneficios", "nombre": "Barra de confianza", "items": true, "enElSitio": true },
+    { "clave": "porQue", "nombre": "Por qué Gimenoos", "items": true, "enElSitio": true },
+    { "clave": "modalidades", "nombre": "Clases de moto y auto", "items": false, "enElSitio": true },
+    { "clave": "opciones", "nombre": "Opciones dentro de las clases", "items": true, "enElSitio": false },
+    { "clave": "proceso", "nombre": "Cómo funciona", "items": true, "enElSitio": true },
+    { "clave": "vehiculos", "nombre": "Vehículos", "items": false, "enElSitio": true },
+    { "clave": "planes", "nombre": "Planes y precios", "items": false, "enElSitio": true },
+    { "clave": "tramite", "nombre": "Trámite de la libreta", "items": true, "enElSitio": true },
+    { "clave": "instructores", "nombre": "Instructores", "items": false, "enElSitio": true },
+    { "clave": "graduados", "nombre": "Egresados", "items": false, "enElSitio": true },
+    { "clave": "testimonios", "nombre": "Testimonios", "items": false, "enElSitio": true },
+    { "clave": "galeria", "nombre": "Galería", "items": false, "enElSitio": true },
+    { "clave": "ubicacion", "nombre": "Dónde estamos", "items": false, "enElSitio": true },
+    { "clave": "preguntas", "nombre": "Preguntas frecuentes", "items": true, "enElSitio": true },
+    { "clave": "contacto", "nombre": "Contacto", "items": false, "enElSitio": true },
+    { "clave": "ctaFinal", "nombre": "Llamada final a la acción", "items": false, "enElSitio": false }
+  ]
+}

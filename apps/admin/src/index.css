@@ -33,3 +33,21 @@
 body {
   @apply bg-slate-50 text-slate-800 antialiased;
 }
+
+/* --- Impresión del diploma --------------------------------------------------
+   Al imprimir solo tiene que salir el diploma: sin la barra del panel, sin los
+   botones y sin fondo gris, que en papel se ve como una mancha y gasta tinta. */
+@media print {
+  .no-imprimir {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+  }
+
+  .diploma {
+    max-width: none;
+    padding: 0;
+  }
+}

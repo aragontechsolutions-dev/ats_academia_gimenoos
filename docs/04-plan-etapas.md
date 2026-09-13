@@ -135,6 +135,25 @@ Detalle en [`13-landing.md`](13-landing.md).
 
 Detalle en [`14-contenido-editable.md`](14-contenido-editable.md).
 
+### Etapa 1.G — Diploma de egresado y galería de graduados ✅ COMPLETADA
+
+| Entregable | Estado |
+|---|---|
+| Diploma imprimible, sin datos sensibles | ✅ |
+| Código de verificación y página pública para comprobarlo | ✅ |
+| Sin autorización firmada no se publica (garantizado por la base) | ✅ |
+| Autorización de tutor para menores de 18 | ✅ |
+| Retiro de permiso y borrado (derecho de supresión) | ✅ |
+| Galería en la portada y página histórica con filtro por año | ✅ |
+| Paginado de 10 por defecto, con 20, 50 y 100 | ✅ |
+| Formulario de autorización para imprimir | ✅ |
+| Pruebas | ✅ 103 + recorrido en navegador de punta a punta |
+
+Detalle en [`15-graduados-y-diploma.md`](15-graduados-y-diploma.md) y el
+formulario en [`16-autorizacion-imagen.md`](16-autorizacion-imagen.md).
+
+**Pendiente:** la carga de fotos a Storage.
+
 **Con esto cierra la Etapa 1 completa.**
 
 ## Etapa 2 — Pagos

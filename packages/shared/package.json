@@ -2,12 +2,12 @@
   "name": "@gimenoos/shared",
   "version": "0.1.0",
   "private": true,
-  "description": "Tipos, enums y contratos compartidos entre la API y los frontends",
-  "type": "module",
+  "description": "Tipos, enums y contratos compartidos entre la API y los frontends. Se publica como TypeScript crudo y sin \"type\": \"module\": lo consumen Vite, tsc, ts-node y Jest, y declararlo como modulo ESM hace que Node exija extensiones .js que ni Jest ni la resolucion CommonJS entienden.",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./secciones-landing.json": "./secciones-landing.json"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -15,5 +15,9 @@
   },
   "devDependencies": {
     "typescript": "^5.7.3"
-  }
+  },
+  "files": [
+    "src",
+    "secciones-landing.json"
+  ]
 }

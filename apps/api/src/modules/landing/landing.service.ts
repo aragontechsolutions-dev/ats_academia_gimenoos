@@ -3,7 +3,7 @@ import type { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
-import { SECCIONES_LANDING, ordenPorDefecto, type ClaveSeccion } from './claves';
+import { SECCIONES_LANDING, ordenPorDefecto } from './claves';
 import type { ActualizarSeccionDto } from './dto/seccion.dto';
 import type { ActualizarNegocioDto } from './dto/negocio.dto';
 
@@ -103,7 +103,7 @@ export class LandingService {
     }).sort((a, b) => a.orden - b.orden);
   }
 
-  async actualizarSeccion(clave: ClaveSeccion, dto: ActualizarSeccionDto, usuarioId: string) {
+  async actualizarSeccion(clave: string, dto: ActualizarSeccionDto, usuarioId: string) {
     // Una cadena vacía significa "volver al texto por defecto del sitio", que en
     // la base se representa como null. Guardar "" en su lugar dejaría la sección
     // con un encabezado en blanco, que es justo lo que nadie quiere.
