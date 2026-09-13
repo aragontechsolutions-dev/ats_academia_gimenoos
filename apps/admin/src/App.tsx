@@ -11,6 +11,7 @@ import { Vehiculos } from './paginas/Vehiculos';
 import { Servicios } from './paginas/Servicios';
 import { Sitio } from './paginas/Sitio';
 import { Graduados } from './paginas/Graduados';
+import { Cuentas } from './paginas/Cuentas';
 
 /** Envuelve una página con el guard de rol y la disposición del panel. */
 function Pagina({
@@ -59,6 +60,10 @@ export function App() {
           <Route
             path="/sitio"
             element={<Pagina rolesPermitidos={['ADMIN']}><Sitio /></Pagina>}
+          />
+          <Route
+            path="/cuentas"
+            element={<Pagina rolesPermitidos={['ADMIN']}><Cuentas /></Pagina>}
           />
 
           <Route path="*" element={<Pagina><Agenda /></Pagina>} />

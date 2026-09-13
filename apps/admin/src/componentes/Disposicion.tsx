@@ -10,6 +10,7 @@ const SECCIONES = [
   { ruta: '/servicios', texto: 'Precios', exacto: false, soloAdmin: true },
   { ruta: '/graduados', texto: 'Egresados', exacto: false, soloAdmin: true },
   { ruta: '/sitio', texto: 'Sitio web', exacto: false, soloAdmin: true },
+  { ruta: '/cuentas', texto: 'Cuentas', exacto: false, soloAdmin: true },
 ];
 
 export function Disposicion({ children }: { children: ReactNode }) {

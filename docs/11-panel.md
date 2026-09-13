@@ -13,6 +13,7 @@ Aplicación: `apps/admin` · Roles que entran: `ADMIN` e `INSTRUCTOR`
 | **Instructores** | solo admin | Alta, horarios semanales y licencias |
 | **Vehículos** | solo admin | Alta, foto, estado y vencimiento del SOA |
 | **Precios** | solo admin | Catálogo de servicios y sus dos precios |
+| **Cuentas** | solo admin | Quién puede entrar, con qué permisos, e invitaciones sin usar |
 
 El instructor ve la agenda y los alumnos porque los necesita para dar clase. La
 configuración de la academia es del administrador.
@@ -207,3 +208,18 @@ vehículo va por `PATCH /vehiculos/:id/foto` y no por el PATCH de la ficha.
 `PATCH /vehiculos/:id` reemplaza la ficha entera —lo que no viene se guarda en
 null—, así que mandar solo la foto desde el listado habría borrado la marca, el
 modelo y el SOA del vehículo.
+
+
+---
+
+## Cuentas
+
+Quién puede entrar al sistema. Está documentada en
+[18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md), junto con el resto
+del control de acceso.
+
+Lo que conviene saber acá: **nadie entra si la academia no lo invitó**, ni
+siquiera con un token válido de Supabase, y la API impide tres cosas que dejarían
+al sistema sin forma de entrar —tocarse la propia cuenta, sacar al último
+administrador activo, y ascender a administrador a alguien con ficha de alumno o
+instructor—.

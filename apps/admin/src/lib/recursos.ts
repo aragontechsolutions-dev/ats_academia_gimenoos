@@ -4,6 +4,7 @@ import type { Pagina } from '../componentes/ui/Paginacion';
 import type {
   Cliente, FichaCliente, Excepcion, Franja, Hueco, Instructor, Reserva, Servicio, TipoVehiculo,
   Vehiculo, EstadoReserva, SeccionLanding, NegocioLanding, Graduado, Invitacion,
+  CuentaUsuario, Rol, EstadoInvitacion,
 } from './tipos';
 
 const query = (parametros: Record<string, string | number | boolean | undefined>): string => {
@@ -148,9 +149,27 @@ export const vehiculos = {
     }),
 };
 
+// --- Cuentas ---------------------------------------------------------------
+
+export const usuarios = {
+  listar: (p: {
+    rol?: Rol;
+    incluirInactivos?: boolean;
+    q?: string;
+    pagina?: number;
+    porPagina?: number;
+  } = {}) => llamarApi<Pagina<CuentaUsuario>>(`/usuarios${query({ ...p })}`),
+
+  actualizar: (id: string, cuerpo: { rol?: Rol; activo?: boolean }) =>
+    llamarApi<CuentaUsuario>(`/usuarios/${id}`, { method: 'PATCH', body: JSON.stringify(cuerpo) }),
+};
+
 // --- Invitaciones ----------------------------------------------------------
 
 export const invitaciones = {
+  listar: (p: { clienteId?: string; instructorId?: string; estado?: EstadoInvitacion } = {}) =>
+    llamarApi<Invitacion[]>(`/invitaciones${query({ ...p })}`),
+
   deCliente: (clienteId: string) =>
     llamarApi<Invitacion[]>(`/invitaciones${query({ clienteId })}`),
 

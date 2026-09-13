@@ -1,5 +1,5 @@
 import { IsEmail, IsEnum, IsOptional, IsUUID, MaxLength } from 'class-validator';
-import { RolUsuario } from '@prisma/client';
+import { EstadoInvitacion, RolUsuario } from '@prisma/client';
 
 export class CrearInvitacionDto {
   /**
@@ -23,4 +23,24 @@ export class CrearInvitacionDto {
   @IsOptional()
   @IsUUID()
   instructorId?: string;
+}
+
+/**
+ * Parámetros del listado de invitaciones.
+ *
+ * Sin `clienteId` devuelve todas, que es lo que necesita la pantalla de cuentas
+ * para mostrar quién está invitado y todavía no entró.
+ */
+export class ListarInvitacionesDto {
+  @IsOptional()
+  @IsUUID()
+  clienteId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  instructorId?: string;
+
+  @IsOptional()
+  @IsEnum(EstadoInvitacion)
+  estado?: EstadoInvitacion;
 }

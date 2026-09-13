@@ -1,0 +1,21 @@
+-- Quita el DEFAULT de `invitaciones.id`.
+--
+-- La migracion anterior creo la columna con `DEFAULT gen_random_uuid()`, pero el
+-- esquema la declara `@default(uuid())`, que Prisma resuelve en el CLIENTE y no
+-- en la base. Con eso, el estado que dejan las migraciones y el que describe el
+-- esquema dejan de coincidir, y la verificacion de deriva de la CI lo rechaza:
+--
+--     [*] Changed the `invitaciones` table
+--       [*] Altered column `id` (default changed from
+--           `Some(DbGenerated(Some("gen_random_uuid()")))` to `None`)
+--
+-- Todas las demas tablas del proyecto usan `"id" UUID NOT NULL` a secas.
+--
+-- Se corrige con una migracion nueva y NO editando la anterior, porque esa ya
+-- esta en la rama principal: si alguien ya la aplico, cambiarle el contenido le
+-- haria fallar el proximo `prisma migrate deploy` por checksum. Asi funciona en
+-- los dos casos, en una base nueva y en una que ya la tenga.
+--
+-- No cambia ningun dato: Prisma siempre manda el id al insertar, asi que ese
+-- default nunca llego a usarse.
+ALTER TABLE "invitaciones" ALTER COLUMN "id" DROP DEFAULT;

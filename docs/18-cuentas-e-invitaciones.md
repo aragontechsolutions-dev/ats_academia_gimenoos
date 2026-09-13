@@ -120,6 +120,47 @@ duplica nada: reenvía la misma.
 
 ---
 
+## 3b. La pantalla de cuentas
+
+**Panel → Cuentas.** Solo administración. Muestra quién puede entrar, con qué
+permisos y desde cuándo, con la **ficha vinculada** de cada cuenta: sin eso la
+lista sería una columna de correos sueltos sin forma de saber de quién es cada
+uno.
+
+Arriba, en ámbar, las **invitaciones sin usar**, con reenviar y dar de baja. Es
+donde se ve de un vistazo a quién se invitó y todavía no entró, y cuáles
+quedaron con el correo sin salir.
+
+### Qué se puede hacer, y qué no
+
+Desde la tabla se cambia el rol y se da de baja o se reactiva una cuenta. Dar de
+baja **no borra nada**: la persona deja de poder entrar y su historial queda.
+
+El botón **Invitar** es para quienes trabajan en la academia. **A los alumnos no
+se los invita desde acá** sino desde su ficha, y el propio diálogo lo dice: ahí
+está el dato que hace falta —a qué ficha pertenece la cuenta— y el correo ya
+cargado.
+
+### Tres cosas que la API no deja hacer
+
+No son validaciones de formulario: las hace cumplir el servicio, así que tampoco
+se saltean llamando a la API directamente.
+
+| Bloqueo | Por qué |
+|---|---|
+| **Tocar la propia cuenta** | Quien quiere irse cierra sesión. Quien se equivoca acá se queda sin panel y sin forma de volver a entrar |
+| **Sacar al último administrador activo**, por rol o por baja | Sin ningún administrador ya no se puede invitar a nadie, y la única salida sería entrar a la base a mano |
+| **Ascender a ADMIN a alguien con ficha** de alumno o instructor | Esa cuenta vería los datos de todos los demás desde la ficha de uno |
+
+En la pantalla, la fila propia aparece marcada con *(vos)* y sin el selector de
+rol ni el botón de baja. Eso es cortesía; el que protege es el bloqueo del
+servidor.
+
+Cambiar un rol, dar de baja y reactivar quedan **en el registro de auditoría**,
+con quién lo hizo y, en el caso del rol, el antes y el después.
+
+---
+
 ## 4. La puerta de arranque
 
 `ADMIN_INICIAL_EMAIL` es **la única dirección que entra sin invitación**, y lo
@@ -185,6 +226,12 @@ Para el administrador, la alternativa más simple es cargar
 | Invitar dos veces no duplica la invitación | OK |
 | Invitar a alguien sin correo cargado | `400` con mensaje claro |
 | Recorrido en el panel: invitar, reenviar, dar de baja | OK, sin errores de consola |
+| Un alumno listando o modificando cuentas | `403` |
+| Un administrador tocando su propia cuenta | `400`, y sigue activo y ADMIN |
+| Sacar al último administrador activo (por rol o por baja) | `409` |
+| Ascender a ADMIN a alguien con ficha | `409` |
+| El cambio de rol y las bajas quedan auditados | OK |
+| Los parámetros que el panel manda de verdad al listado | `200` en todos |
 
 **Lo que no se pudo verificar:** el envío real del correo. El entorno de
 desarrollo no alcanza `supabase.co`, así que la invitación se guarda y la API

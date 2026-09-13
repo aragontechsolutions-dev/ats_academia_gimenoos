@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { EstadoInvitacion, RolUsuario } from '@prisma/client';
 
 import { PrismaService } from '../src/common/prisma/prisma.service';
+import { AuditoriaService } from '../src/common/auditoria/auditoria.service';
 import { UsuariosService } from '../src/modules/usuarios/usuarios.service';
 import type { SupabaseJwtPayload } from '../src/common/auth/jwt-payload.interface';
 
@@ -19,7 +20,8 @@ const prisma = new PrismaService();
 const configCon = (valores: Record<string, string | undefined>) =>
   ({ get: (clave: string) => valores[clave] }) as unknown as ConfigService;
 
-const usuarios = new UsuariosService(prisma, configCon({}));
+const auditoria = new AuditoriaService(prisma);
+const usuarios = new UsuariosService(prisma, configCon({}), auditoria);
 
 const SUFIJO = '@prueba-invitacion.uy';
 const tokenDe = (sub: string, email: string): SupabaseJwtPayload => ({
@@ -194,7 +196,7 @@ describe('Con invitación, la ficha queda atada sin adivinar', () => {
 describe('La puerta de arranque', () => {
   it('deja entrar como ADMIN solo a la dirección configurada', async () => {
     const email = `jefe${SUFIJO}`;
-    const conArranque = new UsuariosService(prisma, configCon({ ADMIN_INICIAL_EMAIL: email }));
+    const conArranque = new UsuariosService(prisma, configCon({ ADMIN_INICIAL_EMAIL: email }), auditoria);
 
     const autenticado = await conArranque.resolverDesdeToken(tokenDe(nuevoId(), email));
     expect(autenticado.rol).toBe(RolUsuario.ADMIN);
@@ -204,6 +206,7 @@ describe('La puerta de arranque', () => {
     const conArranque = new UsuariosService(
       prisma,
       configCon({ ADMIN_INICIAL_EMAIL: `jefe${SUFIJO}` }),
+      auditoria,
     );
     await expect(
       conArranque.resolverDesdeToken(tokenDe(nuevoId(), `otro${SUFIJO}`)),
