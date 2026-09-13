@@ -1,5 +1,7 @@
 import { galeria } from '../contenido';
 import { Seccion, TituloSeccion } from './ui/Seccion';
+import { useSeccion } from '../contexto/ContenidoContexto';
+import { texto } from '../lib/contenidoRemoto';
 
 /**
  * Galería de fotos reales de la academia.
@@ -8,11 +10,16 @@ import { Seccion, TituloSeccion } from './ui/Seccion';
  * muestra una academia que no es esta, y el visitante lo nota.
  */
 export function Galeria() {
-  if (galeria.length === 0) return null;
+  const config = useSeccion('galeria');
+  if (!config.visible || galeria.length === 0) return null;
 
   return (
     <Seccion id="galeria" className="bg-slate-50">
-      <TituloSeccion sobretitulo="Galería" titulo="La academia por dentro" />
+      <TituloSeccion
+        sobretitulo={texto(config.etiqueta, 'Galería')}
+        titulo={texto(config.titulo, 'La academia por dentro')}
+        bajada={config.bajada ?? undefined}
+      />
 
       <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {galeria.map((foto, indice) => (

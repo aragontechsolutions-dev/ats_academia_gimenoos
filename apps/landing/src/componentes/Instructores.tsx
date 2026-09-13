@@ -1,5 +1,7 @@
 import { instructores } from '../contenido';
 import { Seccion, TituloSeccion } from './ui/Seccion';
+import { useSeccion } from '../contexto/ContenidoContexto';
+import { texto } from '../lib/contenidoRemoto';
 
 /**
  * Instructores.
@@ -9,14 +11,15 @@ import { Seccion, TituloSeccion } from './ui/Seccion';
  * que en la práctica significa que alguien dio esa autorización.
  */
 export function Instructores() {
-  if (instructores.length === 0) return null;
+  const config = useSeccion('instructores');
+  if (!config.visible || instructores.length === 0) return null;
 
   return (
     <Seccion id="instructores">
       <TituloSeccion
-        sobretitulo="Equipo"
-        titulo="Quién te va a enseñar"
-        bajada="Vas a manejar acompañado por alguien que enseña todos los días."
+        sobretitulo={texto(config.etiqueta, 'Equipo')}
+        titulo={texto(config.titulo, 'Quién te va a enseñar')}
+        bajada={texto(config.bajada, 'Vas a manejar acompañado por alguien que enseña todos los días.')}
       />
 
       <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

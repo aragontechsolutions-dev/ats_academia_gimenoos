@@ -115,6 +115,26 @@ a `America/Montevideo` solo al mostrar.
 
 Detalle en [`13-landing.md`](13-landing.md).
 
+### Etapa 1.E — Navegación y acceso ✅ COMPLETADA
+
+| Entregable | Estado |
+|---|---|
+| Indicador de sección activa en la barra del sitio | ✅ |
+| Acceso al panel desde el logo con Ctrl + Shift + clic, sin enlace visible | ✅ |
+
+### Etapa 1.F — Contenido editable desde el panel ✅ COMPLETADA
+
+| Entregable | Estado |
+|---|---|
+| Datos de contacto editables sin desplegar | ✅ |
+| Textos, visibilidad y orden de las 16 secciones | ✅ |
+| Listas editables (preguntas, beneficios, tarjetas, pasos, requisitos) | ✅ |
+| El sitio sigue completo si la API no responde | ✅ |
+| Panel con la identidad visual del sitio | ✅ |
+| Pruebas | ✅ 77 + recorrido en navegador de punta a punta |
+
+Detalle en [`14-contenido-editable.md`](14-contenido-editable.md).
+
 **Con esto cierra la Etapa 1 completa.**
 
 ## Etapa 2 — Pagos

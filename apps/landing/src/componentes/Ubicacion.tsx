@@ -1,5 +1,6 @@
 import { Clock, Mail, MapPin, Phone } from 'lucide-react';
-import { negocio } from '../contenido';
+import { useNegocio, useSeccion } from '../contexto/ContenidoContexto';
+import { texto } from '../lib/contenidoRemoto';
 import { Seccion, TituloSeccion } from './ui/Seccion';
 import { clasesBoton } from './ui/Boton';
 
@@ -11,14 +12,21 @@ import { clasesBoton } from './ui/Boton';
  * lugar equivocado.
  */
 export function Ubicacion() {
+  const negocio = useNegocio();
+  const config = useSeccion('ubicacion');
+  if (!config.visible) return null;
+
   return (
     <Seccion id="ubicacion">
       <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
         <div>
           <TituloSeccion
-            sobretitulo="Dónde estamos"
-            titulo={`En ${negocio.ciudad}, ${negocio.departamento}`}
-            bajada="Damos clases en San Carlos y alrededores. Coordinamos el punto de encuentro con vos."
+            sobretitulo={texto(config.etiqueta, 'Dónde estamos')}
+            titulo={texto(config.titulo, `En ${negocio.ciudad}, ${negocio.departamento}`)}
+            bajada={texto(
+              config.bajada,
+              `Damos clases en ${negocio.ciudad} y alrededores. Coordinamos el punto de encuentro con vos.`,
+            )}
           />
 
           <dl className="aparece mt-8 space-y-5">

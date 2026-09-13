@@ -1,12 +1,27 @@
 import { MapPin, MessageCircle } from 'lucide-react';
 
-import { hero, negocio } from '../contenido';
-import { destinoPrincipal, enlaceWhatsApp } from '../lib/whatsapp';
+import { hero } from '../contenido';
+import {
+  useDestinoPrincipal,
+  useEnlaceWhatsApp,
+  useNegocio,
+  useSeccion,
+} from '../contexto/ContenidoContexto';
+import { texto } from '../lib/contenidoRemoto';
 import { BotonEnlace } from './ui/Boton';
 
 export function Hero() {
-  const wa = enlaceWhatsApp();
-  const principal = destinoPrincipal();
+  const negocio = useNegocio();
+  const wa = useEnlaceWhatsApp();
+  const principal = useDestinoPrincipal();
+
+  // Lo que la academia cargó desde el panel gana; si no cargó nada, el texto
+  // del código.
+  const config = useSeccion('hero');
+  const insignia = texto(config.etiqueta, hero.insignia);
+  const titulo = texto(config.titulo, hero.titulo);
+  const subtitulo = texto(config.bajada, hero.subtitulo);
+  const ctaPrincipal = texto(config.accion, hero.ctaPrincipal);
 
   return (
     <section id="inicio" className="relative overflow-hidden bg-carbon-950 text-white">
@@ -33,19 +48,19 @@ export function Hero() {
         <div className="aparece visible">
           <p className="inline-flex items-center gap-2 rounded-full border border-marca-500/40 bg-marca-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-marca-200">
             <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-acento-400" />
-            {hero.insignia}
+            {insignia}
           </p>
 
           <h1 className="mt-6 text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl">
-            {hero.titulo.split(' ').slice(0, -1).join(' ')}{' '}
-            <span className="text-marca-500">{hero.titulo.split(' ').slice(-1)}</span>
+            {titulo.split(' ').slice(0, -1).join(' ')}{' '}
+            <span className="text-marca-500">{titulo.split(' ').slice(-1)}</span>
           </h1>
 
-          <p className="mt-6 max-w-xl text-lg text-slate-300">{hero.subtitulo}</p>
+          <p className="mt-6 max-w-xl text-lg text-slate-300">{subtitulo}</p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <BotonEnlace href={principal.href} externo={principal.externo} variante="primario">
-              {hero.ctaPrincipal}
+              {ctaPrincipal}
             </BotonEnlace>
 
             {wa ? (

@@ -2,7 +2,7 @@
 import { llamarApi } from './api';
 import type {
   Cliente, FichaCliente, Excepcion, Franja, Hueco, Instructor, Reserva, Servicio, TipoVehiculo,
-  Vehiculo, EstadoReserva,
+  Vehiculo, EstadoReserva, SeccionLanding, NegocioLanding,
 } from './tipos';
 
 const query = (parametros: Record<string, string | number | boolean | undefined>): string => {
@@ -161,4 +161,24 @@ export const clientes = {
 
   actualizar: (id: string, cuerpo: Record<string, unknown>) =>
     llamarApi<Cliente>(`/clientes/${id}`, { method: 'PATCH', body: JSON.stringify(cuerpo) }),
+};
+
+// --- Sitio público ---------------------------------------------------------
+
+export const sitio = {
+  secciones: () => llamarApi<SeccionLanding[]>('/landing/secciones'),
+
+  guardarSeccion: (clave: string, cuerpo: Record<string, unknown>) =>
+    llamarApi<unknown>(`/landing/secciones/${encodeURIComponent(clave)}`, {
+      method: 'PUT',
+      body: JSON.stringify(cuerpo),
+    }),
+
+  negocio: () => llamarApi<NegocioLanding>('/landing/negocio'),
+
+  guardarNegocio: (cuerpo: Record<string, unknown>) =>
+    llamarApi<NegocioLanding>('/landing/negocio', {
+      method: 'PATCH',
+      body: JSON.stringify(cuerpo),
+    }),
 };

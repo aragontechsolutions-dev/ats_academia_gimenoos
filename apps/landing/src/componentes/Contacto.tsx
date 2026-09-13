@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { MessageCircle, Send } from 'lucide-react';
-import { motivosConsulta, negocio } from '../contenido';
-import { enlaceWhatsApp } from '../lib/whatsapp';
+import { motivosConsulta } from '../contenido';
+import { construirEnlaceWhatsApp, useNegocio, useSeccion } from '../contexto/ContenidoContexto';
+import { texto } from '../lib/contenidoRemoto';
 import { Seccion, TituloSeccion } from './ui/Seccion';
 import { clasesBoton } from './ui/Boton';
 
@@ -25,6 +26,8 @@ export function Contacto() {
   const [motivo, setMotivo] = useState<string>(motivosConsulta[0]);
   const [mensaje, setMensaje] = useState('');
 
+  const negocio = useNegocio();
+  const config = useSeccion('contacto');
   const hayWhatsApp = Boolean(negocio.whatsapp);
 
   function enviar(evento: FormEvent<HTMLFormElement>) {
@@ -32,7 +35,10 @@ export function Contacto() {
 
     const presentacion = `Hola, soy ${nombre.trim()}. ${motivo}.`;
     const cuerpo = mensaje.trim();
-    const enlace = enlaceWhatsApp(cuerpo ? `${presentacion}\n${cuerpo}` : presentacion);
+    const enlace = construirEnlaceWhatsApp(
+      negocio.whatsapp,
+      cuerpo ? `${presentacion}\n${cuerpo}` : presentacion,
+    );
     if (!enlace) return;
     window.open(enlace, '_blank', 'noopener,noreferrer');
   }
@@ -42,9 +48,9 @@ export function Contacto() {
       <div className="grid gap-10 lg:grid-cols-2">
         <div>
           <TituloSeccion
-            sobretitulo="Contacto"
-            titulo="Escribinos y empezamos"
-            bajada="Contanos en qué estás y te decimos cómo seguir. Sin compromiso."
+            sobretitulo={texto(config.etiqueta, 'Contacto')}
+            titulo={texto(config.titulo, 'Escribinos y empezamos')}
+            bajada={texto(config.bajada, 'Contanos en qué estás y te decimos cómo seguir. Sin compromiso.')}
           />
 
           {hayWhatsApp ? (

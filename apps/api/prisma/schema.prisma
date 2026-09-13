@@ -502,6 +502,18 @@ model ConfiguracionAcademia {
   whatsapp  String?
   email     String?
 
+  /// Datos de contacto que consume la landing. Viven aca y no en el codigo del
+  /// sitio para que la academia los cambie sin desplegar. Lo que quede en null
+  /// NO se muestra: la landing oculta el dato en vez de inventar uno.
+  ciudad       String  @default("San Carlos")
+  departamento String  @default("Maldonado")
+  /// Horarios de atencion, en texto libre (ej: "Lunes a viernes de 9 a 19").
+  horarios  String?
+  /// Enlace de Google Maps para el boton "Como llegar".
+  mapaUrl   String? @map("mapa_url")
+  instagram String?
+  facebook  String?
+
   /// Minutos libres que se reservan entre dos clases consecutivas.
   bufferMinutos Int @default(15) @map("buffer_minutos")
   /// Horas minimas de antelacion para que el alumno pueda reservar.
@@ -535,4 +547,41 @@ model RegistroAuditoria {
   @@index([entidad, entidadId])
   @@index([createdAt])
   @@map("registros_auditoria")
+}
+
+/// Contenido editable de cada seccion del sitio publico.
+///
+/// Una sola forma para todas las secciones —titulo, bajada y una lista de
+/// items— en lugar de una tabla por seccion. La alternativa, un modelo por
+/// seccion, multiplica migraciones y formularios para guardar siempre lo mismo:
+/// un encabezado y una lista.
+///
+/// Lo que no este cargado aca cae al texto por defecto que vive en el codigo
+/// del sitio, asi la landing sigue completa aunque la API no responda.
+model SeccionLanding {
+  /// Identificador de la seccion: 'hero', 'porQue', 'beneficios', ...
+  /// Lo define el sitio; la API solo acepta claves conocidas.
+  clave String @id
+
+  /// Si la seccion se muestra en el sitio.
+  visible Boolean @default(true)
+  /// Orden entre las secciones de contenido. Menor primero.
+  orden Int @default(0)
+
+  /// Encabezado de la seccion. Null = se usa el texto por defecto del sitio.
+  titulo String?
+  bajada String?
+  /// Texto corto sobre el titulo (la insignia del hero, el sobretitulo).
+  etiqueta String?
+  /// Texto del boton principal de la seccion, cuando la seccion tiene uno.
+  accion String?
+
+  /// Lista de { titulo, detalle }. Cubre tarjetas, pasos, beneficios y
+  /// preguntas frecuentes (pregunta -> titulo, respuesta -> detalle).
+  items Json @default("[]")
+
+  actualizadoPor String?  @map("actualizado_por") @db.Uuid
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("secciones_landing")
 }

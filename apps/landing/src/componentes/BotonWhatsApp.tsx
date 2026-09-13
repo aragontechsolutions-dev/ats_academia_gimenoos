@@ -1,4 +1,4 @@
-import { enlaceWhatsApp } from '../lib/whatsapp';
+import { useEnlaceWhatsApp } from '../contexto/ContenidoContexto';
 
 /**
  * Botón flotante de WhatsApp.
@@ -7,7 +7,7 @@ import { enlaceWhatsApp } from '../lib/whatsapp';
  * no lleva a ninguna parte es peor que no tenerlo.
  */
 export function BotonWhatsApp() {
-  const enlace = enlaceWhatsApp();
+  const enlace = useEnlaceWhatsApp();
   if (!enlace) return null;
 
   return (

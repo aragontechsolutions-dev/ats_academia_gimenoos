@@ -1,6 +1,8 @@
 import { Bike, Car } from 'lucide-react';
 import { vehiculos } from '../contenido';
 import { Seccion, TituloSeccion } from './ui/Seccion';
+import { useSeccion } from '../contexto/ContenidoContexto';
+import { texto } from '../lib/contenidoRemoto';
 
 /**
  * Los vehículos de la academia.
@@ -10,14 +12,15 @@ import { Seccion, TituloSeccion } from './ui/Seccion';
  * vehículo que quizá no tiene.
  */
 export function Vehiculos() {
-  if (vehiculos.length === 0) return null;
+  const config = useSeccion('vehiculos');
+  if (!config.visible || vehiculos.length === 0) return null;
 
   return (
     <Seccion id="vehiculos">
       <TituloSeccion
-        sobretitulo="Nuestra flota"
-        titulo="Con qué vas a practicar"
-        bajada="Los vehículos los pone la academia, mantenidos y preparados para clases."
+        sobretitulo={texto(config.etiqueta, 'Nuestra flota')}
+        titulo={texto(config.titulo, 'Con qué vas a practicar')}
+        bajada={texto(config.bajada, 'Los vehículos los pone la academia, mantenidos y preparados para clases.')}
       />
 
       <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
