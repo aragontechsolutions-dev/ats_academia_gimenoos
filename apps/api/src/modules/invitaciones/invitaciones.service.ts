@@ -6,13 +6,21 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { EstadoInvitacion, RolUsuario, type Invitacion } from '@prisma/client';
+import { CanalInvitacion, EstadoInvitacion, RolUsuario, type Invitacion } from '@prisma/client';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
 import { SupabaseAdminService } from '../../common/supabase/supabase-admin.service';
 import { exigirEmail, normalizarEmail } from '../../common/formato/email';
 import type { CrearInvitacionDto, ListarInvitacionesDto } from './dto/invitacion.dto';
+
+/**
+ * Lo que se devuelve al entregar un acceso.
+ *
+ * `enlace` viene SOLO cuando el canal es ENLACE, y viaja una única vez: es una
+ * credencial, así que no se guarda ni se puede volver a pedir la misma.
+ */
+export type InvitacionEntregada = Invitacion & { enlace?: string };
 
 @Injectable()
 export class InvitacionesService {
@@ -58,17 +66,17 @@ export class InvitacionesService {
       this.logger.log(`Reenvío de la invitación ${pendiente.id}`);
     }
 
-    return this.enviar(invitacion, usuarioId);
+    return this.entregar(invitacion, dto.canal ?? CanalInvitacion.CORREO, usuarioId);
   }
 
-  /** Vuelve a mandar el correo de una invitación que ya existe. */
-  async reenviar(id: string, usuarioId: string) {
+  /** Vuelve a entregar el acceso de una invitación que ya existe. */
+  async reenviar(id: string, canal: CanalInvitacion, usuarioId: string) {
     const invitacion = await this.prisma.invitacion.findUnique({ where: { id } });
     if (!invitacion) throw new NotFoundException('La invitación no existe');
     if (invitacion.estado !== EstadoInvitacion.PENDIENTE) {
       throw new ConflictException('Esa invitación ya no está pendiente');
     }
-    return this.enviar(invitacion, usuarioId);
+    return this.entregar(invitacion, canal, usuarioId);
   }
 
   /**
@@ -125,12 +133,36 @@ export class InvitacionesService {
 
   // --- Interno --------------------------------------------------------------
 
-  private async enviar(invitacion: Invitacion, usuarioId: string) {
-    await this.supabase.invitar(invitacion.email, this.destinoDe(invitacion.rol));
+  /**
+   * Hace llegar el acceso, por el canal que corresponda.
+   *
+   * Con `CORREO` lo manda Supabase. Con `ENLACE` se genera el enlace y se
+   * devuelve una sola vez, para que la academia lo pegue donde ya está hablando
+   * con esa persona —típicamente WhatsApp—.
+   *
+   * El enlace **no se guarda ni se registra**: es una credencial, y quien la
+   * tenga entra como esa persona. Lo único que queda es que se entregó y por
+   * dónde.
+   */
+  private async entregar(
+    invitacion: Invitacion,
+    canal: CanalInvitacion,
+    usuarioId: string,
+  ): Promise<InvitacionEntregada> {
+    const destino = this.destinoDe(invitacion.rol);
 
-    const enviada = await this.prisma.invitacion.update({
+    let enlace: string | undefined;
+    if (canal === CanalInvitacion.CORREO) {
+      await this.supabase.invitar(invitacion.email, destino);
+    } else {
+      // Primer acceso salvo que la cuenta ya exista en Supabase de un intento
+      // anterior: `invite` falla si ya está creada, `magiclink` sirve igual.
+      enlace = await this.generarEnlaceTolerante(invitacion.email, destino);
+    }
+
+    const entregada = await this.prisma.invitacion.update({
       where: { id: invitacion.id },
-      data: { enviadaAt: new Date() },
+      data: { enviadaAt: new Date(), canal },
     });
 
     await this.auditoria.registrar({
@@ -138,11 +170,28 @@ export class InvitacionesService {
       accion: 'INVITACION_ENVIADA',
       entidad: 'Invitacion',
       entidadId: invitacion.id,
-      // El correo no va al registro: es un dato personal y el id ya identifica
-      // la fila para quien tenga que investigar.
-      detalle: { rol: invitacion.rol },
+      // Ni el correo ni el enlace van al registro: uno es un dato personal y el
+      // otro una credencial. El id ya identifica la fila para investigar.
+      detalle: { rol: invitacion.rol, canal },
     });
-    return enviada;
+
+    return enlace ? { ...entregada, enlace } : entregada;
+  }
+
+  /**
+   * Pide el enlace como primer acceso y, si la cuenta ya existía, como acceso
+   * normal.
+   *
+   * Pasa cuando se invitó por correo y después se quiere mandar el enlace por
+   * WhatsApp: la cuenta de Supabase ya quedó creada por el intento anterior, y
+   * `invite` la rechaza por duplicada.
+   */
+  private async generarEnlaceTolerante(email: string, destino: string): Promise<string> {
+    try {
+      return await this.supabase.generarEnlace(email, destino, true);
+    } catch {
+      return this.supabase.generarEnlace(email, destino, false);
+    }
   }
 
   /**

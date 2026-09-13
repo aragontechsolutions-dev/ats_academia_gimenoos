@@ -94,19 +94,72 @@ verdad, igual que para todo lo demás.
 
 ## 3. Cómo se usa
 
-### El alumno llega a la academia
+### Dónde está el botón
 
-1. Se lo da de alta en **Alumnos**, con su correo.
-2. En su ficha, **Acceso a la app → Invitar a la app**.
-3. Le llega un correo con un enlace. Al tocarlo entra ya vinculado a su ficha.
+En **Alumnos**, la columna «Cuenta» de cada fila sin acceso dice **«Dar acceso»**
+y lleva directo a la sección correspondiente de la ficha. La acción también está
+en la ficha, en **Acceso a la app**.
 
-Desde la misma sección se puede **reenviar** o **dar de baja** la invitación
-mientras no se haya usado.
+Estuvo un tiempo solo dentro de la ficha, y no la encontraba nadie: un cartel que
+decía «Sin cuenta» y no llevaba a ninguna parte. Si no la encuentra quien conoce
+el sistema, no la va a encontrar quien atiende el mostrador.
 
-### El alumno llega por el sitio
+### Dos formas de entregar el acceso
 
-El sitio no ofrece registro: consulta por WhatsApp, la academia lo registra y lo
-invita. Es el mismo camino que arriba.
+| Botón | Qué hace | Cuándo |
+|---|---|---|
+| **Enviar enlace por WhatsApp** | Genera el enlace y abre WhatsApp con el mensaje escrito, al número de la ficha | La persona llegó por el sitio y estás hablando con ella por ahí |
+| **Enviar por correo** | Supabase manda el correo con el enlace | Ya dejó su dirección y la mira |
+
+**El envío por WhatsApp lo apretás vos.** `wa.me` abre la aplicación con el
+mensaje listo, pero no lo manda solo. Mandarlo automáticamente requeriría la API
+de WhatsApp Business —cuenta de empresa en Meta, plantillas aprobadas, un
+proveedor y costo por mensaje—, que es un proyecto aparte.
+
+### El correo hace falta igual
+
+Supabase identifica la cuenta **por correo electrónico**. WhatsApp es por dónde
+viaja el enlace, no quién es la persona. Por eso los dos botones quedan
+bloqueados si la ficha no tiene correo, y la pantalla lo explica en vez de
+dejarte adivinando.
+
+Para que la identidad fuera el teléfono haría falta autenticación por SMS o por
+WhatsApp Business: proveedor externo y costo por mensaje.
+
+### El ciclo completo, desde el sitio
+
+1. La persona navega el sitio y toca el botón de WhatsApp.
+2. Escribe. En la conversación se le piden nombre y correo.
+3. Se la da de alta en **Alumnos** con nombre, teléfono y correo. *Esa ficha ya
+   es el registro del interesado*: no hace falta una bandeja de consultas aparte,
+   un alumno sin documento cargado todavía es exactamente eso.
+4. **Enviar enlace por WhatsApp**, y se aprieta enviar.
+5. Entra, y su cuenta queda atada a esa ficha.
+
+Desde la misma sección se puede **reenviar** —por el canal que sea— o **dar de
+baja** el acceso mientras no se haya usado.
+
+### El enlace es una credencial
+
+Quien lo tenga entra como esa persona. Por eso:
+
+- **No se guarda en ningún lado.** Se genera, se devuelve una vez y se olvida. No
+  está en la base, no se escribe en los registros del servidor y no viaja en el
+  listado de invitaciones. Hay pruebas que lo comprueban.
+- **La auditoría anota que se entregó y por dónde**, nunca el valor.
+- **Vence y se usa una sola vez.** El plazo lo fija el proyecto de Supabase, no
+  este código: hay que dejarlo en **24 horas** desde el panel de Supabase, en la
+  configuración del proveedor de correo (la opción de expiración del enlace/OTP).
+  **Este dato no se pudo verificar desde el entorno de desarrollo**, que no
+  alcanza `supabase.co`: hay que mirarlo en el panel.
+- **Antes de abrir WhatsApp se pide confirmación mostrando el número.** Mandarle
+  el acceso de alguien a otra persona le entrega su cuenta, y el número es lo
+  único que separa un caso del otro.
+
+El teléfono se guarda como `+598 98663201` y `wa.me` quiere `59898663201`:
+pasarle el guardado tal cual abre un chat con un número inexistente y sin ningún
+error visible. La conversión está en `apps/admin/src/lib/whatsapp.ts`, y el botón
+queda bloqueado cuando el teléfono no sirve.
 
 ### El orden de las operaciones
 
@@ -226,6 +279,13 @@ Para el administrador, la alternativa más simple es cargar
 | Invitar dos veces no duplica la invitación | OK |
 | Invitar a alguien sin correo cargado | `400` con mensaje claro |
 | Recorrido en el panel: invitar, reenviar, dar de baja | OK, sin errores de consola |
+| La acción «Dar acceso» se ve en el listado y lleva a la sección | OK |
+| Con correo y teléfono, los dos botones habilitados | OK |
+| Sin teléfono: WhatsApp bloqueado, y la pantalla dice por qué | OK |
+| Sin correo: los dos bloqueados, y explica que el correo identifica la cuenta | OK |
+| El enlace no aparece en la base ni en el listado de invitaciones | OK |
+| La base rechaza una entrega sin canal, o un canal sin entrega | OK |
+| Un canal inventado | `400` |
 | Un alumno listando o modificando cuentas | `403` |
 | Un administrador tocando su propia cuenta | `400`, y sigue activo y ADMIN |
 | Sacar al último administrador activo (por rol o por baja) | `409` |
@@ -233,8 +293,9 @@ Para el administrador, la alternativa más simple es cargar
 | El cambio de rol y las bajas quedan auditados | OK |
 | Los parámetros que el panel manda de verdad al listado | `200` en todos |
 
-**Lo que no se pudo verificar:** el envío real del correo. El entorno de
-desarrollo no alcanza `supabase.co`, así que la invitación se guarda y la API
-informa que no pudo enviarla —que es exactamente el comportamiento previsto para
-ese caso, pero no prueba que el correo llegue—. Hay que probarlo en el sistema
-desplegado, invitando a una dirección propia.
+**Lo que no se pudo verificar:** el envío real del correo y la generación real
+del enlace. El entorno de desarrollo no alcanza `supabase.co`, así que la
+invitación se guarda y la API informa que no pudo entregarla —que es exactamente
+el comportamiento previsto para ese caso, pero no prueba que el correo llegue ni
+que el enlace sirva—. Hay que probarlo en el sistema desplegado, mandándose una
+invitación a uno mismo por los dos canales.

@@ -1,9 +1,13 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { RolUsuario } from '@prisma/client';
+import { CanalInvitacion, RolUsuario } from '@prisma/client';
 
 import { InvitacionesService } from './invitaciones.service';
-import { CrearInvitacionDto, ListarInvitacionesDto } from './dto/invitacion.dto';
+import {
+  CrearInvitacionDto,
+  ListarInvitacionesDto,
+  ReenviarInvitacionDto,
+} from './dto/invitacion.dto';
 import { Roles } from '../../common/auth/roles.decorator';
 import { UsuarioActual } from '../../common/auth/usuario-actual.decorator';
 import type { UsuarioAutenticado } from '../../common/auth/jwt-payload.interface';
@@ -29,9 +33,15 @@ export class InvitacionesController {
 
   @Post(':id/reenviar')
   @Roles(RolUsuario.ADMIN)
-  @ApiOperation({ summary: 'Vuelve a mandar el correo de una invitación pendiente' })
-  reenviar(@Param('id', ParseUUIDPipe) id: string, @UsuarioActual() usuario: UsuarioAutenticado) {
-    return this.invitaciones.reenviar(id, usuario.id);
+  @ApiOperation({
+    summary: 'Vuelve a entregar una invitación pendiente, por correo o como enlace',
+  })
+  reenviar(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReenviarInvitacionDto,
+    @UsuarioActual() usuario: UsuarioAutenticado,
+  ) {
+    return this.invitaciones.reenviar(id, dto.canal ?? CanalInvitacion.CORREO, usuario.id);
   }
 
   @Delete(':id')

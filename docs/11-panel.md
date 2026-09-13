@@ -15,6 +15,10 @@ Aplicación: `apps/admin` · Roles que entran: `ADMIN` e `INSTRUCTOR`
 | **Precios** | solo admin | Catálogo de servicios y sus dos precios |
 | **Cuentas** | solo admin | Quién puede entrar, con qué permisos, e invitaciones sin usar |
 
+El acceso de un **alumno** se habilita desde su ficha, o desde «Dar acceso» en el
+listado, y se le puede mandar por correo o por WhatsApp. Ver
+[18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md).
+
 El instructor ve la agenda y los alumnos porque los necesita para dar clase. La
 configuración de la academia es del administrador.
 

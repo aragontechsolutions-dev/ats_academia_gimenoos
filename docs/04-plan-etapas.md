@@ -229,6 +229,21 @@ desarrollo no alcanza `supabase.co`.
 | Todo auditado | ✅ |
 | Pruebas | ✅ 169 + recorridos HTTP y en navegador |
 
+### Etapa 2.E — Cerrar el ciclo desde el sitio ✅ COMPLETADA
+
+| Entregable | Estado |
+|---|---|
+| «Dar acceso» visible en el listado de alumnos, no solo dentro de la ficha | ✅ |
+| Enviar el enlace por WhatsApp, sin API de empresa ni costo | ✅ |
+| Enviar por correo, como estaba | ✅ |
+| El enlace no se guarda ni se registra en ningún lado | ✅ con pruebas |
+| Confirmación con el número antes de abrir WhatsApp | ✅ |
+| Documentación | ✅ [`18-cuentas-e-invitaciones.md`](18-cuentas-e-invitaciones.md) |
+| Pruebas | ✅ 171 + recorridos HTTP y en navegador |
+
+**No verificado:** la generación real del enlace contra Supabase, por la misma
+razón de siempre.
+
 ### Etapa 2.D — PWA del instructor ⏳ PENDIENTE
 
 App propia para los instructores, y cerrar el acceso del rol `INSTRUCTOR` al

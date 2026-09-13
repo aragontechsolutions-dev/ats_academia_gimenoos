@@ -100,6 +100,18 @@ export function Alumnos() {
                     <span className="rounded bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
                       Con acceso
                     </span>
+                  ) : esAdmin ? (
+                    // La acción va acá y no solo dentro de la ficha: es donde se
+                    // mira cuando se quiere dar acceso, y un cartel que solo dice
+                    // "Sin cuenta" no lleva a ninguna parte. Abre la ficha en la
+                    // sección de acceso, que es donde están el correo y el
+                    // teléfono a los que se manda.
+                    <Link
+                      to={`/alumnos/${alumno.id}#acceso`}
+                      className="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-700 transition hover:border-marca-500 hover:text-marca-700"
+                    >
+                      Dar acceso
+                    </Link>
                   ) : (
                     <span className="text-xs text-slate-500">Sin cuenta</span>
                   )}

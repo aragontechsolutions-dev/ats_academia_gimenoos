@@ -133,6 +133,8 @@ export interface CuentaUsuario {
 }
 
 export type EstadoInvitacion = 'PENDIENTE' | 'ACEPTADA' | 'REVOCADA';
+/** Por dónde se le hizo llegar el acceso a la persona. */
+export type CanalInvitacion = 'CORREO' | 'ENLACE';
 
 export interface Invitacion {
   id: string;
@@ -141,10 +143,16 @@ export interface Invitacion {
   estado: EstadoInvitacion;
   /** Null = la fila existe pero el correo no salió, y hay que reintentar. */
   enviadaAt: string | null;
+  canal: CanalInvitacion | null;
   aceptadaAt: string | null;
   createdAt: string;
   cliente?: { id: string; nombre: string; apellido: string } | null;
   instructor?: { id: string; nombre: string; apellido: string } | null;
+  /**
+   * El enlace de acceso. Viene SOLO al pedirlo con canal ENLACE, y una única
+   * vez: es una credencial, así que no se guarda en ningún lado.
+   */
+  enlace?: string;
 }
 
 export interface FichaCliente extends Cliente {

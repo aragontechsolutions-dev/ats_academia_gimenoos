@@ -44,6 +44,15 @@ enum EstadoInvitacion {
   REVOCADA
 }
 
+/// Por donde se le hizo llegar el acceso a la persona.
+enum CanalInvitacion {
+  /// Supabase manda el correo con el enlace.
+  CORREO
+  /// Se genera el enlace y la academia lo manda por su cuenta, tipicamente
+  /// pegandolo en la conversacion de WhatsApp que ya esta teniendo.
+  ENLACE
+}
+
 enum TipoVehiculo {
   MOTO
   AUTO
@@ -184,9 +193,15 @@ model Invitacion {
   clienteId    String? @map("cliente_id") @db.Uuid
   instructorId String? @map("instructor_id") @db.Uuid
 
-  /// Cuando Supabase acepto mandar el correo. Null = la fila existe pero el
-  /// correo no salio, y hay que reintentar.
+  /// Cuando se entrego el acceso. Null = la fila existe pero no salio por ningun
+  /// lado todavia, y hay que reintentar.
   enviadaAt   DateTime? @map("enviada_at") @db.Timestamptz(3)
+  /// Por donde se entrego. Null mientras no se haya entregado.
+  ///
+  /// El enlace EN SI no se guarda nunca, ni aca ni en los registros: es una
+  /// credencial, y quien la tenga entra como esa persona. Se genera, se usa y se
+  /// olvida.
+  canal       CanalInvitacion? 
   aceptadaAt  DateTime? @map("aceptada_at") @db.Timestamptz(3)
   /// Usuario que se creo al aceptarla.
   aceptadaPor String?   @map("aceptada_por") @db.Uuid

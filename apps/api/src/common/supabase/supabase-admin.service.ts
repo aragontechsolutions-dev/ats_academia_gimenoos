@@ -88,4 +88,64 @@ export class SupabaseAdminService {
       `Supabase rechazó la invitación (${respuesta.status}). Revisá la configuración de correo del proyecto.`,
     );
   }
+  /**
+   * Genera el enlace de acceso SIN mandar ningún correo.
+   *
+   * Es lo que permite cerrar el ciclo cuando la persona llegó por WhatsApp: la
+   * academia ya está conversando con ella, así que el enlace se pega en esa
+   * conversación en vez de mandarlo a una casilla que capaz no mira.
+   *
+   * El enlace devuelto es una **credencial**: quien lo tenga entra como esa
+   * persona. Por eso no se guarda en la base, no se escribe en los registros y
+   * no se puede volver a pedir el mismo. El plazo de validez lo fija el proyecto
+   * de Supabase, no este código.
+   */
+  async generarEnlace(email: string, redirigirA: string, esPrimerAcceso: boolean): Promise<string> {
+    if (!this.configurado) {
+      throw new ServiceUnavailableException(
+        'Falta configurar SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en el servidor.',
+      );
+    }
+
+    const destino = new URL(`${this.url}/auth/v1/admin/generate_link`);
+    destino.searchParams.set('redirect_to', redirigirA);
+
+    let respuesta: Response;
+    try {
+      respuesta = await fetch(destino, {
+        method: 'POST',
+        headers: {
+          apikey: this.clave,
+          Authorization: `Bearer ${this.clave}`,
+          'Content-Type': 'application/json',
+        },
+        // `invite` crea la cuenta; `magiclink` sirve para quien ya la tiene.
+        body: JSON.stringify({ type: esPrimerAcceso ? 'invite' : 'magiclink', email }),
+      });
+    } catch (problema) {
+      this.logger.error(`No se pudo llegar a Supabase Auth: ${(problema as Error).message}`);
+      throw new ServiceUnavailableException(
+        'No se pudo conectar con Supabase para generar el enlace. Probá de nuevo en un momento.',
+      );
+    }
+
+    if (!respuesta.ok) {
+      const cuerpo = await respuesta.text().catch(() => '');
+      this.logger.error(
+        `Supabase respondió ${respuesta.status} al generar el enlace: ${cuerpo.slice(0, 300)}`,
+      );
+      throw new ServiceUnavailableException(
+        `Supabase rechazó la generación del enlace (${respuesta.status}).`,
+      );
+    }
+
+    // El cuerpo de esta respuesta NUNCA se registra: trae el enlace adentro.
+    const datos = (await respuesta.json()) as { properties?: { action_link?: string } };
+    const enlace = datos.properties?.action_link;
+    if (!enlace) {
+      this.logger.error('Supabase devolvió una respuesta sin action_link al generar el enlace');
+      throw new ServiceUnavailableException('Supabase no devolvió un enlace utilizable.');
+    }
+    return enlace;
+  }
 }

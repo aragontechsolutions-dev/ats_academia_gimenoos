@@ -4,7 +4,7 @@ import type { Pagina } from '../componentes/ui/Paginacion';
 import type {
   Cliente, FichaCliente, Excepcion, Franja, Hueco, Instructor, Reserva, Servicio, TipoVehiculo,
   Vehiculo, EstadoReserva, SeccionLanding, NegocioLanding, Graduado, Invitacion,
-  CuentaUsuario, Rol, EstadoInvitacion,
+  CuentaUsuario, Rol, EstadoInvitacion, CanalInvitacion,
 } from './tipos';
 
 const query = (parametros: Record<string, string | number | boolean | undefined>): string => {
@@ -173,10 +173,19 @@ export const invitaciones = {
   deCliente: (clienteId: string) =>
     llamarApi<Invitacion[]>(`/invitaciones${query({ clienteId })}`),
 
-  crear: (cuerpo: { rol: 'CLIENTE' | 'INSTRUCTOR' | 'ADMIN'; clienteId?: string; instructorId?: string; email?: string }) =>
-    llamarApi<Invitacion>('/invitaciones', { method: 'POST', body: JSON.stringify(cuerpo) }),
+  crear: (cuerpo: {
+    rol: Rol;
+    clienteId?: string;
+    instructorId?: string;
+    email?: string;
+    canal?: CanalInvitacion;
+  }) => llamarApi<Invitacion>('/invitaciones', { method: 'POST', body: JSON.stringify(cuerpo) }),
 
-  reenviar: (id: string) => llamarApi<Invitacion>(`/invitaciones/${id}/reenviar`, { method: 'POST' }),
+  reenviar: (id: string, canal: CanalInvitacion = 'CORREO') =>
+    llamarApi<Invitacion>(`/invitaciones/${id}/reenviar`, {
+      method: 'POST',
+      body: JSON.stringify({ canal }),
+    }),
 
   revocar: (id: string) => llamarApi<Invitacion>(`/invitaciones/${id}`, { method: 'DELETE' }),
 };

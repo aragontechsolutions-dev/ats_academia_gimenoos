@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 
 import { Aviso } from '../componentes/ui/Aviso';
 import { Boton } from '../componentes/ui/Boton';
@@ -8,10 +8,12 @@ import { clientes as api, invitaciones as apiInvitaciones } from '../lib/recurso
 import { documentoLegible } from '../lib/paises';
 import { fechaCorta, fechaYHora } from '../lib/fecha';
 import { useSesion } from '../lib/sesion';
+import { abrirWhatsApp, mensajeDeAcceso, numeroParaWhatsApp } from '../lib/whatsapp';
 import { ETIQUETA_ESTADO, type FichaCliente, type Invitacion } from '../lib/tipos';
 
 export function AlumnoFicha() {
   const { id } = useParams<{ id: string }>();
+  const { hash } = useLocation();
   const { perfil } = useSesion();
   const esAdmin = perfil?.rol === 'ADMIN';
 
@@ -28,6 +30,15 @@ export function AlumnoFicha() {
   }, [id]);
 
   useEffect(cargar, [cargar]);
+
+  // Al llegar desde "Dar acceso" en el listado, bajar hasta esa sección.
+  //
+  // No alcanza con el ancla en la dirección: la sección se pinta recién cuando
+  // llega la ficha, y para entonces el navegador ya decidió que no hay adónde ir.
+  useEffect(() => {
+    if (!ficha || hash !== '#acceso') return;
+    document.getElementById('acceso')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [ficha, hash]);
 
   if (error) return <Aviso tipo="error">{error}</Aviso>;
   if (!ficha) return <p className="text-slate-500">Cargando…</p>;
@@ -178,6 +189,15 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string | null | un
  * habilita la academia desde acá. Así el sistema sabe de antemano a qué ficha
  * pertenece la cuenta, en vez de deducirlo por el correo después del hecho, que
  * fallaba cuando había dos fichas iguales o el alumno usaba otra dirección.
+ *
+ * Dos formas de entregarlo, porque la gente llega por dos caminos distintos:
+ *
+ *   - **Por correo**, que lo manda Supabase. Sirve cuando la persona ya dejó su
+ *     dirección y la mira.
+ *   - **Por WhatsApp**, que es por donde llega casi todo el mundo desde el sitio.
+ *     El enlace se genera acá y se abre WhatsApp con el mensaje listo; el envío
+ *     lo aprieta quien atiende. La cuenta igual se identifica por el correo:
+ *     WhatsApp es por dónde viaja el enlace, no quién es la persona.
  */
 function AccesoALaApp({ ficha, onCambio }: { ficha: FichaCliente; onCambio: () => void }) {
   const [lista, setLista] = useState<Invitacion[]>([]);
@@ -195,6 +215,7 @@ function AccesoALaApp({ ficha, onCambio }: { ficha: FichaCliente; onCambio: () =
   useEffect(cargar, [cargar]);
 
   const pendiente = lista.find((i) => i.estado === 'PENDIENTE');
+  const whatsapp = numeroParaWhatsApp(ficha.telefono);
 
   const accion = async (promesa: Promise<unknown>, exito: string) => {
     setTrabajando(true);
@@ -212,74 +233,139 @@ function AccesoALaApp({ ficha, onCambio }: { ficha: FichaCliente; onCambio: () =
     }
   };
 
+  /**
+   * Genera el enlace y abre WhatsApp con el mensaje listo.
+   *
+   * Se pide confirmación mostrando el número: mandarle el acceso de alguien a
+   * otra persona le entrega su cuenta, y el número es lo único que separa un
+   * caso del otro.
+   *
+   * El enlace se usa y se descarta: no se guarda en ningún estado ni se muestra
+   * en pantalla, porque quien lo tenga entra como esa persona.
+   */
+  const enviarPorWhatsApp = async (invitacionId?: string) => {
+    if (!whatsapp) return;
+    if (
+      !window.confirm(
+        `Se va a abrir WhatsApp para mandarle el acceso a ${ficha.nombre} al ${ficha.telefono}.\n\n` +
+          'Revisá que el número sea el correcto: quien reciba el enlace entra como esta persona.',
+      )
+    ) {
+      return;
+    }
+
+    setTrabajando(true);
+    setError(null);
+    setAviso(null);
+    try {
+      const invitacion = invitacionId
+        ? await apiInvitaciones.reenviar(invitacionId, 'ENLACE')
+        : await apiInvitaciones.crear({ rol: 'CLIENTE', clienteId: ficha.id, canal: 'ENLACE' });
+
+      if (!invitacion.enlace) throw new Error('El servidor no devolvió el enlace.');
+
+      abrirWhatsApp(ficha.telefono ?? '', mensajeDeAcceso(ficha.nombre, invitacion.enlace));
+      setAviso('Se abrió WhatsApp con el mensaje listo. Falta que lo envíes desde ahí.');
+      cargar();
+      onCambio();
+    } catch (problema) {
+      setError((problema as Error).message);
+    } finally {
+      setTrabajando(false);
+    }
+  };
+
+  const ayudaWhatsApp = !ficha.telefono
+    ? 'Le falta el teléfono en la ficha.'
+    : !whatsapp
+      ? 'El teléfono de la ficha no tiene una forma que WhatsApp entienda.'
+      : null;
+
   return (
-    <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+    <section id="acceso" className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
       <h2 className="font-semibold text-slate-900">Acceso a la app</h2>
 
       {ficha.usuarioId ? (
         <p className="mt-2 text-sm text-slate-600">
           Ya tiene cuenta y entra con su correo. Para sacarle el acceso hay que desactivar
-          la cuenta.
+          la cuenta, desde Cuentas.
         </p>
-      ) : pendiente ? (
-        <>
-          <p className="mt-2 text-sm text-slate-600">
-            Invitación enviada a <strong>{pendiente.email}</strong>
-            {pendiente.enviadaAt ? (
-              <> el {fechaYHora(pendiente.enviadaAt)}. Todavía no la usó.</>
-            ) : (
-              <>
-                , pero <strong className="text-amber-800">el correo no salió</strong>. Probá
-                reenviarla.
-              </>
-            )}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Boton
-              variante="secundario"
-              disabled={trabajando}
-              onClick={() =>
-                void accion(apiInvitaciones.reenviar(pendiente.id), 'Listo, se reenvió el correo.')
-              }
-            >
-              Reenviar invitación
-            </Boton>
-            <Boton
-              variante="peligro"
-              disabled={trabajando}
-              onClick={() => {
-                if (window.confirm('¿Dar de baja la invitación? El enlace deja de servir.')) {
-                  void accion(apiInvitaciones.revocar(pendiente.id), 'Invitación dada de baja.');
-                }
-              }}
-            >
-              Dar de baja
-            </Boton>
-          </div>
-        </>
       ) : (
         <>
-          <p className="mt-2 text-sm text-slate-600">
-            Todavía no tiene acceso. Al invitarlo le llega un correo con un enlace para entrar
-            a ver y reservar sus clases.
-          </p>
-          {!ficha.email && (
-            <p className="mt-2 text-sm text-amber-800">
-              Le falta el correo en la ficha. Cargalo antes de invitarlo.
+          {pendiente ? (
+            <p className="mt-2 text-sm text-slate-600">
+              Acceso entregado a <strong>{pendiente.email}</strong>
+              {pendiente.enviadaAt ? (
+                <>
+                  {pendiente.canal === 'ENLACE' ? ' por WhatsApp' : ' por correo'} el{' '}
+                  {fechaYHora(pendiente.enviadaAt)}. Todavía no entró.
+                </>
+              ) : (
+                <>
+                  , pero <strong className="text-amber-800">no llegó a salir</strong>. Probá de
+                  nuevo.
+                </>
+              )}
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-slate-600">
+              Todavía no tiene acceso. Al habilitarlo recibe un enlace para entrar a ver y
+              reservar sus clases.
             </p>
           )}
-          <Boton
-            className="mt-3"
-            disabled={trabajando || !ficha.email}
-            onClick={() =>
-              void accion(
-                apiInvitaciones.crear({ rol: 'CLIENTE', clienteId: ficha.id }),
-                'Listo, le mandamos la invitación por correo.',
-              )
-            }
-          >
-            {trabajando ? 'Enviando…' : 'Invitar a la app'}
-          </Boton>
+
+          {!ficha.email && (
+            <p className="mt-2 text-sm text-amber-800">
+              Le falta el correo en la ficha, y hace falta para crear la cuenta: es con lo que
+              el sistema la identifica, aunque el enlace se lo mandes por WhatsApp.
+            </p>
+          )}
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Boton
+              disabled={trabajando || !ficha.email || !whatsapp}
+              onClick={() => void enviarPorWhatsApp(pendiente?.id)}
+            >
+              {trabajando ? 'Preparando…' : 'Enviar enlace por WhatsApp'}
+            </Boton>
+            <Boton
+              variante="secundario"
+              disabled={trabajando || !ficha.email}
+              onClick={() =>
+                void accion(
+                  pendiente
+                    ? apiInvitaciones.reenviar(pendiente.id, 'CORREO')
+                    : apiInvitaciones.crear({ rol: 'CLIENTE', clienteId: ficha.id, canal: 'CORREO' }),
+                  'Listo, le mandamos el enlace por correo.',
+                )
+              }
+            >
+              Enviar por correo
+            </Boton>
+            {pendiente && (
+              <Boton
+                variante="peligro"
+                disabled={trabajando}
+                onClick={() => {
+                  if (window.confirm('¿Dar de baja el acceso? El enlace que mandaste deja de servir.')) {
+                    void accion(apiInvitaciones.revocar(pendiente.id), 'Acceso dado de baja.');
+                  }
+                }}
+              >
+                Dar de baja
+              </Boton>
+            )}
+          </div>
+
+          {ayudaWhatsApp && ficha.email && (
+            <p className="mt-2 text-xs text-slate-500">
+              {ayudaWhatsApp} Por eso no se puede mandar por WhatsApp.
+            </p>
+          )}
+
+          <p className="mt-3 text-xs text-slate-500">
+            El enlace vence en 24 horas y se usa una sola vez. Si se vence, mandá otro desde acá.
+          </p>
         </>
       )}
 
