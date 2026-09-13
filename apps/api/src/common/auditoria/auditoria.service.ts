@@ -13,7 +13,9 @@ export type AccionAuditada =
   | 'VEHICULO_CREADO'
   | 'VEHICULO_ACTUALIZADO'
   | 'SERVICIO_CREADO'
-  | 'SERVICIO_ACTUALIZADO';
+  | 'SERVICIO_ACTUALIZADO'
+  | 'CLIENTE_CREADO'
+  | 'CLIENTE_ACTUALIZADO';
 
 export interface EventoAuditoria {
   usuarioId: string | null;

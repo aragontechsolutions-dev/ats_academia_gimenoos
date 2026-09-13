@@ -158,6 +158,7 @@ Antes de dar por terminada cualquier funcionalidad:
 | Validación de entorno | ✅ Implementado |
 | Integridad en la base (EXCLUDE + CHECK) | ✅ Implementado y probado |
 | Verificación de pertenencia en agenda (anti-IDOR) | ✅ Implementado y probado |
+| Campos sensibles filtrados por rol (cédula, domicilio, notas) | ✅ No se envían a quien no los necesita |
 | RLS de Storage | 📄 SQL escrito, pendiente de aplicar en Supabase |
 | Registro de auditoría | ✅ Conectado a reservas, instructores, vehículos y precios |
 | Seguridad de pagos | ⬜ Etapa 2 |

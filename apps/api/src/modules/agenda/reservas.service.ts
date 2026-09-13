@@ -36,10 +36,7 @@ const SELECCION_RESERVA = {
   motivoCancelacion: true,
   createdAt: true,
   cliente: {
-    select: {
-      id: true,
-      usuario: { select: { nombre: true, apellido: true, telefono: true, email: true } },
-    },
+    select: { id: true, nombre: true, apellido: true, telefono: true, email: true },
   },
   instructor: { select: { id: true, nombre: true, apellido: true, colorAgenda: true } },
   vehiculo: { select: { id: true, patente: true, tipo: true } },
