@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CanalInvitacion, EstadoInvitacion, RolUsuario, type Invitacion } from '@prisma/client';
@@ -201,9 +202,32 @@ export class InvitacionesService {
    * todos al mismo lado dejaría al alumno en una pantalla que no puede usar.
    */
   private destinoDe(rol: RolUsuario): string {
-    const app = this.config.get<string>('APP_ALUMNO_URL') ?? 'http://localhost:5175';
-    const panel = this.config.get<string>('APP_PANEL_URL') ?? 'http://localhost:5174';
-    return rol === RolUsuario.CLIENTE ? app : panel;
+    const variable = rol === RolUsuario.CLIENTE ? 'APP_ALUMNO_URL' : 'APP_PANEL_URL';
+    const porDefecto = rol === RolUsuario.CLIENTE
+      ? 'http://localhost:5175'
+      : 'http://localhost:5174';
+    const destino = this.config.get<string>(variable) ?? porDefecto;
+
+    // En producción, un destino local significa que la variable quedó sin
+    // cargar. Sin este corte la invitación sale igual y la persona recibe un
+    // enlace que la lleva a su propia computadora: falla en silencio y del lado
+    // de quien menos puede entender por qué.
+    //
+    // Ojo: aunque esté bien cargada, Supabase igual descarta el destino si no
+    // está en su lista de URLs permitidas, y en su lugar manda al Site URL del
+    // proyecto. Ver docs/18-cuentas-e-invitaciones.md.
+    if (
+      this.config.get<string>('NODE_ENV') === 'production' &&
+      /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(destino)
+    ) {
+      this.logger.error(`${variable} apunta a ${destino} en producción`);
+      throw new ServiceUnavailableException(
+        `Falta configurar ${variable} en el servidor: apunta a una dirección local, ` +
+          'así que el enlace no llevaría a ninguna parte.',
+      );
+    }
+
+    return destino;
   }
 
   /**

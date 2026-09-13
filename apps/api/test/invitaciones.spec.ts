@@ -12,6 +12,8 @@ import { EstadoInvitacion, RolUsuario } from '@prisma/client';
 import { PrismaService } from '../src/common/prisma/prisma.service';
 import { AuditoriaService } from '../src/common/auditoria/auditoria.service';
 import { UsuariosService } from '../src/modules/usuarios/usuarios.service';
+import { InvitacionesService } from '../src/modules/invitaciones/invitaciones.service';
+import type { SupabaseAdminService } from '../src/common/supabase/supabase-admin.service';
 import type { SupabaseJwtPayload } from '../src/common/auth/jwt-payload.interface';
 
 const prisma = new PrismaService();
@@ -24,6 +26,8 @@ const auditoria = new AuditoriaService(prisma);
 const usuarios = new UsuariosService(prisma, configCon({}), auditoria);
 
 const SUFIJO = '@prueba-invitacion.uy';
+/** Quien figura como autor de las invitaciones en estas pruebas. */
+const ID_ADMIN = '00000000-0000-4000-e000-0000000000ad';
 const tokenDe = (sub: string, email: string): SupabaseJwtPayload => ({
   sub,
   email,
@@ -288,5 +292,75 @@ describe('Entrega del acceso por enlace, para mandar por WhatsApp', () => {
         data: { email, rol: RolUsuario.CLIENTE, clienteId: cliente.id, canal: 'CORREO' },
       }),
     ).rejects.toThrow();
+  });
+});
+
+describe('Un enlace que no lleva a ninguna parte no se manda', () => {
+  /**
+   * Si `APP_ALUMNO_URL` queda sin cargar en el servidor, el destino cae en
+   * `localhost`. La invitación saldría igual y la persona recibiría un enlace
+   * que la lleva a su propia computadora: falla en silencio, y del lado de quien
+   * menos puede entender por qué.
+   */
+  const supabaseQueNuncaSeUsa = {
+    invitar: async () => {
+      throw new Error('no debería llegar a pedirle nada a Supabase');
+    },
+    generarEnlace: async () => {
+      throw new Error('no debería llegar a pedirle nada a Supabase');
+    },
+  } as unknown as SupabaseAdminService;
+
+  const servicioCon = (valores: Record<string, string | undefined>) =>
+    new InvitacionesService(prisma, auditoria, supabaseQueNuncaSeUsa, configCon(valores));
+
+  it('en producción, un destino local corta el envío con un mensaje claro', async () => {
+    const email = `destinolocal${SUFIJO}`;
+    const cliente = await prisma.cliente.create({
+      data: { nombre: 'Destino', apellido: 'Local', email },
+    });
+
+    const invitaciones = servicioCon({
+      NODE_ENV: 'production',
+      APP_ALUMNO_URL: 'http://localhost:5175',
+    });
+
+    await expect(
+      invitaciones.crear({ rol: RolUsuario.CLIENTE, clienteId: cliente.id }, ID_ADMIN),
+    ).rejects.toThrow(/APP_ALUMNO_URL/);
+  });
+
+  it('con una dirección real sigue de largo y llega hasta Supabase', async () => {
+    const email = `destinoreal${SUFIJO}`;
+    const cliente = await prisma.cliente.create({
+      data: { nombre: 'Destino', apellido: 'Real', email },
+    });
+
+    const invitaciones = servicioCon({
+      NODE_ENV: 'production',
+      APP_ALUMNO_URL: 'https://app.ejemplo.uy',
+    });
+
+    // El stub de Supabase avisa que lo llamaron: eso prueba que el destino pasó
+    // el control y que el corte no se lleva puesto el caso bueno.
+    await expect(
+      invitaciones.crear({ rol: RolUsuario.CLIENTE, clienteId: cliente.id }, ID_ADMIN),
+    ).rejects.toThrow(/no debería llegar a pedirle nada a Supabase/);
+  });
+
+  it('en desarrollo, localhost es lo normal y no molesta', async () => {
+    const email = `destinodev${SUFIJO}`;
+    const cliente = await prisma.cliente.create({
+      data: { nombre: 'Destino', apellido: 'Dev', email },
+    });
+
+    const invitaciones = servicioCon({
+      NODE_ENV: 'development',
+      APP_ALUMNO_URL: 'http://localhost:5175',
+    });
+
+    await expect(
+      invitaciones.crear({ rol: RolUsuario.CLIENTE, clienteId: cliente.id }, ID_ADMIN),
+    ).rejects.toThrow(/no debería llegar a pedirle nada a Supabase/);
   });
 });

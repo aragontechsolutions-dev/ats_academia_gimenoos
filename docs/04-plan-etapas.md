@@ -244,6 +244,18 @@ desarrollo no alcanza `supabase.co`.
 **No verificado:** la generación real del enlace contra Supabase, por la misma
 razón de siempre.
 
+### Etapa 2.F — Correos propios y enlaces que llegan a destino ✅ COMPLETADA
+
+Tres problemas que aparecieron al probar el envío real.
+
+| Entregable | Estado |
+|---|---|
+| Arreglo: el enlace por WhatsApp fallaba siempre (`action_link` mal leído) | ✅ |
+| Plantillas de correo en español y con la identidad del sistema | ✅ verificadas en navegador |
+| En producción, un destino `localhost` corta el envío en vez de fallar callado | ✅ con pruebas |
+| Documentación de la configuración de Supabase que faltaba | ✅ |
+| Pruebas | ✅ 174 |
+
 ### Etapa 2.D — PWA del instructor ⏳ PENDIENTE
 
 App propia para los instructores, y cerrar el acceso del rol `INSTRUCTOR` al
