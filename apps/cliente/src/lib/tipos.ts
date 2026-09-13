@@ -72,11 +72,14 @@ export const ETIQUETA_ESTADO: Record<EstadoReserva, string> = {
 };
 
 export const COLOR_ESTADO: Record<EstadoReserva, string> = {
-  PENDIENTE: 'bg-amber-100 text-amber-800',
-  CONFIRMADA: 'bg-marca-100 text-marca-900',
-  COMPLETADA: 'bg-green-100 text-green-800',
+  PENDIENTE: 'bg-amber-100 text-amber-900',
+  // Celeste y no el rojo de la marca: el rojo queda reservado para AUSENTE, que
+  // es el único estado que el alumno tiene que leer como un problema. Con la
+  // marca en rojo, "confirmada" y "faltó" se verían casi iguales.
+  CONFIRMADA: 'bg-sky-100 text-sky-900',
+  COMPLETADA: 'bg-green-100 text-green-900',
   CANCELADA: 'bg-slate-100 text-slate-500',
-  AUSENTE: 'bg-red-100 text-red-800',
+  AUSENTE: 'bg-red-100 text-red-900',
 };
 
 /** Estados en los que la clase sigue en pie y se puede cancelar. */

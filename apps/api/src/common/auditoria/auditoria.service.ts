@@ -23,7 +23,11 @@ export type AccionAuditada =
   | 'GRADUADO_CREADO'
   | 'GRADUADO_ACTUALIZADO'
   | 'GRADUADO_AUTORIZACION_RETIRADA'
-  | 'GRADUADO_ELIMINADO';
+  | 'GRADUADO_ELIMINADO'
+  | 'INVITACION_ENVIADA'
+  | 'INVITACION_REVOCADA'
+  | 'INVITACION_ACEPTADA'
+  | 'ADMIN_INICIAL_CREADO';
 
 export interface EventoAuditoria {
   usuarioId: string | null;

@@ -3,7 +3,7 @@ import { llamarApi } from './api';
 import type { Pagina } from '../componentes/ui/Paginacion';
 import type {
   Cliente, FichaCliente, Excepcion, Franja, Hueco, Instructor, Reserva, Servicio, TipoVehiculo,
-  Vehiculo, EstadoReserva, SeccionLanding, NegocioLanding, Graduado,
+  Vehiculo, EstadoReserva, SeccionLanding, NegocioLanding, Graduado, Invitacion,
 } from './tipos';
 
 const query = (parametros: Record<string, string | number | boolean | undefined>): string => {
@@ -146,6 +146,20 @@ export const vehiculos = {
       method: 'PATCH',
       body: JSON.stringify({ fotoRuta }),
     }),
+};
+
+// --- Invitaciones ----------------------------------------------------------
+
+export const invitaciones = {
+  deCliente: (clienteId: string) =>
+    llamarApi<Invitacion[]>(`/invitaciones${query({ clienteId })}`),
+
+  crear: (cuerpo: { rol: 'CLIENTE' | 'INSTRUCTOR' | 'ADMIN'; clienteId?: string; instructorId?: string; email?: string }) =>
+    llamarApi<Invitacion>('/invitaciones', { method: 'POST', body: JSON.stringify(cuerpo) }),
+
+  reenviar: (id: string) => llamarApi<Invitacion>(`/invitaciones/${id}/reenviar`, { method: 'POST' }),
+
+  revocar: (id: string) => llamarApi<Invitacion>(`/invitaciones/${id}`, { method: 'DELETE' }),
 };
 
 // --- Catálogo --------------------------------------------------------------

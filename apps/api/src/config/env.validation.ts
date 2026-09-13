@@ -31,6 +31,22 @@ export const envSchema = z.object({
    */
   SUPABASE_JWT_LEGACY_SECRET: z.string().optional(),
 
+  /**
+   * Puerta de arranque: la unica direccion que puede entrar sin invitacion, y lo
+   * hace como ADMIN. Hace falta en la primera instalacion y al rehacer el
+   * proyecto de Supabase, cuando todavia no hay nadie que pueda invitar.
+   *
+   * Conviene vaciarla despues del primer ingreso: mientras este puesta, quien
+   * controle esa casilla de correo puede crearse un administrador.
+   */
+  ADMIN_INICIAL_EMAIL: z.string().email().optional().or(z.literal('')),
+
+  // --- Direcciones de los frontends ----------------------------------------
+  /** A donde cae un alumno al tocar el enlace de su invitacion. */
+  APP_ALUMNO_URL: z.string().url().default('http://localhost:5175'),
+  /** A donde cae un instructor o un administrador. */
+  APP_PANEL_URL: z.string().url().default('http://localhost:5174'),
+
   // --- Seguridad HTTP ------------------------------------------------------
   /** Origenes permitidos para CORS, separados por coma. Sin comodines. */
   CORS_ORIGINS: z
