@@ -140,8 +140,16 @@ export class SupabaseAdminService {
     }
 
     // El cuerpo de esta respuesta NUNCA se registra: trae el enlace adentro.
-    const datos = (await respuesta.json()) as { properties?: { action_link?: string } };
-    const enlace = datos.properties?.action_link;
+    //
+    // `action_link` viene en la RAÍZ de la respuesta. Es el cliente
+    // `supabase-js` el que lo anida bajo `properties`, y como acá se habla
+    // directo con la API de Auth, ese nivel no existe. Se contemplan los dos por
+    // si alguna versión cambia de forma.
+    const datos = (await respuesta.json()) as {
+      action_link?: string;
+      properties?: { action_link?: string };
+    };
+    const enlace = datos.action_link ?? datos.properties?.action_link;
     if (!enlace) {
       this.logger.error('Supabase devolvió una respuesta sin action_link al generar el enlace');
       throw new ServiceUnavailableException('Supabase no devolvió un enlace utilizable.');

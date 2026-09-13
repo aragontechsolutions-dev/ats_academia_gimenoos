@@ -116,6 +116,24 @@ Verificar después en **Storage** que la visibilidad coincida con la tabla. Los
 dos públicos lo son solo para **leer**: escribir en ellos requiere rol de
 administrador. El detalle está en [17-fotos.md](17-fotos.md).
 
+## 5b. Direcciones de retorno y correos
+
+**Sin este paso las invitaciones salen pero no sirven.** Supabase solo obedece el
+destino que manda la API si esa dirección está en su lista; si no, manda a la
+persona al *Site URL*, que de fábrica es `http://localhost:3000`.
+
+En **Authentication → URL Configuration**:
+
+- **Site URL**: la dirección de la app del alumno.
+- **Redirect URLs**: la app del alumno **y** el panel.
+
+Y pegar las plantillas de correo en español desde
+`infra/supabase/plantillas-correo/` (**Authentication → Emails**), y dejar el
+vencimiento del enlace en 24 horas.
+
+Todo el detalle, con qué pasa si falta cada cosa, está en
+[18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md).
+
 ## 6. Configurar Auth
 
 **Authentication → Providers**

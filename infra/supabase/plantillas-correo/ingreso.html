@@ -1,0 +1,107 @@
+<!--
+  Plantilla: "Magic Link" (Enlace de acceso).
+  Es el correo que recibe quien YA tiene cuenta y pide entrar desde la app. Se
+  pega tal cual en Supabase > Authentication > Emails > Magic Link.
+
+  Por qué está escrita así, y no como una página normal:
+
+  - Todo el estilo va EN LÍNEA y la estructura en <table>. Los clientes de
+    correo —Gmail, Outlook, el de iPhone— descartan las hojas de estilo y no
+    entienden flexbox ni grid. Lo que en una página es un div con clases, acá
+    es una tabla con atributos.
+  - El ancho máximo es 600 px porque es lo que muestran las vistas previas sin
+    recortar.
+  - El botón es una tabla con fondo, no un <a> con padding: Outlook ignora el
+    relleno de los enlaces y el botón queda como texto suelto.
+  - Debajo del botón va la dirección completa en texto. Varios clientes no
+    permiten tocar botones hasta que la persona marca el remitente como seguro,
+    y sin esa línea el correo queda inservible.
+  - Los colores se escriben con su valor, no con variables: son los mismos
+    `marca-*` y `carbon-*` del sitio (#c20325, #d90429, #0b0b0d).
+
+  Variables disponibles: {{ .ConfirmationURL }}, {{ .Email }}, {{ .SiteURL }},
+  {{ .Token }}, {{ .TokenHash }}, {{ .RedirectTo }}.
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;margin:0;padding:24px 12px;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border-radius:14px;overflow:hidden;">
+
+        <tr>
+          <td style="background-color:#0b0b0d;padding:22px 28px;">
+            <span style="font-size:20px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;">GIMENOOS</span><span style="color:#d90429;font-size:20px;font-weight:800;">.</span>
+            <div style="margin-top:4px;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;">Academia de Choferes</div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:32px 28px 8px 28px;">
+            <h1 style="margin:0;font-size:22px;line-height:1.3;color:#0f172a;">Tu enlace para entrar</h1>
+            <p style="margin:14px 0 0 0;font-size:15px;line-height:1.6;color:#334155;">
+              ¡Hola! Pediste entrar a la app de la Academia de Choferes Gimenoos. Tocá el
+              botón y entrás directo, sin contraseña.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td align="center" style="padding:26px 28px 8px 28px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="background-color:#c20325;border-radius:8px;">
+                  <a href="{{ .ConfirmationURL }}"
+                     style="display:inline-block;padding:14px 30px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;">
+                    Entrar
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:10px 28px 0 28px;">
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">
+              Si el botón no funciona, copiá y pegá esta dirección en tu navegador:
+            </p>
+            <p style="margin:6px 0 0 0;font-size:12px;line-height:1.5;word-break:break-all;">
+              <a href="{{ .ConfirmationURL }}" style="color:#c20325;">{{ .ConfirmationURL }}</a>
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:22px 28px 0 28px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fef2f3;border-radius:10px;">
+              <tr>
+                <td style="padding:14px 16px;font-size:13px;line-height:1.6;color:#8d001c;">
+                  <strong>El enlace vence en 24 horas y se usa una sola vez.</strong>
+                  Si se te venció, escribinos y te mandamos otro.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:22px 28px 30px 28px;">
+            <p style="margin:0;font-size:12px;line-height:1.6;color:#94a3b8;">
+              Recibís este correo porque alguien pidió entrar con la dirección
+              {{ .Email }}. Si no fuiste vos, ignoralo: sin tocar el enlace nadie entra a
+              tu cuenta, y no hace falta que hagas nada más.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="background-color:#f8fafc;padding:16px 28px;border-top:1px solid #e2e8f0;">
+            <p style="margin:0;font-size:12px;line-height:1.6;color:#64748b;">
+              Academia de Choferes Gimenoos · San Carlos, Maldonado
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>

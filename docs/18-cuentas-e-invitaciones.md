@@ -214,6 +214,67 @@ con quién lo hizo y, en el caso del rol, el antes y el después.
 
 ---
 
+## 3c. La configuración de Supabase, sin la cual nada de esto llega
+
+El código arma el enlace y le dice a Supabase a dónde tiene que mandar a la
+persona. Pero **Supabase puede descartar ese destino**, y lo hace en silencio.
+Tres cosas hay que dejar bien en el panel, una sola vez.
+
+### El destino: por qué un enlace terminaba en `localhost:3000`
+
+Supabase solo obedece el `redirect_to` si esa dirección está en su **lista de
+URLs permitidas**. Si no está, manda a la persona al **Site URL** del proyecto,
+que de fábrica viene en `http://localhost:3000`. Nadie avisa: el correo sale, el
+enlace parece bien, y quien lo toca aterriza en su propia computadora.
+
+En **Authentication → URL Configuration** (buscar *Site URL* y *Redirect URLs*):
+
+| Campo | Qué poner |
+|---|---|
+| **Site URL** | La dirección de la app del alumno |
+| **Redirect URLs** | La app del alumno **y** el panel, las dos |
+
+Y en el servidor (Render), las variables que arman el `redirect_to`:
+
+```
+APP_ALUMNO_URL   la dirección de la app del alumno
+APP_PANEL_URL    la dirección del panel
+```
+
+Las dos listas tienen que coincidir. Si `APP_ALUMNO_URL` dice una cosa y la lista
+de Supabase no la incluye, vuelve a pasar lo mismo.
+
+**En producción, la API ya no deja mandar una invitación con un destino local:**
+corta con un mensaje que nombra la variable que falta, en vez de generar un
+enlace que no lleva a ninguna parte. En desarrollo `localhost` es lo normal y no
+molesta.
+
+### Los correos: en español y con la identidad del sistema
+
+Los que manda Supabase de fábrica vienen en inglés y sin ningún estilo. En
+`infra/supabase/plantillas-correo/` están reescritos:
+
+| Archivo | Dónde se pega | Quién lo recibe |
+|---|---|---|
+| `invitacion.html` | **Invite user** | Alguien a quien la academia habilitó |
+| `ingreso.html` | **Magic Link** | Quien ya tiene cuenta y pidió entrar |
+
+Se pegan a mano en **Authentication → Emails**, una vez. El detalle de por qué
+están escritas con tablas y estilos en línea está en el README de esa carpeta.
+
+### El plazo de validez
+
+El enlace tiene que vencer, y el plazo lo fija el proyecto, no este código. Se
+deja en **24 horas** en la configuración del proveedor de correo (la opción de
+expiración del enlace u OTP).
+
+> **Nada de esta sección se pudo verificar desde el entorno de desarrollo**, que
+> no alcanza `supabase.co`. Después de dejarlo configurado, conviene mandarse una
+> invitación a uno mismo y comprobar tres cosas: que el correo llegue en español,
+> que el botón lleve a la app —no a `localhost`— y que se entre de una.
+
+---
+
 ## 4. La puerta de arranque
 
 `ADMIN_INICIAL_EMAIL` es **la única dirección que entra sin invitación**, y lo
@@ -237,6 +298,10 @@ correo puede crearse un administrador.
 | «Esta cuenta no está habilitada» | No hay invitación vigente para ese correo | Invitarlo desde su ficha |
 | «el correo no salió» en el panel | La invitación se guardó pero Supabase no la mandó | Reenviar. Si sigue, revisar la configuración de correo del proyecto |
 | «Supabase está limitando el envío» | Tope de correos del plan | Esperar unos minutos |
+| «Supabase no devolvió un enlace utilizable» | Ya no debería pasar: era un error de lectura de la respuesta, corregido | Si vuelve, revisar `supabase-admin.service.ts` |
+| «Falta configurar APP_ALUMNO_URL…» | La variable no está cargada en el servidor | Cargarla en Render, ver más arriba |
+| El enlace lleva a `localhost:3000` | El destino no está en las URLs permitidas de Supabase, y cayó en el Site URL | Ver «La configuración de Supabase» |
+| El correo llega en inglés | Faltan pegar las plantillas | Ver `infra/supabase/plantillas-correo/` |
 | «Esa dirección ya tiene cuenta» | Ya existe el usuario | No hace falta invitar: entra con el enlace desde la app |
 | «Ya hay una cuenta con ese correo registrada con otro identificador» | Se rehizo el proyecto de Supabase y la fila vieja apunta a una cuenta que ya no existe | Ver abajo |
 
@@ -286,6 +351,10 @@ Para el administrador, la alternativa más simple es cargar
 | El enlace no aparece en la base ni en el listado de invitaciones | OK |
 | La base rechaza una entrega sin canal, o un canal sin entrega | OK |
 | Un canal inventado | `400` |
+| En producción, un destino `localhost` corta el envío nombrando la variable | OK |
+| Con una dirección real, el envío sigue de largo | OK |
+| En desarrollo, `localhost` no molesta | OK |
+| Las dos plantillas de correo, a 600 px y a 390 px | Sin desbordes, sin texto en inglés, sin variables sin reemplazar |
 | Un alumno listando o modificando cuentas | `403` |
 | Un administrador tocando su propia cuenta | `400`, y sigue activo y ADMIN |
 | Sacar al último administrador activo (por rol o por baja) | `409` |

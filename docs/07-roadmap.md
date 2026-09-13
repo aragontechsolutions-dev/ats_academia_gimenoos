@@ -107,6 +107,21 @@ las fotos y el logo:
       **la subida a Storage es lo único del proyecto que no se pudo probar
       corriendo de verdad**, porque el entorno de desarrollo no alcanza a
       Supabase.
+- [ ] **Dejar Supabase configurado para que las invitaciones lleguen a destino.**
+      Tres cosas, en el panel de Supabase, y sin ellas el correo sale pero el
+      enlace no sirve:
+      1. **Authentication → URL Configuration**: *Site URL* con la dirección de
+         la app del alumno, y *Redirect URLs* con la app **y** el panel. De
+         fábrica el Site URL es `http://localhost:3000`, que es adonde llevaba
+         el primer enlace de prueba.
+      2. **Authentication → Emails**: pegar `invitacion.html` en *Invite user* y
+         `ingreso.html` en *Magic Link*, desde
+         `infra/supabase/plantillas-correo/`. Los de fábrica están en inglés.
+      3. Dejar el **vencimiento del enlace en 24 horas**.
+
+      Y en Render: `ADMIN_INICIAL_EMAIL`, `APP_ALUMNO_URL` y `APP_PANEL_URL`.
+      Después, mandarse una invitación a uno mismo por los dos canales y
+      comprobar que el correo llegue en español y que el enlace lleve a la app.
 - [ ] **Imprimir el formulario de autorización** ([`16-autorizacion-imagen.md`](16-autorizacion-imagen.md))
       y hacerlo firmar a cada egresado antes de publicar su foto. Conviene que lo
       revise un abogado antes de usarlo, sobre todo la parte de menores.
