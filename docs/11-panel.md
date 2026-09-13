@@ -113,3 +113,31 @@ cancelarlo.
 Sin errores de consola ni peticiones fallidas. La conversión horaria quedó
 confirmada de punta a punta: una clase agendada a las 09:00 de Montevideo se
 guarda como 12:00 UTC.
+
+---
+
+## Un detalle de los formularios de alta que ya costó un error
+
+El `ValidationPipe` de la API rechaza cualquier campo que el DTO no declare
+(`forbidNonWhitelisted`). Eso está bien y es a propósito: evita que un cliente
+mande campos de más y que alguno termine escribiéndose sin querer.
+
+La consecuencia práctica es que **el formulario no puede mandar el estado entero
+del componente** cuando crea algo. Los campos que solo existen al editar —el
+`activo` de un instructor o un alumno, el `estado` de un vehículo— no están en
+el DTO de creación, y mandarlos devuelve `400 property activo should not exist`.
+
+El patrón correcto, que usan los tres formularios:
+
+```ts
+const cuerpo = {
+  ...camposComunes,
+  ...(instructor ? { activo } : {}),  // solo al editar
+};
+```
+
+El formulario de instructores no lo seguía —mandaba `{ ...datos }`— y dar de
+alta un instructor fallaba con ese 400. La prueba de navegador
+`altas.spec.mjs` recorre los tres formularios de creación de punta a punta y
+falla si la API rechaza alguno: es lo que faltaba, porque la validación vive en
+el borde HTTP y ninguna prueba unitaria recorría el camino completo.
