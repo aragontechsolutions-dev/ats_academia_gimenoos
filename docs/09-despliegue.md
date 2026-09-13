@@ -278,11 +278,27 @@ correo no funciona.
 ### 4.3 Primer administrador
 
 1. **Authentication → Users → Add user**, con correo y contraseña.
-2. Que ingrese una vez al panel (así se crea su fila en `usuarios`).
-3. En **SQL Editor**:
+2. Ingresar una vez al panel. **Es esperable que aparezca "Acceso restringido"**:
+   toda cuenta nueva nace con rol `CLIENTE`, y ese primer ingreso es justamente
+   lo que crea su fila en `usuarios`.
+
+   > Que aparezca esa pantalla —y no un error— confirma que la cadena completa
+   > funciona: CORS, la verificación del token contra el JWKS del proyecto y el
+   > alta automática del usuario en la base.
+
+3. En **SQL Editor**, promoverlo:
    ```sql
    UPDATE usuarios SET rol = 'ADMIN' WHERE email = 'correo@delAdmin.com';
    ```
+4. **Recargar el panel.** No hace falta volver a iniciar sesión: el rol se lee de
+   la base en cada petición, no del token. Por eso un cambio de rol —o dar de
+   baja una cuenta— tiene efecto inmediato, sin esperar a que expire el JWT.
+
+Para verificar antes de recargar:
+
+```sql
+SELECT email, rol, activo FROM usuarios;
+```
 
 ---
 
@@ -290,7 +306,8 @@ correo no funciona.
 
 - [ ] La landing abre y **muestra los servicios** (si los muestra, la cadena
       Vercel → Render → Supabase funciona completa).
-- [ ] El panel permite iniciar sesión con el administrador.
+- [ ] El panel permite iniciar sesión con el administrador (tras el `UPDATE` del
+      paso 4.3; antes de eso, "Acceso restringido" es lo correcto).
 - [ ] El panel muestra el catálogo en *Servicios y precios*.
 - [ ] La PWA envía el enlace de ingreso por correo y permite entrar.
 - [ ] La PWA ofrece instalarse en el teléfono.
