@@ -139,6 +139,36 @@ WhatsApp Business: proveedor externo y costo por mensaje.
 Desde la misma sección se puede **reenviar** —por el canal que sea— o **dar de
 baja** el acceso mientras no se haya usado.
 
+### El enlace va a una pantalla propia, no a la de Supabase
+
+Esto no es estético: **es lo que hace que el enlace llegue vivo.**
+
+La dirección de verificación que arma Supabase **se consume con una sola
+visita**. Y los enlaces no los visita solo la persona:
+
+- **WhatsApp los visita** para armar la tarjeta de vista previa del mensaje.
+- **Los antivirus de correo los visitan** para revisarlos. Safe Links de Outlook
+  es el caso más conocido.
+
+Con el enlace de Supabase, esa visita gastaba el código. La persona lo tocaba
+después y recibía *«el enlace es inválido o expiró»*, sin haberlo usado nunca.
+Nos pasó en la primera prueba real por WhatsApp.
+
+**La solución:** el enlace apunta a `/entrar` de la aplicación que corresponda, y
+lleva el código adentro. Esa pantalla lo canjea **desde JavaScript**, con
+`verifyOtp`. Los rastreadores de vista previa no ejecutan JavaScript, así que el
+código les sobrevive. Es lo que recomienda la propia documentación de Supabase
+para este problema.
+
+Hay una prueba que lo comprueba de la forma que importa: **carga la página con
+JavaScript apagado y verifica que no se haga ningún canje.**
+
+La pantalla existe en las dos aplicaciones —la del alumno y el panel— porque se
+invita a los dos lados. Y el correo usa el mismo camino: las plantillas arman la
+dirección con `{{ .TokenHash }}` en vez de `{{ .ConfirmationURL }}`.
+
+De yapa, el enlace se ve como de la academia y no como una dirección de Supabase.
+
 ### El enlace es una credencial
 
 Quien lo tenga entra como esa persona. Por eso:
@@ -269,16 +299,10 @@ academia y no desde una de Supabase.
 
 #### Cómo se configura
 
-1. Abrir cuenta en un proveedor de correo transaccional. Cualquiera sirve; con
-   plan gratuito alcanza de sobra para el volumen de una academia —se manda un
-   puñado de invitaciones por día—. Brevo, por ejemplo, permite 300 por día sin
-   costo y no exige verificar un dominio para empezar, aunque **conviene
-   verificarlo**: sin eso reescribe el remitente y el correo llega desde una
-   dirección que no es la de la academia.
-2. En el panel de Supabase, **Authentication → Emails → Set up SMTP**, con los
-   datos que da el proveedor (servidor, puerto, usuario y clave) y la dirección
-   y el nombre del remitente.
-3. Recién ahí se habilitan las plantillas. Pegar las dos:
+El paso a paso completo, con el proveedor que usa el proyecto (Brevo), está en
+**[19-correo.md](19-correo.md)**. En resumen: se configura el servidor de correo
+en **Authentication → Emails → Set up SMTP**, y recién ahí se habilitan las
+plantillas. Pegar las dos:
 
 | Archivo | Dónde se pega | Quién lo recibe |
 |---|---|---|
@@ -335,6 +359,7 @@ correo puede crearse un administrador.
 | «Supabase no devolvió un enlace utilizable» | Ya no debería pasar: era un error de lectura de la respuesta, corregido | Si vuelve, revisar `supabase-admin.service.ts` |
 | «Falta configurar APP_ALUMNO_URL…» | La variable no está cargada en el servidor | Cargarla en Render, ver más arriba |
 | El enlace lleva a `localhost:3000` | El destino no está en las URLs permitidas de Supabase, y cayó en el Site URL | Ver «La configuración de Supabase» |
+| «Este enlace ya no sirve» al abrirlo | El código venció, ya se usó, o se generó otro después —cada enlace nuevo invalida el anterior— | Mandar uno nuevo desde la ficha |
 | El correo llega en inglés | Las plantillas no se pueden editar sin SMTP propio | Ver «El correo: hace falta un servidor propio» |
 | «Supabase no tiene permitido escribirle a esa dirección» | El remitente de fábrica solo le entrega al equipo del proyecto | Configurar SMTP propio |
 | El correo le llega al dueño del proyecto pero no a un alumno | Lo mismo de arriba, visto desde el otro lado | Configurar SMTP propio |
@@ -387,6 +412,10 @@ Para el administrador, la alternativa más simple es cargar
 | El enlace no aparece en la base ni en el listado de invitaciones | OK |
 | La base rechaza una entrega sin canal, o un canal sin entrega | OK |
 | Un canal inventado | `400` |
+| **Una visita sin JavaScript no consume el código** | OK — es lo que lo protege de la vista previa |
+| Con el código bueno, la pantalla entra a la app | OK |
+| Con el código quemado, explica en español y sin filtrar el mensaje de Supabase | OK |
+| Los enlaces de las plantillas apuntan a `/entrar` y no a Supabase | OK |
 | En producción, un destino `localhost` corta el envío nombrando la variable | OK |
 | Con una dirección real, el envío sigue de largo | OK |
 | En desarrollo, `localhost` no molesta | OK |

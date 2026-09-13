@@ -114,19 +114,23 @@ las fotos y el logo:
          la app del alumno, y *Redirect URLs* con la app **y** el panel. De
          fábrica el Site URL es `http://localhost:3000`, que es adonde llevaba
          el primer enlace de prueba.
-      2. **Configurar un servidor de correo propio (SMTP)**, en
-         *Authentication → Emails → Set up SMTP*. **Esto no es opcional:** el
-         remitente que trae Supabase solo le escribe a las cuentas del equipo
-         del proyecto, así que a un alumno no le llega nada; permite 2 correos
-         por hora; y sin SMTP propio no deja editar las plantillas. Con plan
-         gratuito de cualquier proveedor alcanza de sobra. Recién después, pegar
-         `invitacion.html` en *Invite user* y `ingreso.html` en *Magic Link*,
-         desde `infra/supabase/plantillas-correo/`.
+      2. **Configurar el servidor de correo (Brevo)** y pegar las plantillas.
+         **Esto no es opcional:** el remitente que trae Supabase solo le escribe
+         a las cuentas del equipo del proyecto, así que a un alumno no le llega
+         nada. Paso a paso en [`19-correo.md`](19-correo.md).
       3. Dejar el **vencimiento del enlace en 24 horas**.
 
       Y en Render: `ADMIN_INICIAL_EMAIL`, `APP_ALUMNO_URL` y `APP_PANEL_URL`.
       Después, mandarse una invitación a uno mismo por los dos canales y
       comprobar que el correo llegue en español y que el enlace lleve a la app.
+- [ ] **Comprar el dominio de la academia** (por ejemplo
+      `academiagimenoos.com.uy`) y autenticarlo en Brevo. Mientras no exista,
+      **el correo no sale a nombre de la academia** —Brevo reemplaza cualquier
+      remitente de Gmail— y **a Hotmail y Outlook probablemente no llegue**, que
+      en Uruguay es media lista de alumnos. Son tres registros de texto en el
+      DNS y no toca nada del código; el procedimiento está en
+      [`19-correo.md`](19-correo.md). Mientras tanto, para esos alumnos el
+      camino confiable es mandarles el acceso por WhatsApp.
 - [ ] **Imprimir el formulario de autorización** ([`16-autorizacion-imagen.md`](16-autorizacion-imagen.md))
       y hacerlo firmar a cada egresado antes de publicar su foto. Conviene que lo
       revise un abogado antes de usarlo, sobre todo la parte de menores.

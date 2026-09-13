@@ -272,6 +272,21 @@ no le llegaría nunca.
 entonces, el envío por WhatsApp funciona igual —no usa correo—, pero el ingreso
 desde la app no.
 
+### Etapa 2.H — Que el enlace llegue vivo ✅ COMPLETADA
+
+La primera prueba real por WhatsApp falló con «el enlace es inválido o expiró»
+sin que nadie lo hubiera usado. Causa: la dirección de verificación de Supabase
+se consume con una sola visita, y **WhatsApp visita los enlaces** para armar la
+vista previa del mensaje. Lo mismo hacen los antivirus de correo.
+
+| Entregable | Estado |
+|---|---|
+| El enlace apunta a una pantalla propia que canjea el código desde JavaScript | ✅ |
+| La pantalla existe en la app del alumno y en el panel | ✅ |
+| Las plantillas de correo usan el mismo camino (`{{ .TokenHash }}`) | ✅ |
+| Mensajes en español cuando el código ya no sirve | ✅ |
+| Pruebas | ✅ 183, más una que carga la página **sin JavaScript** y comprueba que no se consuma el código |
+
 ### Etapa 2.D — PWA del instructor ⏳ PENDIENTE
 
 App propia para los instructores, y cerrar el acceso del rol `INSTRUCTOR` al

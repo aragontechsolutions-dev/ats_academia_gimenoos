@@ -21,6 +21,7 @@
 | [16-autorizacion-imagen.md](16-autorizacion-imagen.md) | **Formulario de autorización para imprimir y firmar** |
 | [17-fotos.md](17-fotos.md) | Validación de fotos, buckets y la foto de cada vehículo |
 | [18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md) | **Quién puede entrar al sistema y cómo se lo habilita** |
+| [19-correo.md](19-correo.md) | **Configuración del correo (Brevo + Supabase), paso a paso** |
 
 **Por dónde empezar:** `07-roadmap.md` si sos quien decide,
 `06-guia-desarrollo.md` para levantar el entorno,

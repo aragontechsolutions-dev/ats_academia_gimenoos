@@ -111,18 +111,28 @@ export class SupabaseAdminService {
     );
   }
   /**
-   * Genera el enlace de acceso SIN mandar ningún correo.
+   * Pide el código de acceso de una persona, SIN mandar ningún correo.
    *
-   * Es lo que permite cerrar el ciclo cuando la persona llegó por WhatsApp: la
-   * academia ya está conversando con ella, así que el enlace se pega en esa
-   * conversación en vez de mandarlo a una casilla que capaz no mira.
+   * Devuelve el `token_hash`, no la dirección que arma Supabase. La diferencia
+   * importa: esa dirección se consume con **una sola visita**, y las
+   * aplicaciones de mensajería visitan los enlaces para armar la vista previa.
+   * Mandarla por WhatsApp la quemaba antes de que la persona la tocara, y al
+   * abrirla recibía «el enlace es inválido o expiró».
    *
-   * El enlace devuelto es una **credencial**: quien lo tenga entra como esa
-   * persona. Por eso no se guarda en la base, no se escribe en los registros y
-   * no se puede volver a pedir el mismo. El plazo de validez lo fija el proyecto
-   * de Supabase, no este código.
+   * Con el `token_hash`, el enlace apunta a una pantalla propia que recién ahí
+   * lo canjea, desde JavaScript. Los rastreadores de vista previa no ejecutan
+   * JavaScript, así que el código sobrevive a la previa. Es lo que recomienda la
+   * propia documentación de Supabase para este problema.
+   *
+   * Lo devuelto es una **credencial**: quien la tenga entra como esa persona.
+   * No se guarda en la base, no se escribe en los registros y no se puede volver
+   * a pedir la misma.
    */
-  async generarEnlace(email: string, redirigirA: string, esPrimerAcceso: boolean): Promise<string> {
+  async generarCodigo(
+    email: string,
+    redirigirA: string,
+    esPrimerAcceso: boolean,
+  ): Promise<{ tokenHash: string; tipo: 'invite' | 'magiclink' }> {
     if (!this.configurado) {
       throw new ServiceUnavailableException(
         'Falta configurar SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en el servidor.',
@@ -131,6 +141,10 @@ export class SupabaseAdminService {
 
     const destino = new URL(`${this.url}/auth/v1/admin/generate_link`);
     destino.searchParams.set('redirect_to', redirigirA);
+
+    // `invite` crea la cuenta; `magiclink` sirve para quien ya la tiene. El tipo
+    // viaja después en el enlace: la pantalla que canjea el código lo necesita.
+    const tipo = esPrimerAcceso ? 'invite' : 'magiclink';
 
     let respuesta: Response;
     try {
@@ -141,8 +155,7 @@ export class SupabaseAdminService {
           Authorization: `Bearer ${this.clave}`,
           'Content-Type': 'application/json',
         },
-        // `invite` crea la cuenta; `magiclink` sirve para quien ya la tiene.
-        body: JSON.stringify({ type: esPrimerAcceso ? 'invite' : 'magiclink', email }),
+        body: JSON.stringify({ type: tipo, email }),
       });
     } catch (problema) {
       this.logger.error(`No se pudo llegar a Supabase Auth: ${(problema as Error).message}`);
@@ -154,28 +167,27 @@ export class SupabaseAdminService {
     if (!respuesta.ok) {
       const cuerpo = await respuesta.text().catch(() => '');
       this.logger.error(
-        `Supabase respondió ${respuesta.status} al generar el enlace: ${cuerpo.slice(0, 300)}`,
+        `Supabase respondió ${respuesta.status} al generar el código: ${cuerpo.slice(0, 300)}`,
       );
       throw new ServiceUnavailableException(
-        `Supabase rechazó la generación del enlace (${respuesta.status}).`,
+        `Supabase rechazó la generación del código (${respuesta.status}).`,
       );
     }
 
-    // El cuerpo de esta respuesta NUNCA se registra: trae el enlace adentro.
+    // El cuerpo de esta respuesta NUNCA se registra: trae la credencial adentro.
     //
-    // `action_link` viene en la RAÍZ de la respuesta. Es el cliente
-    // `supabase-js` el que lo anida bajo `properties`, y como acá se habla
-    // directo con la API de Auth, ese nivel no existe. Se contemplan los dos por
-    // si alguna versión cambia de forma.
+    // Los campos vienen en la RAÍZ. Es el cliente `supabase-js` el que los anida
+    // bajo `properties`, y como acá se habla directo con la API de Auth, ese
+    // nivel no existe. Se contemplan los dos por si alguna versión cambia.
     const datos = (await respuesta.json()) as {
-      action_link?: string;
-      properties?: { action_link?: string };
+      hashed_token?: string;
+      properties?: { hashed_token?: string };
     };
-    const enlace = datos.action_link ?? datos.properties?.action_link;
-    if (!enlace) {
-      this.logger.error('Supabase devolvió una respuesta sin action_link al generar el enlace');
-      throw new ServiceUnavailableException('Supabase no devolvió un enlace utilizable.');
+    const tokenHash = datos.hashed_token ?? datos.properties?.hashed_token;
+    if (!tokenHash) {
+      this.logger.error('Supabase devolvió una respuesta sin hashed_token');
+      throw new ServiceUnavailableException('Supabase no devolvió un código utilizable.');
     }
-    return enlace;
+    return { tokenHash, tipo };
   }
 }

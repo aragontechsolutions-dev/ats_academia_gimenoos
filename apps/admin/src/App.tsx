@@ -3,6 +3,7 @@ import { ProveedorSesion } from './lib/sesion';
 import { RutaProtegida } from './componentes/RutaProtegida';
 import { Disposicion } from './componentes/Disposicion';
 import { Ingreso } from './paginas/Ingreso';
+import { Entrar } from './paginas/Entrar';
 import { Agenda } from './paginas/Agenda';
 import { Alumnos } from './paginas/Alumnos';
 import { AlumnoFicha } from './paginas/AlumnoFicha';
@@ -34,6 +35,8 @@ export function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/ingresar" element={<Ingreso />} />
+          {/* Fuera del guard de rol: es donde se consigue la sesión. */}
+          <Route path="/entrar" element={<Entrar />} />
 
           {/* La agenda y los alumnos también los usa el instructor. */}
           <Route path="/" element={<Pagina><Agenda /></Pagina>} />

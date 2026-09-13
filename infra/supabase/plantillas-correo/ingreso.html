@@ -19,8 +19,24 @@
   - Los colores se escriben con su valor, no con variables: son los mismos
     `marca-*` y `carbon-*` del sitio (#c20325, #d90429, #0b0b0d).
 
-  Variables disponibles: {{ .ConfirmationURL }}, {{ .Email }}, {{ .SiteURL }},
-  {{ .Token }}, {{ .TokenHash }}, {{ .RedirectTo }}.
+  POR QUE EL ENLACE NO USA .ConfirmationURL:
+
+  Esa direccion la arma Supabase y SE CONSUME CON UNA SOLA VISITA. Los antivirus
+  de correo la visitan antes que la persona —Safe Links de Outlook es el caso
+  tipico—, asi que el enlace llega quemado y quien lo abre recibe "el enlace es
+  invalido o expiro".
+
+  En su lugar se arma una direccion a una pantalla propia del sistema, que canjea
+  el codigo DESDE JAVASCRIPT. Los rastreadores no ejecutan JavaScript, asi que el
+  codigo sobrevive. Es lo que recomienda la documentacion de Supabase.
+
+  .RedirectTo es la direccion que manda la API al invitar: la app del alumno o el
+  panel, segun a quien se invite. Si el enlace cayera en el lugar equivocado, es
+  que esa direccion no esta en la lista de URLs permitidas de Supabase
+  (Authentication > URL Configuration).
+
+  Variables disponibles: .ConfirmationURL, .Email, .SiteURL, .Token, .TokenHash
+  y .RedirectTo.
 -->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;margin:0;padding:24px 12px;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;">
   <tr>
@@ -49,7 +65,7 @@
             <table role="presentation" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="background-color:#c20325;border-radius:8px;">
-                  <a href="{{ .ConfirmationURL }}"
+                  <a href="{{ .RedirectTo }}/entrar?token_hash={{ .TokenHash }}&amp;type=magiclink"
                      style="display:inline-block;padding:14px 30px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;">
                     Entrar
                   </a>
@@ -65,7 +81,7 @@
               Si el botón no funciona, copiá y pegá esta dirección en tu navegador:
             </p>
             <p style="margin:6px 0 0 0;font-size:12px;line-height:1.5;word-break:break-all;">
-              <a href="{{ .ConfirmationURL }}" style="color:#c20325;">{{ .ConfirmationURL }}</a>
+              <a href="{{ .RedirectTo }}/entrar?token_hash={{ .TokenHash }}&amp;type=magiclink" style="color:#c20325;">{{ .RedirectTo }}/entrar?token_hash={{ .TokenHash }}&amp;type=magiclink</a>
             </p>
           </td>
         </tr>

@@ -20,7 +20,7 @@ plan gratuito no deja tocar las plantillas. El panel lo dice así:
 
 Configurar un servidor propio (**Authentication → Emails → Set up SMTP**)
 resuelve las tres cosas de una. El paso a paso está en
-[`docs/18-cuentas-e-invitaciones.md`](../../../docs/18-cuentas-e-invitaciones.md).
+[`docs/19-correo.md`](../../../docs/19-correo.md).
 
 ## Cómo se cargan
 
