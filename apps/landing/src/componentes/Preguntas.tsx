@@ -1,26 +1,38 @@
+import { Plus } from 'lucide-react';
 import { preguntas } from '../contenido';
+import { Seccion, TituloSeccion } from './ui/Seccion';
 
 export function Preguntas() {
   return (
-    <section id="preguntas" className="mx-auto max-w-3xl px-4 py-16">
-      <h2 className="text-3xl font-bold text-slate-900">Preguntas frecuentes</h2>
-      <div className="mt-8 divide-y divide-slate-200 border-y border-slate-200">
-        {preguntas.map((item) => (
-          // <details> da acordeon accesible y funcional sin JavaScript.
-          <details key={item.pregunta} className="group py-4">
-            <summary className="flex cursor-pointer items-center justify-between font-semibold text-slate-900">
-              {item.pregunta}
-              <span
-                aria-hidden="true"
-                className="ml-4 text-marca-600 transition group-open:rotate-45"
-              >
-                +
-              </span>
-            </summary>
-            <p className="mt-3 text-slate-600">{item.respuesta}</p>
-          </details>
-        ))}
+    <Seccion id="preguntas" className="bg-slate-50">
+      <div className="grid gap-10 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <TituloSeccion
+            sobretitulo="Preguntas"
+            titulo="Lo que más nos consultan"
+            bajada="¿Te quedó alguna duda? Escribinos y te la respondemos."
+          />
+        </div>
+
+        <div className="lg:col-span-2">
+          <div className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            {preguntas.map((item) => (
+              /* <details> da un acordeón accesible y funcional sin JavaScript. */
+              <details key={item.pregunta} className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 font-bold text-carbon-950 transition hover:text-marca-600">
+                  {item.pregunta}
+                  <Plus
+                    size={20}
+                    aria-hidden="true"
+                    className="shrink-0 text-marca-500 transition group-open:rotate-45"
+                  />
+                </summary>
+                <p className="px-5 pb-5 text-slate-600">{item.respuesta}</p>
+              </details>
+            ))}
+          </div>
+        </div>
       </div>
-    </section>
+    </Seccion>
   );
 }

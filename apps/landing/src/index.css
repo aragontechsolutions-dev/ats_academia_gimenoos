@@ -1,29 +1,81 @@
 @import 'tailwindcss';
 
 /*
-  Paleta y tipografia del sitio.
-  TODO(datos-reales): ajustar los colores de marca cuando la academia defina su
-  identidad visual (logo, colores). El azul de abajo es un valor de arranque.
+  Identidad visual de Academia Gimenoos.
+
+  Paleta automotriz: rojo protagonista, amarillo y naranja como acentos, negro y
+  grafito para las secciones de peso. Verificada contra el criterio AA de
+  contraste, con una salvedad que el código respeta: texto blanco sobre naranja
+  queda en 2.61 y no alcanza, así que el naranja solo se usa como acento
+  decorativo o con texto oscuro. Nunca como fondo de un texto claro.
 */
 @theme {
-  --color-marca-50: #eff6ff;
-  --color-marca-100: #dbeafe;
-  --color-marca-600: #1d4ed8;
-  --color-marca-700: #1e40af;
-  --color-marca-900: #172554;
+  /* Rojo: el color protagonista */
+  --color-marca-50: #fef2f3;
+  --color-marca-100: #fee2e4;
+  --color-marca-200: #fbc9ce;
+  --color-marca-500: #d90429;
+  --color-marca-600: #c20325;
+  --color-marca-700: #a50220;
+  --color-marca-900: #8d001c;
+
+  /* Acentos: nunca como superficie grande */
+  --color-acento-400: #ffc400;
+  --color-acento-500: #ff7a00;
+
+  /* Negros y grafito para las secciones de peso */
+  --color-carbon-950: #0b0b0d;
+  --color-carbon-900: #1b1d21;
+  --color-carbon-800: #2a2d33;
+
+  --font-display: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 html {
   scroll-behavior: smooth;
-}
-
-/* Respeta a quien configuro "reducir movimiento" en su sistema operativo. */
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+  /* La navbar es fija: sin esto, al saltar a una sección el título queda tapado. */
+  scroll-padding-top: 5rem;
 }
 
 body {
   @apply bg-white text-slate-800 antialiased;
+}
+
+/* --- Microinteracciones -----------------------------------------------------
+   Entradas suaves al hacer scroll. Se aplican con la clase `aparece`, que el
+   observador de intersección activa una sola vez por elemento.
+
+   Van dentro de `@layer components` a propósito: las utilidades de Tailwind
+   viven en la capa `utilities`, que gana por orden de capa sin importar la
+   especificidad. Si estas reglas quedaran fuera de toda capa, el
+   `transform: none` de `.aparece.visible` le ganaría al `hover:-translate-y-1`
+   de las tarjetas y el efecto de levantar al pasar por encima no funcionaría. */
+@layer components {
+  .aparece {
+    opacity: 0;
+    transform: translateY(1.25rem);
+    transition:
+      opacity 0.6s ease-out,
+      transform 0.6s ease-out;
+  }
+
+  .aparece.visible {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Quien pidió menos movimiento en su sistema operativo no debería recibir
+   ninguna animación: ni el scroll suave ni las entradas. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .aparece,
+  .aparece.visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

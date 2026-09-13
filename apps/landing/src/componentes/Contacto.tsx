@@ -1,78 +1,135 @@
-import { academia } from '../contenido';
+import { useState, type FormEvent } from 'react';
+import { MessageCircle, Send } from 'lucide-react';
+import { motivosConsulta, negocio } from '../contenido';
+import { enlaceWhatsApp } from '../lib/whatsapp';
+import { Seccion, TituloSeccion } from './ui/Seccion';
+import { clasesBoton } from './ui/Boton';
 
-const MENSAJE_WHATSAPP = encodeURIComponent(
-  'Hola, quiero consultar por las clases de manejo.',
-);
-
+/**
+ * Formulario de contacto.
+ *
+ * Decisión deliberada: el formulario NO envía nada a un servidor. Arma un
+ * mensaje de WhatsApp con lo que la persona escribió y abre la conversación.
+ *
+ * Por qué:
+ * - No se almacena ningún dato personal, así que no se suman obligaciones de
+ *   la Ley 18.331 (consentimiento, base de datos registrada ante la URCDP,
+ *   derechos de acceso y supresión) para algo que igual termina en un chat.
+ * - La consulta llega al mismo lugar donde la academia ya atiende.
+ *
+ * Si no hay número de WhatsApp cargado, el formulario no se muestra: no tendría
+ * a dónde enviar. La sección se degrada a los datos de contacto disponibles.
+ */
 export function Contacto() {
-  const tieneAlgunDato = Boolean(
-    academia.whatsapp || academia.telefono || academia.email || academia.direccion,
-  );
+  const [nombre, setNombre] = useState('');
+  const [motivo, setMotivo] = useState<string>(motivosConsulta[0]);
+  const [mensaje, setMensaje] = useState('');
+
+  const hayWhatsApp = Boolean(negocio.whatsapp);
+
+  function enviar(evento: FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+
+    const presentacion = `Hola, soy ${nombre.trim()}. ${motivo}.`;
+    const cuerpo = mensaje.trim();
+    const enlace = enlaceWhatsApp(cuerpo ? `${presentacion}\n${cuerpo}` : presentacion);
+    if (!enlace) return;
+    window.open(enlace, '_blank', 'noopener,noreferrer');
+  }
 
   return (
-    <section id="contacto" className="bg-marca-900 text-white">
-      <div className="mx-auto max-w-6xl px-4 py-16">
-        <h2 className="text-3xl font-bold">Empezá hoy</h2>
-        <p className="mt-3 max-w-2xl text-marca-100">
-          Escribinos y coordinamos tu primera clase. Te respondemos en el día.
-        </p>
+    <Seccion id="contacto" className="bg-slate-50">
+      <div className="grid gap-10 lg:grid-cols-2">
+        <div>
+          <TituloSeccion
+            sobretitulo="Contacto"
+            titulo="Escribinos y empezamos"
+            bajada="Contanos en qué estás y te decimos cómo seguir. Sin compromiso."
+          />
 
-        {!tieneAlgunDato && (
-          // Los datos de contacto todavia no fueron cargados en src/contenido.ts.
-          // No se inventa ningun numero: se avisa en consola durante el desarrollo.
-          <p className="mt-8 rounded-lg bg-white/10 p-4 text-marca-100">
-            Datos de contacto pendientes de carga.
-          </p>
-        )}
-
-        <div className="mt-8 flex flex-wrap gap-4">
-          {academia.whatsapp && (
-            <a
-              href={`https://wa.me/${academia.whatsapp}?text=${MENSAJE_WHATSAPP}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-lg bg-white px-6 py-3 font-semibold text-marca-900 transition hover:bg-marca-50"
-            >
-              Escribinos por WhatsApp
-            </a>
-          )}
-          {academia.telefono && (
-            <a
-              href={`tel:${academia.telefono.replace(/\s/g, '')}`}
-              className="rounded-lg border border-white/40 px-6 py-3 font-semibold transition hover:bg-white/10"
-            >
-              {academia.telefono}
-            </a>
-          )}
-          {academia.email && (
-            <a
-              href={`mailto:${academia.email}`}
-              className="rounded-lg border border-white/40 px-6 py-3 font-semibold transition hover:bg-white/10"
-            >
-              {academia.email}
-            </a>
+          {hayWhatsApp ? (
+            <p className="aparece mt-6 flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">
+              <MessageCircle size={20} aria-hidden="true" className="mt-0.5 shrink-0 text-marca-500" />
+              <span>
+                Al enviar se abre WhatsApp con tu consulta ya escrita.{' '}
+                <strong className="font-bold text-carbon-950">
+                  No guardamos tus datos en ningún lado
+                </strong>
+                : la conversación queda entre vos y la academia.
+              </span>
+            </p>
+          ) : (
+            <p className="aparece mt-6 rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">
+              Todavía no está publicado el canal de contacto directo. Mientras tanto, mirá los
+              datos de la sección{' '}
+              <a href="#ubicacion" className="font-bold text-marca-600 underline">
+                Dónde estamos
+              </a>
+              .
+            </p>
           )}
         </div>
 
-        <dl className="mt-10 grid gap-6 border-t border-white/20 pt-8 sm:grid-cols-3">
-          <div>
-            <dt className="text-sm text-marca-100">Dónde estamos</dt>
-            <dd className="mt-1 font-semibold">
-              {academia.direccion ?? `${academia.ciudad}, ${academia.departamento}`}
-            </dd>
-          </div>
-          {academia.horarios && (
+        {hayWhatsApp && (
+          <form onSubmit={enviar} className="aparece rounded-2xl border border-slate-200 bg-white p-7">
             <div>
-              <dt className="text-sm text-marca-100">Horarios</dt>
-              <dd className="mt-1 font-semibold">{academia.horarios}</dd>
+              <label htmlFor="contacto-nombre" className="block text-sm font-bold text-carbon-950">
+                Tu nombre
+              </label>
+              <input
+                id="contacto-nombre"
+                name="nombre"
+                type="text"
+                required
+                maxLength={80}
+                autoComplete="name"
+                value={nombre}
+                onChange={(evento) => setNombre(evento.target.value)}
+                className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-carbon-950 outline-none transition focus:border-marca-500 focus:ring-2 focus:ring-marca-200"
+              />
             </div>
-          )}
-          <div>
-            <dt className="text-sm text-marca-100">Zona de cobertura</dt>
-            <dd className="mt-1 font-semibold">San Carlos y alrededores, Maldonado</dd>
-          </div>
-        </dl>
+
+            <div className="mt-5">
+              <label htmlFor="contacto-motivo" className="block text-sm font-bold text-carbon-950">
+                ¿Qué necesitás?
+              </label>
+              <select
+                id="contacto-motivo"
+                name="motivo"
+                value={motivo}
+                onChange={(evento) => setMotivo(evento.target.value)}
+                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-carbon-950 outline-none transition focus:border-marca-500 focus:ring-2 focus:ring-marca-200"
+              >
+                {motivosConsulta.map((opcion) => (
+                  <option key={opcion} value={opcion}>
+                    {opcion}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mt-5">
+              <label htmlFor="contacto-mensaje" className="block text-sm font-bold text-carbon-950">
+                Contanos un poco más <span className="font-normal text-slate-500">(opcional)</span>
+              </label>
+              <textarea
+                id="contacto-mensaje"
+                name="mensaje"
+                rows={4}
+                maxLength={500}
+                value={mensaje}
+                onChange={(evento) => setMensaje(evento.target.value)}
+                className="mt-2 w-full resize-y rounded-lg border border-slate-300 px-4 py-3 text-carbon-950 outline-none transition focus:border-marca-500 focus:ring-2 focus:ring-marca-200"
+              />
+            </div>
+
+            <button type="submit" className={`${clasesBoton('primario')} mt-6 w-full`}>
+              <Send size={18} aria-hidden="true" />
+              Enviar por WhatsApp
+            </button>
+          </form>
+        )}
       </div>
-    </section>
+    </Seccion>
   );
 }

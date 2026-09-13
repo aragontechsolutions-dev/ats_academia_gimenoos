@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@gimenoos/shared": "workspace:*",
+    "lucide-react": "^0.474.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

@@ -3,42 +3,62 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <title>Academia de Choferes Gimenoos | Clases de manejo en San Carlos, Maldonado</title>
     <meta
       name="description"
-      content="Academia de choferes en San Carlos, Maldonado. Clases prácticas de moto y auto con instructores habilitados y acompañamiento del trámite de la libreta de conducir."
+      content="Academia de choferes en San Carlos, Maldonado. Clases prácticas de moto y auto, a tu ritmo, y acompañamiento del trámite de la libreta de conducir."
     />
     <link rel="canonical" href="https://www.academiagimenoos.com.uy/" />
     <meta name="robots" content="index, follow" />
-    <meta name="theme-color" content="#1d4ed8" />
+    <!-- Rojo de la marca: pinta la barra del navegador en Android. -->
+    <meta name="theme-color" content="#d90429" />
 
-    <!-- Open Graph: como se ve el enlace al compartirlo por WhatsApp o redes -->
+    <!-- SEO local: le dice a los buscadores dónde presta servicio la academia. -->
+    <meta name="geo.region" content="UY-MA" />
+    <meta name="geo.placename" content="San Carlos, Maldonado" />
+
+    <!-- Open Graph: cómo se ve el enlace al compartirlo por WhatsApp o redes -->
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="es_UY" />
     <meta property="og:site_name" content="Academia de Choferes Gimenoos" />
-    <meta property="og:title" content="Academia de Choferes Gimenoos | San Carlos, Maldonado" />
+    <meta
+      property="og:title"
+      content="Academia de Choferes Gimenoos | San Carlos, Maldonado"
+    />
     <meta
       property="og:description"
-      content="Clases de manejo de moto y auto en San Carlos. Reservá tu clase online."
+      content="Aprendé a manejar con confianza. Clases de moto y auto en San Carlos, a tu ritmo."
     />
     <meta property="og:url" content="https://www.academiagimenoos.com.uy/" />
-    <!-- TODO(datos-reales): subir una imagen 1200x630 a /public y referenciarla aca. -->
+    <!-- TODO(datos-reales): subir una imagen 1200x630 a /public y referenciarla acá
+         con og:image y twitter:image. Sin ella, al compartir el enlace se ve solo texto. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Academia de Choferes Gimenoos | San Carlos, Maldonado"
+    />
+    <meta
+      name="twitter:description"
+      content="Aprendé a manejar con confianza. Clases de moto y auto en San Carlos."
+    />
 
     <!--
       Datos estructurados schema.org.
       Le dicen a Google que esto es una autoescuela local y ayudan al SEO local.
-      TODO(datos-reales): completar telephone, address, geo y openingHours con los
-      datos reales. Los campos incompletos deben eliminarse, no dejarse con valores
-      de ejemplo: Google penaliza los datos estructurados que no coinciden con la
-      informacion visible en la pagina.
+
+      TODO(datos-reales): completar telephone, address.streetAddress, geo y
+      openingHours con los datos reales. Los campos que falten deben AGREGARSE,
+      nunca inventarse: Google penaliza los datos estructurados que no coinciden
+      con la información visible en la página.
     -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "DrivingSchool",
         "name": "Academia de Choferes Gimenoos",
-        "description": "Academia de choferes en San Carlos, Maldonado, Uruguay. Clases de manejo de moto y auto.",
+        "description": "Academia de choferes en San Carlos, Maldonado, Uruguay. Clases de manejo de moto y auto y acompañamiento del trámite de la libreta.",
         "url": "https://www.academiagimenoos.com.uy/",
         "areaServed": [
           { "@type": "City", "name": "San Carlos" },

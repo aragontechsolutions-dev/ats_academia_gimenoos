@@ -96,10 +96,26 @@ Detalle en [`11-panel.md`](11-panel.md).
 
 Detalle en [`12-pwa-alumno.md`](12-pwa-alumno.md).
 
-**Con esto cierra la Etapa 1 completa.**
-
 **Riesgo principal:** las zonas horarias. Todo se persiste en UTC y se convierte
 a `America/Montevideo` solo al mostrar.
+
+### Etapa 1.D — Sitio público profesional ✅ COMPLETADA
+
+| Entregable | Estado |
+|---|---|
+| Identidad visual propia (rojo/amarillo/negro), contraste verificado | ✅ |
+| Hero, barra de confianza, propuesta de valor, clases, proceso | ✅ |
+| Planes con precios en vivo desde la API | ✅ |
+| Trámite de la libreta, ubicación, preguntas frecuentes, CTA final | ✅ |
+| Formulario de contacto que abre WhatsApp y **no almacena datos** | ✅ |
+| Navbar fija, menú móvil, microinteracciones al hacer scroll | ✅ |
+| SEO local: metadatos, Open Graph y `schema.org/DrivingSchool` | ✅ |
+| Secciones sin datos reales que directamente no se renderizan | ✅ |
+| Pruebas | ✅ recorrido en navegador a 1280×900 y 390×844 |
+
+Detalle en [`13-landing.md`](13-landing.md).
+
+**Con esto cierra la Etapa 1 completa.**
 
 ## Etapa 2 — Pagos
 

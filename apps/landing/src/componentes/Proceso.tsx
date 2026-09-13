@@ -1,20 +1,41 @@
 import { pasos } from '../contenido';
+import { Seccion, TituloSeccion } from './ui/Seccion';
 
+/**
+ * El proceso dibujado como una carretera: la línea punteada que une los pasos
+ * refuerza la idea de recorrido sin necesidad de explicarla.
+ */
 export function Proceso() {
   return (
-    <section id="proceso" className="mx-auto max-w-6xl px-4 py-16">
-      <h2 className="text-3xl font-bold text-slate-900">Cómo funciona</h2>
-      <ol className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {pasos.map((paso) => (
-          <li key={paso.numero} className="rounded-xl border border-slate-200 p-6">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-marca-600 font-bold text-white">
+    <Seccion id="proceso" oscura>
+      <TituloSeccion
+        sobretitulo="Cómo funciona"
+        titulo="Tu camino hasta la libreta"
+        bajada="Cuatro pasos, sin vueltas."
+        claro
+      />
+
+      <ol className="relative mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+        {/* La "ruta": línea punteada horizontal detrás de los números. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-7 hidden border-t-2 border-dashed border-white/15 lg:block"
+        />
+
+        {pasos.map((paso, indice) => (
+          <li
+            key={paso.numero}
+            className="aparece relative"
+            style={{ transitionDelay: `${indice * 100}ms` }}
+          >
+            <span className="relative z-10 inline-flex h-14 w-14 items-center justify-center rounded-full bg-marca-500 text-lg font-extrabold text-white ring-8 ring-carbon-950">
               {paso.numero}
             </span>
-            <h3 className="mt-4 font-semibold text-slate-900">{paso.titulo}</h3>
-            <p className="mt-2 text-sm text-slate-600">{paso.detalle}</p>
+            <h3 className="mt-5 text-lg font-bold text-white">{paso.titulo}</h3>
+            <p className="mt-2 text-sm text-slate-400">{paso.detalle}</p>
           </li>
         ))}
       </ol>
-    </section>
+    </Seccion>
   );
 }
