@@ -3,7 +3,9 @@ import { Prisma, RolUsuario } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
 import type { UsuarioAutenticado } from '../../common/auth/jwt-payload.interface';
-import type { ActualizarClienteDto, BuscarClientesDto, CrearClienteDto } from './dto/cliente.dto';
+import type {
+  ActualizarClienteDto, ActualizarMiFichaDto, BuscarClientesDto, CrearClienteDto,
+} from './dto/cliente.dto';
 
 /**
  * Datos que ve un instructor: lo necesario para dar la clase y coordinar.
@@ -17,6 +19,18 @@ const CAMPOS_BASICOS = {
   email: true,
   ciudad: true,
   activo: true,
+} satisfies Prisma.ClienteSelect;
+
+/**
+ * Lo que el alumno ve de su propia ficha.
+ * Incluye sus datos identificatorios —son suyos— pero nunca las notas internas,
+ * que son observaciones del instructor sobre su desempeño.
+ */
+const CAMPOS_PROPIOS = {
+  ...CAMPOS_BASICOS,
+  cedula: true,
+  fechaNacimiento: true,
+  direccion: true,
 } satisfies Prisma.ClienteSelect;
 
 /** Lo que ve un administrador: incluye los datos identificatorios. */
@@ -146,6 +160,76 @@ export class ClientesService {
       entidadId: id,
     });
     return cliente;
+  }
+
+  // --------------------------------------------------------------------------
+  // La ficha del propio alumno (PWA)
+  // --------------------------------------------------------------------------
+
+  /**
+   * Busca la ficha a partir del usuario autenticado.
+   *
+   * El identificador NUNCA llega por parámetro: se resuelve desde el token. Es
+   * lo que hace imposible que un alumno pida la ficha de otro cambiando un id.
+   */
+  private async miFicha(usuarioId: string) {
+    const cliente = await this.prisma.cliente.findUnique({
+      where: { usuarioId },
+      select: { id: true },
+    });
+    if (!cliente) {
+      throw new NotFoundException(
+        'Tu usuario todavía no tiene ficha de alumno. Comunicate con la academia.',
+      );
+    }
+    return cliente;
+  }
+
+  async obtenerMia(usuarioId: string) {
+    const { id } = await this.miFicha(usuarioId);
+    return this.prisma.cliente.findUniqueOrThrow({
+      where: { id },
+      select: {
+        ...CAMPOS_PROPIOS,
+        compras: {
+          select: {
+            id: true,
+            clasesTotales: true,
+            clasesUsadas: true,
+            vigenteHasta: true,
+            servicio: { select: { nombre: true, tipoVehiculo: true, duracionMin: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+  }
+
+  async actualizarMia(usuarioId: string, dto: ActualizarMiFichaDto) {
+    const { id } = await this.miFicha(usuarioId);
+
+    const actualizada = await this.prisma.cliente.update({
+      where: { id },
+      data: {
+        nombre: dto.nombre,
+        apellido: dto.apellido,
+        telefono: dto.telefono ?? null,
+        cedula: dto.cedula ?? null,
+        fechaNacimiento: dto.fechaNacimiento ?? null,
+        direccion: dto.direccion ?? null,
+        ...(dto.ciudad ? { ciudad: dto.ciudad } : {}),
+      },
+      select: CAMPOS_PROPIOS,
+    });
+
+    await this.auditoria.registrar({
+      usuarioId,
+      accion: 'CLIENTE_ACTUALIZADO',
+      entidad: 'Cliente',
+      entidadId: id,
+      detalle: { porElPropioAlumno: true },
+    });
+    return actualizada;
   }
 
   private datos(dto: CrearClienteDto) {

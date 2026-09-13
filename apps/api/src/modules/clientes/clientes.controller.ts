@@ -3,7 +3,9 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RolUsuario } from '@prisma/client';
 
 import { ClientesService } from './clientes.service';
-import { ActualizarClienteDto, BuscarClientesDto, CrearClienteDto } from './dto/cliente.dto';
+import {
+  ActualizarClienteDto, ActualizarMiFichaDto, BuscarClientesDto, CrearClienteDto,
+} from './dto/cliente.dto';
 import { Roles } from '../../common/auth/roles.decorator';
 import { UsuarioActual } from '../../common/auth/usuario-actual.decorator';
 import type { UsuarioAutenticado } from '../../common/auth/jwt-payload.interface';
@@ -15,6 +17,26 @@ import type { UsuarioAutenticado } from '../../common/auth/jwt-payload.interface
 @Roles(RolUsuario.ADMIN, RolUsuario.INSTRUCTOR)
 export class ClientesController {
   constructor(private readonly clientes: ClientesService) {}
+
+  // Estas dos rutas son las únicas del módulo abiertas al alumno, y operan
+  // siempre sobre su propia ficha: el id sale del token, no de la URL.
+  // Van declaradas antes que :id para que "me" no se interprete como un id.
+  @Get('me')
+  @Roles(RolUsuario.CLIENTE)
+  @ApiOperation({ summary: 'Ficha y packs del alumno autenticado' })
+  obtenerMia(@UsuarioActual() usuario: UsuarioAutenticado) {
+    return this.clientes.obtenerMia(usuario.id);
+  }
+
+  @Patch('me')
+  @Roles(RolUsuario.CLIENTE)
+  @ApiOperation({ summary: 'El alumno actualiza sus propios datos' })
+  actualizarMia(
+    @UsuarioActual() usuario: UsuarioAutenticado,
+    @Body() dto: ActualizarMiFichaDto,
+  ) {
+    return this.clientes.actualizarMia(usuario.id, dto);
+  }
 
   @Get()
   @ApiOperation({ summary: 'Busca alumnos por nombre, apellido, correo o cédula' })

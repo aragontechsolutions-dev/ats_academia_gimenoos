@@ -8,7 +8,7 @@ import { NuevaClase } from '../componentes/agenda/NuevaClase';
 import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { agenda, instructores as apiInstructores, vehiculos as apiVehiculos } from '../lib/recursos';
-import { aLocal } from '../lib/fecha';
+import { aLocal, soloPrimeraMayuscula } from '../lib/fecha';
 import type { Instructor, Reserva, Vehiculo } from '../lib/tipos';
 
 type Vista = 'dia' | 'semana' | 'mes';
@@ -106,17 +106,20 @@ export function Agenda() {
     setReferencia((actual) => actual.plus({ [unidad]: direccion }));
   };
 
-  const titulo =
-    vista === 'mes'
-      ? referencia.toFormat('LLLL yyyy')
-      : vista === 'semana'
-        ? `${referencia.startOf('week').toFormat('d LLL')} – ${referencia.endOf('week').toFormat('d LLL yyyy')}`
-        : referencia.toFormat("cccc d 'de' LLLL yyyy");
+  const titulo = (() => {
+    const texto =
+      vista === 'mes'
+        ? referencia.toFormat('LLLL yyyy')
+        : vista === 'semana'
+          ? `${referencia.startOf('week').toFormat('d LLL')} – ${referencia.endOf('week').toFormat('d LLL yyyy')}`
+          : referencia.toFormat("cccc d 'de' LLLL yyyy");
+    return soloPrimeraMayuscula(texto);
+  })();
 
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold capitalize text-slate-900">{titulo}</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{titulo}</h1>
         <Boton onClick={() => setAgendando(true)}>Agendar clase</Boton>
       </div>
 

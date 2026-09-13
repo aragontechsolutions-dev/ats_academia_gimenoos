@@ -118,6 +118,73 @@ describe('Cada rol ve solo los datos que necesita', () => {
   });
 });
 
+describe('El alumno consulta y edita su propia ficha', () => {
+  const ID_USUARIO_ALUMNO = '00000000-0000-4000-d000-0000000000c1';
+  const ID_FICHA_ALUMNO = '00000000-0000-4000-d000-0000000000c2';
+
+  beforeEach(async () => {
+    await prisma.cliente.deleteMany({ where: { id: ID_FICHA_ALUMNO } });
+    await prisma.usuario.deleteMany({ where: { id: ID_USUARIO_ALUMNO } });
+    await prisma.usuario.create({
+      data: {
+        id: ID_USUARIO_ALUMNO,
+        email: 'alumno-propio@local',
+        nombre: 'Propio',
+        apellido: 'Alumno',
+        rol: RolUsuario.CLIENTE,
+      },
+    });
+    await prisma.cliente.create({
+      data: {
+        id: ID_FICHA_ALUMNO,
+        usuarioId: ID_USUARIO_ALUMNO,
+        nombre: 'Propio',
+        apellido: 'Alumno',
+        cedula: '87654321',
+        notasInternas: 'Todavía le cuesta el embrague',
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.cliente.deleteMany({ where: { id: ID_FICHA_ALUMNO } });
+    await prisma.usuario.deleteMany({ where: { id: ID_USUARIO_ALUMNO } });
+  });
+
+  it('recibe su ficha con su cédula, pero nunca las notas internas', async () => {
+    const ficha = await clientes.obtenerMia(ID_USUARIO_ALUMNO);
+
+    // La cédula es suya: puede verla y completarla para el trámite.
+    expect(ficha).toMatchObject({ id: ID_FICHA_ALUMNO, cedula: '87654321' });
+    // Las notas internas son observaciones del instructor sobre su desempeño.
+    expect(ficha).not.toHaveProperty('notasInternas');
+  });
+
+  it('la ficha se resuelve desde el usuario autenticado, no desde un id recibido', async () => {
+    // El servicio no acepta un id de ficha: la única entrada es el usuario. Por
+    // eso un alumno no tiene forma de pedir la de otro.
+    const ficha = await clientes.obtenerMia(ID_USUARIO_ALUMNO);
+    expect(ficha.id).toBe(ID_FICHA_ALUMNO);
+
+    // Y un usuario sin ficha recibe un error claro, no la de otra persona.
+    await expect(clientes.obtenerMia(ID.usuarioAdmin)).rejects.toThrow(/no tiene ficha/);
+  });
+
+  it('al editarse no puede tocar sus notas internas ni darse de baja', async () => {
+    await clientes.actualizarMia(ID_USUARIO_ALUMNO, {
+      nombre: 'Propio',
+      apellido: 'Editado',
+      telefono: '099000111',
+    });
+
+    const enBase = await prisma.cliente.findUniqueOrThrow({ where: { id: ID_FICHA_ALUMNO } });
+    expect(enBase.apellido).toBe('Editado');
+    // Lo que el alumno no controla queda intacto.
+    expect(enBase.notasInternas).toBe('Todavía le cuesta el embrague');
+    expect(enBase.activo).toBe(true);
+  });
+});
+
 describe('Vinculación de la ficha cuando el alumno se crea una cuenta', () => {
   it('vincula la ficha existente si hay una sola con ese correo', async () => {
     const email = 'ana@prueba-vinculo.uy';
