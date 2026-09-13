@@ -14,6 +14,7 @@
 | [09-despliegue.md](09-despliegue.md) | **Paso a paso para poner el sistema en línea** (Render + Vercel) |
 | [10-motor-agenda.md](10-motor-agenda.md) | Cómo se calculan los horarios y quién puede tocar cada clase |
 | [11-panel.md](11-panel.md) | Las pantallas del panel y qué ve cada rol |
+| [12-pwa-alumno.md](12-pwa-alumno.md) | La app del alumno y qué puede y no puede tocar |
 
 **Por dónde empezar:** `07-roadmap.md` si sos quien decide,
 `06-guia-desarrollo.md` para levantar el entorno,

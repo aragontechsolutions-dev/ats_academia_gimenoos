@@ -83,11 +83,20 @@ Detalle en [`10-motor-agenda.md`](10-motor-agenda.md).
 
 Detalle en [`11-panel.md`](11-panel.md).
 
-### Etapa 1.C — PWA del alumno
+### Etapa 1.C — PWA del alumno ✅ COMPLETADA
 
-- Reserva de clase eligiendo horario entre los disponibles.
-- Cancelación según la política configurada.
-- Vista de sus próximas clases.
+| Entregable | Estado |
+|---|---|
+| Ver próximas clases e historial | ✅ |
+| Reservar eligiendo entre los horarios libres | ✅ |
+| Cancelar según la política configurada | ✅ |
+| Ficha propia: datos y saldo de packs | ✅ |
+| Endpoints propios del alumno en la API | ✅ |
+| Pruebas | ✅ 54 + recorrido en navegador |
+
+Detalle en [`12-pwa-alumno.md`](12-pwa-alumno.md).
+
+**Con esto cierra la Etapa 1 completa.**
 
 **Riesgo principal:** las zonas horarias. Todo se persiste en UTC y se convierte
 a `America/Montevideo` solo al mostrar.

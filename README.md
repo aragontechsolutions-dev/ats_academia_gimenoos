@@ -58,6 +58,7 @@ Guía completa: [`docs/06-guia-desarrollo.md`](docs/06-guia-desarrollo.md).
 | [Despliegue](docs/09-despliegue.md) | Poner el sistema en línea: Render + Vercel |
 | [Motor de agenda](docs/10-motor-agenda.md) | Cálculo de horarios, reservas y permisos |
 | [Panel](docs/11-panel.md) | Pantallas del panel de administración |
+| [PWA del alumno](docs/12-pwa-alumno.md) | La app del alumno y sus permisos |
 
 ## Antes de publicar
 
