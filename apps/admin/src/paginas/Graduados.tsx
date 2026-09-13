@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { Modal } from '../componentes/ui/Modal';
 import { Paginacion, PAGINA_VACIA, type Pagina } from '../componentes/ui/Paginacion';
@@ -6,13 +6,11 @@ import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
 import { DiplomaImprimible } from '../componentes/DiplomaImprimible';
+import { CeldaFoto } from '../componentes/CeldaFoto';
 import { graduados as api, clientes as apiClientes } from '../lib/recursos';
-import { borrarFotoGraduado, subirFotoGraduado } from '../lib/fotos';
-import { enKb } from '../lib/imagen';
 import type { Cliente, Graduado } from '../lib/tipos';
 
 const SITIO_URL = import.meta.env.VITE_SITIO_URL ?? 'academiagimenoos.com.uy';
-const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL ?? '').replace(/\/$/, '');
 
 const CATEGORIAS = [
   { valor: 'A', texto: 'A — Automóvil' },
@@ -138,7 +136,15 @@ export function Graduados() {
               {lista.map((graduado) => (
                 <tr key={graduado.id}>
                   <td className="px-4 py-3">
-                    <CeldaFoto graduado={graduado} onCambio={cargar} onError={setError} />
+                    <CeldaFoto
+                      bucket="graduados"
+                      duenoId={graduado.id}
+                      ruta={graduado.fotoRuta}
+                      descripcion={`${graduado.cliente.nombre} ${graduado.cliente.apellido}`}
+                      guardar={(fotoRuta) => api.actualizar(graduado.id, { fotoRuta })}
+                      onCambio={cargar}
+                      onError={setError}
+                    />
                   </td>
                   <td className="px-4 py-3 font-medium text-slate-900">
                     {graduado.cliente.nombre} {graduado.cliente.apellido}
@@ -422,119 +428,5 @@ function FormularioEgresado({
         </Boton>
       </div>
     </Modal>
-  );
-}
-
-/**
- * La foto del egresado: subir, reemplazar y quitar.
- *
- * La imagen se reduce y se re-codifica en el navegador antes de salir, lo que le
- * quita los metadatos de la cámara —incluida la ubicación GPS—. Subir la foto
- * tal cual sale del celular publicaría esas coordenadas en un archivo que
- * cualquiera puede descargar.
- */
-function CeldaFoto({
-  graduado,
-  onCambio,
-  onError,
-}: {
-  graduado: Graduado;
-  onCambio: () => void;
-  onError: (mensaje: string) => void;
-}) {
-  const [subiendo, setSubiendo] = useState(false);
-  const entrada = useRef<HTMLInputElement>(null);
-
-  const urlPublica = graduado.fotoRuta
-    ? `${SUPABASE_URL}/storage/v1/object/public/graduados/${graduado.fotoRuta}`
-    : null;
-
-  const elegir = async (archivo: File | undefined) => {
-    if (!archivo) return;
-    setSubiendo(true);
-    const anterior = graduado.fotoRuta;
-
-    try {
-      const { ruta, imagen } = await subirFotoGraduado(graduado.id, archivo);
-      await api.actualizar(graduado.id, { fotoRuta: ruta });
-
-      // La anterior se borra DESPUÉS de que la nueva quedó guardada: si algo
-      // falla en el medio, el egresado se queda con su foto vieja y no sin
-      // ninguna.
-      if (anterior) await borrarFotoGraduado(anterior).catch(() => undefined);
-
-      console.info(
-        `Foto de ${graduado.cliente.nombre}: ${enKb(imagen.bytesOriginal)} -> ${enKb(imagen.bytes)}`,
-      );
-      onCambio();
-    } catch (problema) {
-      onError((problema as Error).message);
-    } finally {
-      setSubiendo(false);
-      if (entrada.current) entrada.current.value = '';
-    }
-  };
-
-  const quitar = async () => {
-    if (!graduado.fotoRuta) return;
-    if (!window.confirm(`¿Quitar la foto de ${graduado.cliente.nombre}?`)) return;
-
-    setSubiendo(true);
-    try {
-      await api.actualizar(graduado.id, { fotoRuta: '' });
-      await borrarFotoGraduado(graduado.fotoRuta);
-      onCambio();
-    } catch (problema) {
-      onError((problema as Error).message);
-    } finally {
-      setSubiendo(false);
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-2">
-      {urlPublica ? (
-        <img
-          src={urlPublica}
-          alt={`Foto de ${graduado.cliente.nombre} ${graduado.cliente.apellido}`}
-          className="h-12 w-12 shrink-0 rounded-lg object-cover"
-        />
-      ) : (
-        <div
-          aria-hidden="true"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400"
-        >
-          —
-        </div>
-      )}
-
-      <div className="flex flex-col gap-1">
-        <button
-          type="button"
-          disabled={subiendo}
-          onClick={() => entrada.current?.click()}
-          className="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-700 hover:border-marca-500 hover:text-marca-700 disabled:opacity-50"
-        >
-          {subiendo ? 'Subiendo…' : graduado.fotoRuta ? 'Cambiar' : 'Subir'}
-        </button>
-        {graduado.fotoRuta && !subiendo && (
-          <button
-            type="button"
-            onClick={() => void quitar()}
-            className="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-500 hover:border-red-400 hover:text-red-600"
-          >
-            Quitar
-          </button>
-        )}
-      </div>
-
-      <input
-        ref={entrada}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="hidden"
-        onChange={(evento) => void elegir(evento.target.files?.[0])}
-      />
-    </div>
   );
 }

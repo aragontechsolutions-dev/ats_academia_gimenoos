@@ -244,6 +244,8 @@ model Vehiculo {
   estado     EstadoVehiculo @default(ACTIVO)
   /// Vencimiento del SOA. La Intendencia lo exige vigente para el examen practico.
   soaVence   DateTime?      @map("soa_vence") @db.Date
+  /// Foto del vehiculo. Ruta dentro del bucket de Storage, no una direccion completa.
+  fotoRuta   String?        @map("foto_ruta")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)

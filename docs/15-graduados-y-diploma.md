@@ -135,6 +135,10 @@ Un valor inventado en la URL del navegador tampoco se obedece.
 
 ## 3b. Las fotos
 
+> Las reglas de validación (extensiones, peso, medidas), los buckets y la forma
+> de las rutas están en [17-fotos.md](17-fotos.md), porque son las mismas que usa
+> la foto de los vehículos. Acá queda lo propio de los egresados.
+
 ### Se procesan en el navegador antes de salir
 
 Cuando el administrador elige una foto, el panel la **redibuja y la vuelve a

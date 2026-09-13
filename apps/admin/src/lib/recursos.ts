@@ -136,6 +136,16 @@ export const vehiculos = {
 
   actualizar: (id: string, cuerpo: Partial<Vehiculo>) =>
     llamarApi<Vehiculo>(`/vehiculos/${id}`, { method: 'PATCH', body: JSON.stringify(cuerpo) }),
+
+  /**
+   * La foto va por su propio endpoint: `actualizar` reemplaza la ficha entera y
+   * mandarla con solo la foto borraría marca, modelo y SOA.
+   */
+  guardarFoto: (id: string, fotoRuta: string) =>
+    llamarApi<Vehiculo>(`/vehiculos/${id}/foto`, {
+      method: 'PATCH',
+      body: JSON.stringify({ fotoRuta }),
+    }),
 };
 
 // --- Catálogo --------------------------------------------------------------

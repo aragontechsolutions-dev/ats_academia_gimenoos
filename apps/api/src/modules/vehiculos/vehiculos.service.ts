@@ -7,6 +7,7 @@ import {
   type ConsultaPaginadaDto,
 } from '../../common/paginacion/paginacion';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
+import { rutaFotoONula } from '../../common/formato/foto';
 import type { ActualizarVehiculoDto, CrearVehiculoDto } from './dto/vehiculo.dto';
 
 @Injectable()
@@ -72,6 +73,30 @@ export class VehiculosService {
       entidad: 'Vehiculo',
       entidadId: id,
       detalle: { estado: vehiculo.estado },
+    });
+    return vehiculo;
+  }
+
+  /**
+   * Guarda la ruta de la foto, sin tocar el resto de la ficha.
+   *
+   * El archivo ya está en Storage: el panel lo sube directo desde el navegador y
+   * acá llega solamente dónde quedó. La forma de esa ruta la valida el DTO.
+   */
+  async guardarFoto(id: string, fotoRuta: string | null | undefined, usuarioId: string) {
+    await this.obtener(id);
+
+    const vehiculo = await this.prisma.vehiculo.update({
+      where: { id },
+      data: { fotoRuta: rutaFotoONula(fotoRuta) ?? null },
+    });
+
+    await this.auditoria.registrar({
+      usuarioId,
+      accion: vehiculo.fotoRuta ? 'VEHICULO_FOTO_CARGADA' : 'VEHICULO_FOTO_QUITADA',
+      entidad: 'Vehiculo',
+      entidadId: id,
+      detalle: { patente: vehiculo.patente },
     });
     return vehiculo;
   }

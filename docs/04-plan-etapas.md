@@ -168,6 +168,27 @@ formulario en [`16-autorizacion-imagen.md`](16-autorizacion-imagen.md).
 desarrollo no alcanza `supabase.co`. Ver la advertencia en
 [`15-graduados-y-diploma.md`](15-graduados-y-diploma.md).
 
+### Etapa 1.I — Validaciones finas del panel ✅ COMPLETADA
+
+Un repaso sobre lo ya construido, para que los datos entren bien desde el
+principio en vez de tener que limpiarlos después.
+
+| Entregable | Estado |
+|---|---|
+| Teléfonos guardados con el código de país (`+598 98663201`) en alumnos e instructores | ✅ |
+| Migración que normaliza los teléfonos ya cargados | ✅ verificado antes/después |
+| Cédula sin puntos, guiones ni letras | ✅ |
+| Pasaporte con país de emisión y letras pasadas a mayúscula solas | ✅ 257 países |
+| Correo del alumno validado | ✅ |
+| Paginado en alumnos, instructores, vehículos y egresados (10 por defecto; 20, 50, 100) | ✅ |
+| Validación de fotos: extensión, tipo, peso y medidas | ✅ verificado en navegador |
+| Foto de cada vehículo, con su propio endpoint | ✅ |
+| Documentación | ✅ [`17-fotos.md`](17-fotos.md) y los documentos tocados |
+| Pruebas | ✅ 148 + recorrido en navegador |
+
+**No verificado:** lo mismo que en 1.H — una subida exitosa contra el Storage
+real. Ver [`17-fotos.md`](17-fotos.md#5-qué-se-verificó).
+
 **Con esto cierra la Etapa 1 completa.**
 
 ## Etapa 2 — Pagos

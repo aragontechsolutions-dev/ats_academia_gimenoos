@@ -11,7 +11,7 @@ Aplicación: `apps/admin` · Roles que entran: `ADMIN` e `INSTRUCTOR`
 | **Agenda** | admin e instructor | La operación diaria: ver, agendar, mover y cerrar clases |
 | **Alumnos** | admin e instructor | Buscar alumnos y consultar su ficha e historial |
 | **Instructores** | solo admin | Alta, horarios semanales y licencias |
-| **Vehículos** | solo admin | Alta, estado y vencimiento del SOA |
+| **Vehículos** | solo admin | Alta, foto, estado y vencimiento del SOA |
 | **Precios** | solo admin | Catálogo de servicios y sus dos precios |
 
 El instructor ve la agenda y los alumnos porque los necesita para dar clase. La
@@ -192,3 +192,18 @@ muestra nada.
 los parámetros que ese endpoint acepta, no solo los que uno está agregando. Por
 eso existen `ListarInstructoresDto`, `ListarVehiculosDto` y `ListarGraduadosDto`
 en vez de usar `ConsultaPaginadaDto` pelado.
+
+---
+
+## Las fotos de los listados
+
+Egresados y Vehículos tienen una miniatura con *Subir* / *Cambiar* / *Quitar* en
+cada fila, con el mismo componente (`componentes/CeldaFoto.tsx`). Las reglas de
+validación, los buckets y por qué la base guarda una ruta y no una dirección
+están en [17-fotos.md](17-fotos.md).
+
+**Una trampa parecida a las dos de arriba, evitada a tiempo:** la foto del
+vehículo va por `PATCH /vehiculos/:id/foto` y no por el PATCH de la ficha.
+`PATCH /vehiculos/:id` reemplaza la ficha entera —lo que no viene se guarda en
+null—, así que mandar solo la foto desde el listado habría borrado la marca, el
+modelo y el SOA del vehículo.

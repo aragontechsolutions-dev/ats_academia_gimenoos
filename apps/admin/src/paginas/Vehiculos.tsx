@@ -4,6 +4,7 @@ import { Paginacion, PAGINA_VACIA, type Pagina } from '../componentes/ui/Paginac
 import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
+import { CeldaFoto } from '../componentes/CeldaFoto';
 import { vehiculos as api } from '../lib/recursos';
 import { fechaCorta } from '../lib/fecha';
 import type { EstadoVehiculo, TipoVehiculo, Vehiculo } from '../lib/tipos';
@@ -53,6 +54,7 @@ export function Vehiculos() {
         <table className="w-full text-left text-sm">
           <thead className="border-b border-slate-200 text-slate-500">
             <tr>
+              <th className="px-4 py-3 font-medium">Foto</th>
               <th className="px-4 py-3 font-medium">Patente</th>
               <th className="px-4 py-3 font-medium">Tipo</th>
               <th className="px-4 py-3 font-medium">Vehículo</th>
@@ -66,6 +68,17 @@ export function Vehiculos() {
               const soaVencido = vehiculo.soaVence && new Date(vehiculo.soaVence) < hoy;
               return (
                 <tr key={vehiculo.id} className={vehiculo.estado === 'ACTIVO' ? '' : 'bg-slate-50'}>
+                  <td className="px-4 py-3">
+                    <CeldaFoto
+                      bucket="vehiculos"
+                      duenoId={vehiculo.id}
+                      ruta={vehiculo.fotoRuta}
+                      descripcion={`${vehiculo.tipo === 'MOTO' ? 'la moto' : 'el auto'} ${vehiculo.patente}`}
+                      guardar={(fotoRuta) => api.guardarFoto(vehiculo.id, fotoRuta)}
+                      onCambio={cargar}
+                      onError={setError}
+                    />
+                  </td>
                   <td className="px-4 py-3 font-medium text-slate-900">{vehiculo.patente}</td>
                   <td className="px-4 py-3 text-slate-600">
                     {vehiculo.tipo === 'MOTO' ? 'Moto' : 'Auto'}
