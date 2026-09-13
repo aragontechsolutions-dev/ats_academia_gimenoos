@@ -7,19 +7,19 @@
  * un proveedor y costo por mensaje—, que es un proyecto aparte.
  */
 
+import { digitosParaWhatsApp } from '@gimenoos/shared';
+
 /**
  * Deja un teléfono como lo quiere `wa.me`: solo dígitos, con código de país y
  * sin el `+`.
  *
- * Los teléfonos se guardan como `+598 98663201`. Pasarle eso a `wa.me` tal cual
- * abre un chat con un número inexistente, sin ningún error visible.
+ * Las reglas son las mismas que usa la API para guardar el número y el sitio
+ * público para su botón: viven en `@gimenoos/shared`. Acá había una copia que
+ * solo quitaba los símbolos, y eso dejaba pasar `092331784` como si fuera un
+ * número de nueve dígitos de otro país.
  */
 export function numeroParaWhatsApp(telefono: string | null | undefined): string | null {
-  if (!telefono) return null;
-  const digitos = telefono.replace(/\D/g, '');
-  // Menos de 8 dígitos no es un número que se pueda llamar; más de 15 no existe
-  // (E.164 topea ahí).
-  return digitos.length >= 8 && digitos.length <= 15 ? digitos : null;
+  return digitosParaWhatsApp(telefono);
 }
 
 /** Abre WhatsApp con el mensaje listo para enviar. */

@@ -31,9 +31,14 @@ const CAMPOS_NEGOCIO: Array<{
   {
     clave: 'whatsapp',
     etiqueta: 'WhatsApp',
-    ayuda: 'Solo números, con código de país y sin espacios. Ejemplo: 59899123456',
+    ayuda:
+      'Como lo escribas: 092331784, 092 331 784 o +598 92331784. Se guarda igual en todos los casos.',
   },
-  { clave: 'telefono', etiqueta: 'Teléfono para mostrar', ayuda: 'Como querés que se vea. Ejemplo: +598 4266 0000' },
+  {
+    clave: 'telefono',
+    etiqueta: 'Teléfono para llamar',
+    ayuda: 'Ejemplo: 42660000. Si es de otro país, con su código: +55 11 99999 9999.',
+  },
   { clave: 'email', etiqueta: 'Correo de contacto', tipo: 'email' },
   { clave: 'direccion', etiqueta: 'Dirección' },
   { clave: 'ciudad', etiqueta: 'Ciudad' },

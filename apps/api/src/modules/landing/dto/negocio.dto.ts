@@ -1,4 +1,15 @@
-import { IsNumber, IsOptional, IsString, Length, Matches, Max, Min, ValidateIf } from 'class-validator';
+import {
+  IsEmail,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 
 /**
  * Datos de contacto del negocio.
@@ -28,29 +39,40 @@ export class ActualizarNegocioDto {
   @Length(2, 80)
   departamento?: string;
 
+  /**
+   * Mismo trato que el teléfono de un alumno o de un instructor: se acepta como
+   * lo escriba la persona y el servicio lo normaliza a `+598 98663201`. Acá solo
+   * se acota el largo; la validación de verdad, con su mensaje explicando qué se
+   * espera, vive en `normalizarTelefono`.
+   */
   @IsOptional()
   @IsString()
-  @Length(0, 40)
+  @MaxLength(25, { message: 'El teléfono es demasiado largo' })
   telefono?: string;
 
   /**
-   * Solo dígitos, con código de país y sin símbolos (ej: 59899123456). Es lo que
-   * pide la API de wa.me; un número con espacios o con "+" genera un enlace roto,
-   * y un enlace roto convierte peor que no tener botón.
+   * El WhatsApp se trata como cualquier otro teléfono.
+   *
+   * Antes se exigían dígitos con código de país y sin símbolos. Esa regla dejaba
+   * pasar `092331784` —un celular uruguayo escrito como se escribe acá, nueve
+   * dígitos— y con eso el enlace de wa.me abría un chat con un número de otro
+   * país. Sin ningún error: el botón existía y no llevaba a nadie.
+   *
+   * Normalizado, queda `+598 92331784`, y el enlace se arma a partir de ahí.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(25, { message: 'El WhatsApp es demasiado largo' })
+  whatsapp?: string;
+
+  /**
+   * La misma comprobación que el correo de un alumno: `IsEmail`, y no una
+   * expresión regular escrita a mano. La cadena vacía sigue borrando el dato.
    */
   @IsOptional()
   @ValidateIf((_objeto, valor) => valor !== '')
-  @IsString()
-  @Matches(/^[0-9]{8,15}$/, {
-    message: 'El WhatsApp va solo con dígitos, con código de país y sin espacios (ej: 59899123456)',
-  })
-  whatsapp?: string;
-
-  @IsOptional()
-  @ValidateIf((_objeto, valor) => valor !== '')
-  @IsString()
-  @Length(5, 120)
-  @Matches(/^[^@\s]+@[^@\s]+\.[^@\s]+$/, { message: 'El correo no tiene un formato válido' })
+  @IsEmail({}, { message: 'El correo no tiene un formato válido' })
+  @MaxLength(120)
   email?: string;
 
   @IsOptional()

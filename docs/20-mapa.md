@@ -149,6 +149,35 @@ comprobación solo corre si el pedido toca alguna de las dos coordenadas.
 
 ---
 
+## 6-bis. El mapa le pasaba por encima a la barra de navegación
+
+Leaflet apila sus capas internas hasta **z-index 1000** —los controles de zoom y
+la atribución—, y la barra fija del sitio está en **50**. Al bajar la página, el
+mapa se dibujaba encima del menú.
+
+El arreglo es una sola clase, `z-0`, sobre el contenedor del mapa. Con un
+z-index propio, el contenedor pasa a ser un **contexto de apilado**: todo lo que
+Leaflet numera adentro queda contenido ahí, y esa caja compite con el resto de la
+página como un solo bloque, en 0.
+
+### Por qué no se veía siempre
+
+El bloque entra con la animación `aparece`, que arranca con `opacity: 0` y un
+`transform`. **Cualquiera de las dos cosas ya crea un contexto de apilado**, así
+que mientras la animación corre el mapa está contenido y todo se ve bien. Al
+terminar —`opacity: 1`, `transform: none`— ese contexto desaparece y recién ahí
+el mapa se escapa.
+
+Esto hizo que la primera prueba en navegador **diera en verde sin el arreglo**:
+medía antes de que la animación terminara. La prueba definitiva espera a que el
+bloque quede en `opacity: 1` y sin `transform`, y recién entonces mira quién
+manda. Sin el arreglo falla; con el arreglo pasa.
+
+La misma clase está en el selector del panel, por lo mismo: sus diálogos también
+están en z-index 50.
+
+---
+
 ## 7. Un agujero que apareció escribiendo esto
 
 El globo que se abre al tocar el marcador muestra el nombre y la dirección de la
@@ -195,6 +224,9 @@ En un navegador de verdad, sobre las dos aplicaciones:
 | Panel: «Usar mi ubicación» con permiso dado | OK |
 | Panel: sin permiso, sale de «Buscando…» en 12,4 s y explica por qué | OK |
 | HTML inyectado desde el panel no se ejecuta en el globo del marcador | OK, comprobado antes y después del arreglo |
+| El mapa NO se dibuja encima de la barra de navegación | OK, comprobado antes y después del arreglo |
+| El WhatsApp del pie arma el enlace con código de país | OK |
+| Un número sin código de país no dibuja ningún botón | OK |
 
 **Lo que no se pudo comprobar desde el entorno de desarrollo:** las imágenes del
 mapa, porque el proxy de ese entorno bloquea `openstreetmap.org`, y la apertura

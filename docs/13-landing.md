@@ -47,9 +47,17 @@ Lo que falta cargar está marcado con `TODO(datos-reales)`.
 // Antes
 whatsapp: null as string | null,
 
-// Después (número con código de país, sin espacios ni símbolos)
-whatsapp: '59899123456' as string | null,
+// Después: como se escriba. Lo normaliza la API al guardarlo, igual que el
+// teléfono de un alumno.
+whatsapp: '+598 99123456' as string | null,
 ```
+
+El WhatsApp y el teléfono del negocio se guardan con las **mismas reglas** que
+los de alumnos e instructores (`normalizarTelefono`), y el correo con las mismas
+que el de un alumno (`IsEmail` y minúsculas). Antes no era así, y el resultado
+fue un número guardado como `092331784` —bien escrito para Uruguay— con el que
+el enlace de WhatsApp abría un chat con un número de otro país. Ver
+[20-mapa.md](20-mapa.md) para el detalle de cómo se arma ese enlace.
 
 **La excepción son los precios.** No están en `contenido.ts`: se leen en vivo
 desde la API (`GET /catalogo/servicios`), que es la misma fuente que usa el
@@ -177,6 +185,22 @@ El enlace de **Egresados** lleva a la sección de fotos de egresados con su
 diploma. La sección y el menú se apoyan en la **misma** petición —
 `lib/egresados.ts` la comparte— para no pedir dos veces lo mismo al cargar la
 página.
+
+---
+
+## 5a-bis. El pie
+
+El pie repite las mismas dos reglas que la barra de arriba, y no por simetría:
+
+- **Sus enlaces se filtran igual.** Un enlace a una sección que no existe deja a
+  la persona donde estaba, venga del menú o del pie.
+- **Muestra el WhatsApp.** Faltaba: el número estaba cargado en el panel y el pie
+  solo mostraba teléfono y correo, que suelen estar vacíos. El resultado era un
+  bloque «Contacto» con nada más que la dirección.
+
+El enlace se arma con `digitosParaWhatsApp`, y **si el número no se puede
+convertir con seguridad, no se dibuja el enlace**. Es preferible que falte el
+botón a que abra un chat con quien no es.
 
 ---
 

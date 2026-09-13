@@ -52,6 +52,21 @@ let negocioOriginal: Awaited<ReturnType<typeof servicio.obtenerNegocio>>;
 beforeAll(async () => {
   await prisma.$connect();
 
+  // La fila de configuración tiene que existir: es única —id fijo en 1— y el
+  // servicio la exige.
+  //
+  // Este archivo la daba por hecha, y funcionaba de casualidad: otras pruebas la
+  // crean en su propio `beforeAll`, así que alcanzaba con que alguna corriera
+  // antes. Sobre una base recién migrada y sin datos —que es como arranca la
+  // CI—, el archivo entero fallaba o pasaba según el orden en que jest tomara
+  // los archivos, y ese orden depende del tamaño de cada uno. Agrandar este
+  // archivo fue suficiente para darlo vuelta.
+  await prisma.configuracionAcademia.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1 },
+  });
+
   // El registro de auditoría tiene clave foránea a `usuarios`. Sin este usuario
   // el insert falla, el servicio se traga el error a propósito —auditar nunca
   // debe tumbar la operación— y la prueba de auditoría no vería nada.
@@ -117,11 +132,29 @@ describe('validación de los datos del negocio', () => {
     expect(errores).toHaveLength(0);
   });
 
-  it('el WhatsApp solo acepta dígitos con código de país', async () => {
-    expect(await validarDto(ActualizarNegocioDto, { whatsapp: '59899123456' })).toHaveLength(0);
-    expect((await validarDto(ActualizarNegocioDto, { whatsapp: '+598 99 123 456' })).length)
+  it('el WhatsApp se acepta escrito de cualquiera de las formas usuales', async () => {
+    // La regla vieja exigia digitos con codigo de pais y rechazaba todo lo
+    // demas. Era peor de lo que parecia: dejaba pasar `092331784` —un celular
+    // uruguayo bien escrito, nueve digitos— y con eso wa.me abria un chat con
+    // un numero de otro pais. Ahora se acepta como lo escriba la persona y el
+    // servicio lo normaliza, que es lo mismo que se hace con los alumnos.
+    for (const forma of ['59899123456', '+598 99 123 456', '099123456', '099 123 456']) {
+      expect(await validarDto(ActualizarNegocioDto, { whatsapp: forma })).toHaveLength(0);
+    }
+  });
+
+  it('un WhatsApp que no es un número lo frena el servicio', async () => {
+    // El DTO solo acota el largo; la regla de verdad está en `normalizarTelefono`
+    // y es la misma para todos los teléfonos del sistema.
+    expect(await validarDto(ActualizarNegocioDto, { whatsapp: '123' })).toHaveLength(0);
+    await expect(servicio.actualizarNegocio({ whatsapp: '123' }, ADMIN.id)).rejects.toThrow(
+      /8 dígitos/,
+    );
+  });
+
+  it('un WhatsApp desmedido no llega ni al servicio', async () => {
+    expect((await validarDto(ActualizarNegocioDto, { whatsapp: '9'.repeat(26) })).length)
       .toBeGreaterThan(0);
-    expect((await validarDto(ActualizarNegocioDto, { whatsapp: '123' })).length).toBeGreaterThan(0);
   });
 
   it('permite vaciar un campo con cadena vacía', async () => {
@@ -131,6 +164,60 @@ describe('validación de los datos del negocio', () => {
   it('rechaza campos que no están declarados', async () => {
     const errores = await validarDto(ActualizarNegocioDto, { rol: 'ADMIN' });
     expect(errores.length).toBeGreaterThan(0);
+  });
+});
+
+describe('el teléfono y el correo del negocio', () => {
+  // Los datos de la academia se validaban distinto que los de un alumno: el
+  // teléfono no se normalizaba y el correo usaba una expresión regular propia.
+  // El mismo número quedaba escrito de dos formas segun donde se cargara.
+
+  it('el teléfono se guarda igual que el de un alumno', async () => {
+    for (const forma of ['098663201', '098 663 201', '+598 98663201', '598 98663201']) {
+      const guardado = await servicio.actualizarNegocio({ telefono: forma }, ADMIN.id);
+      expect(guardado.telefono).toBe('+598 98663201');
+    }
+  });
+
+  it('el WhatsApp también, y eso es lo que arregla el enlace', async () => {
+    // Guardado como lo escribe cualquiera acá, el enlace de wa.me salia roto.
+    const guardado = await servicio.actualizarNegocio({ whatsapp: '092331784' }, ADMIN.id);
+    expect(guardado.whatsapp).toBe('+598 92331784');
+  });
+
+  it('un teléfono que no es un teléfono se rechaza con un mensaje que explica', async () => {
+    await expect(servicio.actualizarNegocio({ telefono: '123' }, ADMIN.id)).rejects.toThrow(
+      /8 dígitos/,
+    );
+  });
+
+  it('el correo se guarda en minúscula, como el de un alumno', async () => {
+    const guardado = await servicio.actualizarNegocio({ email: '  Hola@Gimenoos.UY ' }, ADMIN.id);
+    expect(guardado.email).toBe('hola@gimenoos.uy');
+  });
+
+  it('el correo se valida con IsEmail, no con una expresión propia', async () => {
+    for (const malo of ['sin-arroba', 'dos@@arrobas.com', 'espacio @ejemplo.com', '@ejemplo.com']) {
+      const errores = await validarDto(ActualizarNegocioDto, { email: malo });
+      expect(errores.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('la cadena vacía sigue borrando el dato', async () => {
+    await servicio.actualizarNegocio({ telefono: '098663201', whatsapp: '092331784' }, ADMIN.id);
+    const vacio = await servicio.actualizarNegocio(
+      { telefono: '', whatsapp: '', email: '' },
+      ADMIN.id,
+    );
+    expect(vacio.telefono).toBeNull();
+    expect(vacio.whatsapp).toBeNull();
+    expect(vacio.email).toBeNull();
+  });
+
+  it('no tocar un campo lo deja como estaba', async () => {
+    await servicio.actualizarNegocio({ telefono: '098663201' }, ADMIN.id);
+    const despues = await servicio.actualizarNegocio({ horarios: 'Lunes a viernes' }, ADMIN.id);
+    expect(despues.telefono).toBe('+598 98663201');
   });
 });
 
