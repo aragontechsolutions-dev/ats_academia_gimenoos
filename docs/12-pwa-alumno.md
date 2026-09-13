@@ -125,24 +125,22 @@ del alumno, y cada rol usa las suyas.
 
 ---
 
-## Cómo entra el alumno, hoy
+## Cómo entra el alumno
 
 El formulario de ingreso **no habla con la API ni con el panel**. Llama a
 `supabase.auth.signInWithOtp()`, que va del navegador directo a Supabase Auth.
 
-La conexión con el panel ocurre **después**, en el primer llamado a la API
-(`UsuariosService.resolverDesdeToken`): se crea el usuario local y, si es su
-primer acceso, se busca una ficha de alumno **con ese mismo correo y sin cuenta**.
-Si hay exactamente una, la vincula; si hay dos, no adivina; si no hay ninguna,
-crea una ficha nueva.
+El permiso para entrar se resuelve **después**, en el primer llamado a la API
+(`UsuariosService.resolverDesdeToken`): se busca una invitación vigente para ese
+correo. Si la hay, se crea la cuenta con el rol y la ficha que dice la
+invitación; si no la hay, se responde `403` y no se crea nada.
 
-> **Pendiente, y es el objetivo de la etapa siguiente.** En
-> `@supabase/auth-js@2.116.0` el alta de usuario viene activada por defecto
-> (`create_user: options?.shouldCreateUser ?? true`), y el formulario no la
-> apaga. Hoy **cualquier persona** que escriba un correo recibe el enlace, entra,
-> y el sistema le crea cuenta y una ficha de alumno vacía. Además, la
-> vinculación por correo falla en silencio si el alumno se cargó sin correo o
-> usa otro distinto al que registró la academia.
+**Resuelto.** El formulario manda `shouldCreateUser: false` y, sobre todo, la
+API exige una **invitación vigente** para aprovisionar la cuenta: un token
+válido de Supabase ya no alcanza. La cuenta la habilita la academia desde la
+ficha del alumno, y el vínculo con esa ficha queda dicho en la invitación en vez
+de adivinarse por correo. Todo el detalle está en
+[18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md).
 
 ---
 

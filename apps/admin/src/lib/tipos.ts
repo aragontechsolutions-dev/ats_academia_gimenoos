@@ -108,6 +108,19 @@ export interface CompraDelHistorial {
   servicio: { nombre: string; tipoVehiculo: TipoVehiculo | null; duracionMin: number };
 }
 
+export type EstadoInvitacion = 'PENDIENTE' | 'ACEPTADA' | 'REVOCADA';
+
+export interface Invitacion {
+  id: string;
+  email: string;
+  rol: 'ADMIN' | 'INSTRUCTOR' | 'CLIENTE';
+  estado: EstadoInvitacion;
+  /** Null = la fila existe pero el correo no salió, y hay que reintentar. */
+  enviadaAt: string | null;
+  aceptadaAt: string | null;
+  createdAt: string;
+}
+
 export interface FichaCliente extends Cliente {
   reservas: ReservaDelHistorial[];
   compras: CompraDelHistorial[];

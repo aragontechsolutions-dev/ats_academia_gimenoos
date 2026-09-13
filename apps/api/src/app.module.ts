@@ -10,6 +10,7 @@ import { AuthModule } from './common/auth/auth.module';
 import { SupabaseAuthGuard } from './common/auth/supabase-auth.guard';
 import { RolesGuard } from './common/auth/roles.guard';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { SupabaseModule } from './common/supabase/supabase.module';
 
 import { HealthModule } from './modules/health/health.module';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
@@ -21,6 +22,7 @@ import { VehiculosModule } from './modules/vehiculos/vehiculos.module';
 import { ClientesModule } from './modules/clientes/clientes.module';
 import { LandingModule } from './modules/landing/landing.module';
 import { GraduadosModule } from './modules/graduados/graduados.module';
+import { InvitacionesModule } from './modules/invitaciones/invitaciones.module';
 
 @Module({
   imports: [
@@ -40,6 +42,7 @@ import { GraduadosModule } from './modules/graduados/graduados.module';
     }),
     PrismaModule,
     AuditoriaModule,
+    SupabaseModule,
     AuthModule,
     HealthModule,
     UsuariosModule,
@@ -51,6 +54,7 @@ import { GraduadosModule } from './modules/graduados/graduados.module';
     ClientesModule,
     LandingModule,
     GraduadosModule,
+    InvitacionesModule,
   ],
   providers: [
     // El orden importa: primero se limita la tasa, luego se autentica, luego se autoriza.

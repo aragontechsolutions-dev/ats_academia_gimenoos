@@ -1,101 +1,190 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
-import { RolUsuario, type Prisma, type Usuario } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import { EstadoInvitacion, RolUsuario, type Invitacion, type Usuario } from '@prisma/client';
+
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { normalizarEmail } from '../../common/formato/email';
 import type { SupabaseJwtPayload, UsuarioAutenticado } from '../../common/auth/jwt-payload.interface';
 
 @Injectable()
 export class UsuariosService {
   private readonly logger = new Logger(UsuariosService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
 
   /**
    * Resuelve el usuario local a partir de un JWT ya verificado.
    *
-   * Si es su primer acceso se crea el registro local (aprovisionamiento JIT) con
-   * el rol que venga en `app_metadata.rol`, que solo puede escribirse con la clave
-   * service_role. Si el usuario ya existe, el rol de la base manda: un token viejo
-   * nunca puede devolverle privilegios a alguien a quien se le cambio el rol.
+   * Un token válido de Supabase NO alcanza para entrar. Hace falta, además, una
+   * invitación vigente emitida desde el panel.
+   *
+   * Antes bastaba con el token: la cuenta se creaba sola con rol CLIENTE y la
+   * ficha de alumno se adivinaba por correo. Eso significaba que cualquier
+   * persona que escribiera su dirección en la app entraba y se llevaba una ficha
+   * de alumno vacía dentro del listado de la academia. El alta del navegador ya
+   * está cerrada (`shouldCreateUser: false`), pero eso es una comprobación del
+   * lado del cliente: la que cuenta es esta.
+   *
+   * Si el usuario ya existe, manda el rol de la base: un token viejo nunca puede
+   * devolverle privilegios a alguien a quien se le cambió el rol.
    */
   async resolverDesdeToken(payload: SupabaseJwtPayload): Promise<UsuarioAutenticado> {
     const existente = await this.prisma.usuario.findUnique({ where: { id: payload.sub } });
 
-    const usuario = existente ?? (await this.crearDesdeToken(payload));
-
-    if (!usuario.activo) {
-      throw new ForbiddenException('La cuenta esta deshabilitada');
+    if (existente) {
+      if (!existente.activo) throw new ForbiddenException('La cuenta esta deshabilitada');
+      return { id: existente.id, email: existente.email, rol: existente.rol };
     }
 
-    if (!existente && usuario.rol === RolUsuario.CLIENTE) {
-      await this.vincularFichaDeAlumno(usuario);
-    }
-
+    const usuario = await this.aprovisionar(payload);
     return { id: usuario.id, email: usuario.email, rol: usuario.rol };
   }
 
-  private async crearDesdeToken(payload: SupabaseJwtPayload): Promise<Usuario> {
-    const email = payload.email ?? `${payload.sub}@sin-email.local`;
-    const rolDelToken = payload.app_metadata?.rol;
-    const rol = rolDelToken && rolDelToken in RolUsuario ? rolDelToken : RolUsuario.CLIENTE;
+  /** Primer acceso: la cuenta local todavía no existe. */
+  private async aprovisionar(payload: SupabaseJwtPayload): Promise<Usuario> {
+    const email = normalizarEmail(payload.email);
+    if (!email) {
+      throw new ForbiddenException('La cuenta no tiene un correo con el que identificarla');
+    }
 
-    this.logger.log(`Alta de usuario local ${payload.sub} con rol ${rol}`);
+    // Una cuenta de Supabase distinta con un correo que ya está en uso acá. Pasa
+    // al rehacer el proyecto de Supabase: los identificadores cambian y la fila
+    // vieja queda apuntando a una cuenta que ya no existe. Se avisa en vez de
+    // fallar con un error de clave duplicada, que no le diría nada a nadie.
+    const mismoEmail = await this.prisma.usuario.findUnique({ where: { email } });
+    if (mismoEmail) {
+      this.logger.error(
+        `El usuario ${payload.sub} trae el correo de la cuenta ${mismoEmail.id}, que ya existe. ` +
+          'Si se rehizo el proyecto de Supabase, hay que actualizar el id de esa fila. ' +
+          'Ver docs/18-cuentas-e-invitaciones.md.',
+      );
+      throw new ForbiddenException(
+        'Ya hay una cuenta con ese correo registrada con otro identificador. Avisale a la academia.',
+      );
+    }
 
-    return this.prisma.usuario.create({
-      data: {
-        id: payload.sub,
-        email,
-        // El nombre real se completa desde el perfil; el JWT no lo garantiza.
-        nombre: '',
-        apellido: '',
-        rol,
-      },
+    const invitacion = await this.prisma.invitacion.findFirst({
+      where: { email, estado: EstadoInvitacion.PENDIENTE },
+      include: { cliente: true, instructor: true },
+    });
+
+    if (invitacion) return this.crearDesdeInvitacion(payload.sub, email, invitacion);
+
+    const administradorInicial = normalizarEmail(this.config.get<string>('ADMIN_INICIAL_EMAIL'));
+    if (administradorInicial && administradorInicial === email) {
+      return this.crearAdministradorInicial(payload.sub, email);
+    }
+
+    this.logger.warn(`Ingreso rechazado: ${payload.sub} no tiene invitación vigente`);
+    throw new ForbiddenException(
+      'Esta cuenta no está habilitada. Pedile a la academia que te invite a usar el sistema.',
+    );
+  }
+
+  /**
+   * Crea la cuenta y la ata a su ficha, todo junto.
+   *
+   * En una sola transacción porque las tres cosas son una: si se creara el
+   * usuario y fallara el vínculo, quedaría alguien dentro del sistema sin ficha
+   * y con una invitación que parece sin usar.
+   *
+   * El nombre sale de la ficha, no del token: Supabase no garantiza ninguno, y
+   * el alumno ya está cargado en la academia con su nombre real.
+   */
+  private async crearDesdeInvitacion(
+    id: string,
+    email: string,
+    invitacion: Invitacion & {
+      cliente: { id: string; nombre: string; apellido: string; telefono: string | null } | null;
+      instructor: { id: string; nombre: string; apellido: string; telefono: string | null } | null;
+    },
+  ): Promise<Usuario> {
+    const ficha = invitacion.cliente ?? invitacion.instructor;
+
+    return this.prisma.$transaction(async (tx) => {
+      const usuario = await tx.usuario.create({
+        data: {
+          id,
+          email,
+          nombre: ficha?.nombre ?? '',
+          apellido: ficha?.apellido ?? '',
+          telefono: ficha?.telefono ?? null,
+          rol: invitacion.rol,
+        },
+      });
+
+      if (invitacion.clienteId) {
+        await tx.cliente.update({
+          where: { id: invitacion.clienteId },
+          data: { usuarioId: usuario.id },
+        });
+      }
+      if (invitacion.instructorId) {
+        await tx.instructor.update({
+          where: { id: invitacion.instructorId },
+          data: { usuarioId: usuario.id },
+        });
+      }
+
+      await tx.invitacion.update({
+        where: { id: invitacion.id },
+        data: {
+          estado: EstadoInvitacion.ACEPTADA,
+          aceptadaAt: new Date(),
+          aceptadaPor: usuario.id,
+        },
+      });
+
+      await tx.registroAuditoria.create({
+        data: {
+          usuarioId: usuario.id,
+          accion: 'INVITACION_ACEPTADA',
+          entidad: 'Invitacion',
+          entidadId: invitacion.id,
+          detalle: { rol: invitacion.rol, conFicha: Boolean(ficha) },
+        },
+      });
+
+      this.logger.log(
+        `Alta de ${usuario.id} con rol ${invitacion.rol} por la invitación ${invitacion.id}`,
+      );
+      return usuario;
     });
   }
 
   /**
-   * Conecta la cuenta recien creada con la ficha de alumno que le corresponda.
+   * Puerta de arranque, para cuando todavía no hay nadie que pueda invitar.
    *
-   * El caso normal en una academia es al reves de lo que uno supondria: primero
-   * la academia registra al alumno en el local, y recien despues el alumno se
-   * crea la cuenta para ver sus clases. Sin este paso quedarian dos registros
-   * de la misma persona y el alumno no veria su historial.
+   * Solo funciona con la dirección exacta que esté en `ADMIN_INICIAL_EMAIL`, que
+   * se carga en el servidor y no en ningún frontend. Hace falta en dos momentos:
+   * la primera instalación, y cuando se rehace el proyecto de Supabase.
    *
-   * Se vincula por correo y SOLO si hay exactamente una ficha candidata sin
-   * cuenta asociada. Ante dos coincidencias no se adivina: se crea una ficha
-   * nueva y la academia decide, porque vincular mal expondria los datos de otro
-   * alumno a la persona equivocada.
+   * Conviene vaciarla después del primer ingreso. Mientras esté puesta, quien
+   * controle esa casilla puede crearse un administrador.
    */
-  private async vincularFichaDeAlumno(usuario: Usuario): Promise<void> {
-    const candidatas = await this.prisma.cliente.findMany({
-      where: { usuarioId: null, email: usuario.email },
-      select: { id: true },
-      take: 2,
-    });
+  private async crearAdministradorInicial(id: string, email: string): Promise<Usuario> {
+    this.logger.warn(
+      `Alta del administrador inicial ${id} por ADMIN_INICIAL_EMAIL. ` +
+        'Conviene vaciar esa variable ahora que ya hay un administrador.',
+    );
 
-    if (candidatas.length === 1) {
-      await this.prisma.cliente.update({
-        where: { id: candidatas[0]!.id },
-        data: { usuarioId: usuario.id },
+    return this.prisma.$transaction(async (tx) => {
+      const usuario = await tx.usuario.create({
+        data: { id, email, nombre: '', apellido: '', rol: RolUsuario.ADMIN },
       });
-      this.logger.log(`Ficha de alumno ${candidatas[0]!.id} vinculada al usuario ${usuario.id}`);
-      return;
-    }
-
-    const nueva: Prisma.ClienteCreateInput = {
-      nombre: usuario.nombre || 'Sin nombre',
-      apellido: usuario.apellido || 'Sin apellido',
-      email: usuario.email,
-      telefono: usuario.telefono,
-      usuario: { connect: { id: usuario.id } },
-    };
-    const creada = await this.prisma.cliente.create({ data: nueva, select: { id: true } });
-
-    if (candidatas.length > 1) {
-      this.logger.warn(
-        `Hay mas de una ficha sin cuenta con el correo ${usuario.email}: se creo la ficha ` +
-          `${creada.id} sin vincular. Un administrador debe unificarlas.`,
-      );
-    }
+      await tx.registroAuditoria.create({
+        data: {
+          usuarioId: usuario.id,
+          accion: 'ADMIN_INICIAL_CREADO',
+          entidad: 'Usuario',
+          entidadId: usuario.id,
+        },
+      });
+      return usuario;
+    });
   }
 
   /** Perfil completo del usuario autenticado, con su ficha de cliente o instructor. */

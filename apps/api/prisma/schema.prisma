@@ -34,6 +34,16 @@ enum RolUsuario {
   CLIENTE
 }
 
+/// Estado de una invitacion a usar el sistema.
+enum EstadoInvitacion {
+  /// Emitida y todavia sin usar.
+  PENDIENTE
+  /// La persona entro y su cuenta quedo creada y vinculada.
+  ACEPTADA
+  /// La academia la dio de baja antes de que se usara.
+  REVOCADA
+}
+
 enum TipoVehiculo {
   MOTO
   AUTO
@@ -148,6 +158,53 @@ model Usuario {
   @@map("usuarios")
 }
 
+/// Invitacion a usar el sistema.
+///
+/// Es la UNICA puerta de entrada: sin una invitacion vigente, un token valido de
+/// Supabase no alcanza para que la API aprovisione la cuenta. Antes el acceso se
+/// resolvia adivinando por correo despues del hecho, lo que dejaba entrar a
+/// cualquiera y creaba fichas de alumno vacias.
+///
+/// Guarda A QUE FICHA pertenece (`clienteId` o `instructorId`), asi el vinculo
+/// queda dicho de antemano en vez de deducirse, y funciona aunque haya dos
+/// fichas con el mismo correo o el alumno no tenga correo cargado.
+model Invitacion {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// Siempre en minuscula: Supabase normaliza los correos y la comparacion
+  /// tiene que dar igual escriba como escriba quien la carga.
+  email String
+  /// Con que rol se crea la cuenta. No se lee del token: `app_metadata` vive en
+  /// Supabase y esto vive en la base de la aplicacion, que es la fuente de verdad.
+  rol    RolUsuario       @default(CLIENTE)
+  estado EstadoInvitacion @default(PENDIENTE)
+
+  /// A quien pertenece. Como mucho uno de los dos; una invitacion de ADMIN no
+  /// tiene ninguno.
+  clienteId    String? @map("cliente_id") @db.Uuid
+  instructorId String? @map("instructor_id") @db.Uuid
+
+  /// Cuando Supabase acepto mandar el correo. Null = la fila existe pero el
+  /// correo no salio, y hay que reintentar.
+  enviadaAt   DateTime? @map("enviada_at") @db.Timestamptz(3)
+  aceptadaAt  DateTime? @map("aceptada_at") @db.Timestamptz(3)
+  /// Usuario que se creo al aceptarla.
+  aceptadaPor String?   @map("aceptada_por") @db.Uuid
+
+  invitadaPor String?  @map("invitada_por") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  cliente    Cliente?    @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  instructor Instructor? @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  /// El ingreso busca por correo y estado en cada primer acceso.
+  @@index([email, estado])
+  @@index([clienteId])
+  @@index([instructorId])
+  @@map("invitaciones")
+}
+
 /// Ficha del alumno. Contiene datos identificatorios (cedula) que son datos
 /// personales bajo Ley 18.331: el acceso esta restringido por rol en la API.
 ///
@@ -192,6 +249,7 @@ model Cliente {
   compras     CompraServicio[]
   expedientes Expediente[]
   graduaciones Graduado[]
+  invitaciones Invitacion[]
 
   @@unique([tipoDocumento, paisDocumento, documento])
   @@index([apellido, nombre])
@@ -221,6 +279,7 @@ model Instructor {
   disponibilidades DisponibilidadPlantilla[]
   excepciones      ExcepcionDisponibilidad[]
   reservas         Reserva[]
+  invitaciones     Invitacion[]
 
   @@index([activo])
   @@map("instructores")

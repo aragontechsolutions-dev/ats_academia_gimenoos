@@ -10,13 +10,10 @@ import { RolUsuario } from '@prisma/client';
 import { PrismaService } from '../src/common/prisma/prisma.service';
 import { AuditoriaService } from '../src/common/auditoria/auditoria.service';
 import { ClientesService } from '../src/modules/clientes/clientes.service';
-import { UsuariosService } from '../src/modules/usuarios/usuarios.service';
 import type { UsuarioAutenticado } from '../src/common/auth/jwt-payload.interface';
-import type { SupabaseJwtPayload } from '../src/common/auth/jwt-payload.interface';
 
 const prisma = new PrismaService();
 const clientes = new ClientesService(prisma, new AuditoriaService(prisma));
-const usuarios = new UsuariosService(prisma);
 
 const ID = {
   usuarioAdmin: '00000000-0000-4000-d000-000000000001',
@@ -35,15 +32,6 @@ const INSTRUCTOR: UsuarioAutenticado = {
   rol: RolUsuario.INSTRUCTOR,
 };
 
-/** Ids de los usuarios que crean las pruebas de vinculación, para limpiarlos. */
-const creadosPorVinculacion: string[] = [];
-
-const tokenDe = (sub: string, email: string): SupabaseJwtPayload => ({
-  sub,
-  email,
-  app_metadata: { rol: RolUsuario.CLIENTE },
-});
-
 beforeAll(async () => {
   await prisma.$connect();
   for (const usuario of [
@@ -55,10 +43,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await prisma.cliente.deleteMany({ where: { email: { contains: '@prueba-vinculo' } } });
   await prisma.cliente.deleteMany({ where: { id: ID.cliente } });
-  await prisma.usuario.deleteMany({ where: { id: { in: creadosPorVinculacion } } });
-  creadosPorVinculacion.length = 0;
 
   await prisma.cliente.create({
     data: {
@@ -75,9 +60,7 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  await prisma.cliente.deleteMany({ where: { email: { contains: '@prueba-vinculo' } } });
   await prisma.cliente.deleteMany({ where: { id: ID.cliente } });
-  await prisma.usuario.deleteMany({ where: { id: { in: creadosPorVinculacion } } });
   await prisma.usuario.deleteMany({
     where: { id: { in: [ID.usuarioAdmin, ID.usuarioInstructor] } },
   });
@@ -182,53 +165,5 @@ describe('El alumno consulta y edita su propia ficha', () => {
     // Lo que el alumno no controla queda intacto.
     expect(enBase.notasInternas).toBe('Todavía le cuesta el embrague');
     expect(enBase.activo).toBe(true);
-  });
-});
-
-describe('Vinculación de la ficha cuando el alumno se crea una cuenta', () => {
-  it('vincula la ficha existente si hay una sola con ese correo', async () => {
-    const email = 'ana@prueba-vinculo.uy';
-    const ficha = await prisma.cliente.create({
-      data: { nombre: 'Ana', apellido: 'Previa', email },
-    });
-
-    const sub = '00000000-0000-4000-d000-0000000000b1';
-    creadosPorVinculacion.push(sub);
-    await usuarios.resolverDesdeToken(tokenDe(sub, email));
-
-    const actualizada = await prisma.cliente.findUniqueOrThrow({ where: { id: ficha.id } });
-    expect(actualizada.usuarioId).toBe(sub);
-
-    // Y no se creó una ficha duplicada.
-    const total = await prisma.cliente.count({ where: { email } });
-    expect(total).toBe(1);
-  });
-
-  it('ante dos fichas con el mismo correo no adivina: crea una nueva sin vincular', async () => {
-    const email = 'repetido@prueba-vinculo.uy';
-    await prisma.cliente.create({ data: { nombre: 'Uno', apellido: 'Repetido', email } });
-    await prisma.cliente.create({ data: { nombre: 'Dos', apellido: 'Repetido', email } });
-
-    const sub = '00000000-0000-4000-d000-0000000000b2';
-    creadosPorVinculacion.push(sub);
-    await usuarios.resolverDesdeToken(tokenDe(sub, email));
-
-    // Vincular a ciegas le daría a esta persona el historial de otra.
-    const vinculadas = await prisma.cliente.count({ where: { email, usuarioId: { not: null } } });
-    expect(vinculadas).toBe(1);
-
-    const nueva = await prisma.cliente.findFirstOrThrow({ where: { usuarioId: sub } });
-    expect(['Uno', 'Dos']).not.toContain(nueva.nombre);
-  });
-
-  it('crea la ficha si el alumno no estaba registrado', async () => {
-    const email = 'nuevo@prueba-vinculo.uy';
-    const sub = '00000000-0000-4000-d000-0000000000b3';
-    creadosPorVinculacion.push(sub);
-
-    await usuarios.resolverDesdeToken(tokenDe(sub, email));
-
-    const ficha = await prisma.cliente.findFirstOrThrow({ where: { usuarioId: sub } });
-    expect(ficha.email).toBe(email);
   });
 });

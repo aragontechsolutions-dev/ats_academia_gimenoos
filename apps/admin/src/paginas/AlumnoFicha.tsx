@@ -4,11 +4,11 @@ import { Link, useParams } from 'react-router-dom';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Boton } from '../componentes/ui/Boton';
 import { FormularioAlumno } from './Alumnos';
-import { clientes as api } from '../lib/recursos';
+import { clientes as api, invitaciones as apiInvitaciones } from '../lib/recursos';
 import { documentoLegible } from '../lib/paises';
 import { fechaCorta, fechaYHora } from '../lib/fecha';
 import { useSesion } from '../lib/sesion';
-import { ETIQUETA_ESTADO, type FichaCliente } from '../lib/tipos';
+import { ETIQUETA_ESTADO, type FichaCliente, type Invitacion } from '../lib/tipos';
 
 export function AlumnoFicha() {
   const { id } = useParams<{ id: string }>();
@@ -90,6 +90,8 @@ export function AlumnoFicha() {
         </section>
       )}
 
+      {esAdmin && <AccesoALaApp ficha={ficha} onCambio={cargar} />}
+
       {ficha.compras.length > 0 && (
         <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
           <h2 className="font-semibold text-slate-900">Packs comprados</h2>
@@ -166,5 +168,123 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string | null | un
       <dt className="text-slate-500">{etiqueta}</dt>
       <dd className="text-slate-900">{valor || '—'}</dd>
     </div>
+  );
+}
+
+/**
+ * Acceso del alumno a su app.
+ *
+ * La cuenta NO se crea sola cuando el alumno escribe su correo en la app: la
+ * habilita la academia desde acá. Así el sistema sabe de antemano a qué ficha
+ * pertenece la cuenta, en vez de deducirlo por el correo después del hecho, que
+ * fallaba cuando había dos fichas iguales o el alumno usaba otra dirección.
+ */
+function AccesoALaApp({ ficha, onCambio }: { ficha: FichaCliente; onCambio: () => void }) {
+  const [lista, setLista] = useState<Invitacion[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [trabajando, setTrabajando] = useState(false);
+
+  const cargar = useCallback(() => {
+    void apiInvitaciones
+      .deCliente(ficha.id)
+      .then(setLista)
+      .catch(() => setLista([]));
+  }, [ficha.id]);
+
+  useEffect(cargar, [cargar]);
+
+  const pendiente = lista.find((i) => i.estado === 'PENDIENTE');
+
+  const accion = async (promesa: Promise<unknown>, exito: string) => {
+    setTrabajando(true);
+    setError(null);
+    setAviso(null);
+    try {
+      await promesa;
+      setAviso(exito);
+      cargar();
+      onCambio();
+    } catch (problema) {
+      setError((problema as Error).message);
+    } finally {
+      setTrabajando(false);
+    }
+  };
+
+  return (
+    <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+      <h2 className="font-semibold text-slate-900">Acceso a la app</h2>
+
+      {ficha.usuarioId ? (
+        <p className="mt-2 text-sm text-slate-600">
+          Ya tiene cuenta y entra con su correo. Para sacarle el acceso hay que desactivar
+          la cuenta.
+        </p>
+      ) : pendiente ? (
+        <>
+          <p className="mt-2 text-sm text-slate-600">
+            Invitación enviada a <strong>{pendiente.email}</strong>
+            {pendiente.enviadaAt ? (
+              <> el {fechaYHora(pendiente.enviadaAt)}. Todavía no la usó.</>
+            ) : (
+              <>
+                , pero <strong className="text-amber-800">el correo no salió</strong>. Probá
+                reenviarla.
+              </>
+            )}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Boton
+              variante="secundario"
+              disabled={trabajando}
+              onClick={() =>
+                void accion(apiInvitaciones.reenviar(pendiente.id), 'Listo, se reenvió el correo.')
+              }
+            >
+              Reenviar invitación
+            </Boton>
+            <Boton
+              variante="peligro"
+              disabled={trabajando}
+              onClick={() => {
+                if (window.confirm('¿Dar de baja la invitación? El enlace deja de servir.')) {
+                  void accion(apiInvitaciones.revocar(pendiente.id), 'Invitación dada de baja.');
+                }
+              }}
+            >
+              Dar de baja
+            </Boton>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="mt-2 text-sm text-slate-600">
+            Todavía no tiene acceso. Al invitarlo le llega un correo con un enlace para entrar
+            a ver y reservar sus clases.
+          </p>
+          {!ficha.email && (
+            <p className="mt-2 text-sm text-amber-800">
+              Le falta el correo en la ficha. Cargalo antes de invitarlo.
+            </p>
+          )}
+          <Boton
+            className="mt-3"
+            disabled={trabajando || !ficha.email}
+            onClick={() =>
+              void accion(
+                apiInvitaciones.crear({ rol: 'CLIENTE', clienteId: ficha.id }),
+                'Listo, le mandamos la invitación por correo.',
+              )
+            }
+          >
+            {trabajando ? 'Enviando…' : 'Invitar a la app'}
+          </Boton>
+        </>
+      )}
+
+      {error && <div className="mt-3"><Aviso tipo="error">{error}</Aviso></div>}
+      {aviso && <div className="mt-3"><Aviso tipo="exito">{aviso}</Aviso></div>}
+    </section>
   );
 }

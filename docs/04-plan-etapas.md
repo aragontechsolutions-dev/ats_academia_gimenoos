@@ -191,6 +191,42 @@ real. Ver [`17-fotos.md`](17-fotos.md#5-qué-se-verificó).
 
 **Con esto cierra la Etapa 1 completa.**
 
+### Etapa 2.A — La app del alumno con la identidad del sitio ✅ COMPLETADA
+
+| Entregable | Estado |
+|---|---|
+| Misma paleta y mismo logotipo que el sitio y el panel | ✅ |
+| Barra de marca arriba, navegación abajo, zonas seguras respetadas | ✅ |
+| `CONFIRMADA` deja de chocar con `AUSENTE` | ✅ |
+| `theme-color` y favicon | ✅ |
+| Contraste verificado, criterio AA | ✅ |
+| Pruebas | ✅ recorrido en navegador a 390×844 |
+
+### Etapa 2.B — Cuentas por invitación ✅ COMPLETADA
+
+| Entregable | Estado |
+|---|---|
+| Nadie entra sin invitación, comprobado en la API y no solo en el navegador | ✅ |
+| El vínculo cuenta↔ficha deja de adivinarse por correo | ✅ |
+| Invitar, reenviar y dar de baja desde la ficha del alumno | ✅ |
+| Reglas en la base, no solo en el código (5 constraints) | ✅ |
+| Puerta de arranque para el primer administrador | ✅ |
+| Documentación | ✅ [`18-cuentas-e-invitaciones.md`](18-cuentas-e-invitaciones.md) |
+| Pruebas | ✅ 158 + recorridos HTTP y en navegador |
+
+**No verificado:** el envío real del correo de invitación. El entorno de
+desarrollo no alcanza `supabase.co`.
+
+### Etapa 2.C — Pantalla de cuentas en el panel ⏳ PENDIENTE
+
+Ver rol y estado de cada cuenta, invitar instructores y administradores,
+desactivar una cuenta sin borrar su historial.
+
+### Etapa 2.D — PWA del instructor ⏳ PENDIENTE
+
+App propia para los instructores, y cerrar el acceso del rol `INSTRUCTOR` al
+panel de administración.
+
 ## Etapa 2 — Pagos
 
 **Objetivo:** cobrar por los tres canales y conciliar.

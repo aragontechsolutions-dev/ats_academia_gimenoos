@@ -153,22 +153,19 @@ ampliando la superficie de ataque a cambio de nada.
 
 ## 7. Crear el primer administrador
 
-El sistema aprovisiona el usuario local en su primer acceso, con rol `CLIENTE`
-por defecto. Para el primer administrador:
+**Nadie entra sin invitación**, ni siquiera con un token válido de Supabase. Para
+el primero, que es el que después invita a todos los demás, hay una puerta de
+arranque:
 
-1. **Authentication → Users → Add user**, con correo y contraseña.
-2. Que ingrese una vez al panel (así se crea la fila en `usuarios`).
-3. En **SQL Editor**:
+1. En el servidor (Render), cargar `ADMIN_INICIAL_EMAIL` con el correo del
+   administrador.
+2. **Authentication → Users → Add user**, con ese mismo correo y una contraseña.
+3. Que ingrese una vez al panel: la cuenta se crea con rol `ADMIN`.
+4. **Vaciar `ADMIN_INICIAL_EMAIL`.** Mientras esté puesta, quien controle esa
+   casilla de correo puede crearse un administrador.
 
-```sql
-UPDATE usuarios SET rol = 'ADMIN' WHERE email = 'correo@delAdmin.com';
-```
-
-A partir de ahí los roles se administran desde el panel (Etapa 1).
-
-> Alternativa: fijar `app_metadata.rol = 'ADMIN'` desde el panel de Supabase
-> antes del primer ingreso. `app_metadata` solo se escribe con la clave
-> `service_role`, nunca por el propio usuario.
+A partir de ahí, todo el mundo entra por invitación desde el panel. El detalle
+está en [18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md).
 
 ## 8. Checklist antes de producción
 

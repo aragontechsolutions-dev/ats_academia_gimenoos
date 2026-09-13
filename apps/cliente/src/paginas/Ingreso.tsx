@@ -23,10 +23,21 @@ export function Ingreso() {
     setEnviando(true);
     await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin },
+      options: {
+        emailRedirectTo: window.location.origin,
+        // La cuenta la crea la academia al invitar, nunca este formulario.
+        //
+        // Sin esto, Supabase da de alta al que escriba cualquier dirección
+        // (`create_user` viene en true por defecto): entraba cualquiera y el
+        // sistema le armaba una ficha de alumno vacía dentro del listado de la
+        // academia. La comprobación que de verdad cuenta está en la API, que
+        // exige invitación vigente; esto evita además el alta en Supabase.
+        shouldCreateUser: false,
+      },
     });
-    // Se muestra el mismo mensaje exista o no la cuenta: asi no se puede
-    // averiguar que correos estan registrados en el sistema.
+    // Se muestra el mismo mensaje exista o no la cuenta, y también si Supabase
+    // devolvió error: así no se puede averiguar qué correos están registrados
+    // probando direcciones en este formulario.
     setEnviado(true);
     setEnviando(false);
   }
@@ -89,7 +100,8 @@ export function Ingreso() {
         {/* slate-400 y no slate-500: sobre el negro de la marca, slate-500 da 4.13
             de contraste y el criterio AA pide 4.5 para texto de este tamaño. */}
         <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
-          ¿Todavía no sos alumno? Escribinos y te contamos cómo empezar.
+          La cuenta te la habilita la academia. Si todavía no sos alumno, escribinos
+          y te contamos cómo empezar.
         </p>
       </div>
     </div>
