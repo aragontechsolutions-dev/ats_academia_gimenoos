@@ -134,10 +134,16 @@ las fotos y el logo:
 - [ ] **Imprimir el formulario de autorización** ([`16-autorizacion-imagen.md`](16-autorizacion-imagen.md))
       y hacerlo firmar a cada egresado antes de publicar su foto. Conviene que lo
       revise un abogado antes de usarlo, sobre todo la parte de menores.
-- [ ] **Fotos propias** de la academia, las clases y los vehículos → `galeria` y
-      `vehiculos` en el mismo archivo. Las secciones aparecen solas cuando hay
-      fotos. No se usan imágenes de banco: mostrar un auto que no es el de la
-      academia sería afirmar algo que no es cierto.
+- [ ] **Fotos propias** de los vehículos → se cargan desde el panel, en
+      Vehículos. La sección del sitio aparece sola cuando hay fotos. No se usan
+      imágenes de banco: mostrar un auto que no es el de la academia sería
+      afirmar algo que no es cierto.
+- [ ] **Marcar la ubicación de la academia en el mapa**: Panel → Sitio público →
+      Datos de contacto → *Ubicación en el mapa*. Se toca el mapa, se arrastra el
+      marcador, o se usa «Usar mi ubicación» estando en el local. Hasta que no se
+      marque, el sitio muestra la ilustración de la zona y **no** ofrece el botón
+      «Llevame hasta allí»: no inventa una dirección.
+      Ver [`20-mapa.md`](20-mapa.md).
 - [ ] **Instructores y testimonios** → mismo archivo, **con autorización expresa
       de cada persona** para publicar su nombre y su foto (es un dato personal:
       Ley 18.331).

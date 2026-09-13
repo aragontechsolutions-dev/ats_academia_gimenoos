@@ -21,7 +21,7 @@ escrita en un documento: está sostenido por el código.
 | Vehículos | La sección **entera** no existe en el HTML. |
 | Instructores | Ídem. |
 | Testimonios | Ídem. |
-| Galería | Ídem. |
+| Egresados | Ídem, y además **desaparece su enlace del menú**. |
 | Precios | Se muestra "Consultanos el precio" en lugar de un número. |
 
 Está verificado en navegador: la prueba falla si alguna de esas secciones
@@ -73,7 +73,7 @@ aparece recién cuando ya se entendió qué se está comprando.
 | 6 | Vehículos | *(solo si hay vehículos cargados)* |
 | 7 | Planes | Precios en vivo desde la API |
 | 8 | Trámite | La libreta ante la Intendencia |
-| 9 | Instructores / Testimonios / Galería | *(solo si hay datos reales)* |
+| 9 | Instructores / Egresados / Testimonios | *(solo si hay datos reales)* |
 | 10 | Ubicación | Dónde estamos y cómo llegar |
 | 11 | Preguntas | Se responden las objeciones antes de pedir el contacto |
 | 12 | Contacto | El formulario |
@@ -145,8 +145,38 @@ es una infracción con consecuencias reales, no un detalle de diseño.
 El hero y la sección de ubicación usan ilustraciones SVG propias —líneas de
 velocidad, un velocímetro estilizado, una ruta— en lugar de fotografías. No es
 una limitación temporal: mostrar la foto de un auto que no es el de la academia
-sería afirmar algo que no es cierto. Cuando haya fotos reales, van en
-`vehiculos` y `galeria` y las secciones aparecen solas.
+sería afirmar algo que no es cierto. Cuando haya fotos reales, van en `vehiculos` y la sección aparece sola.
+
+La sección de ubicación deja de ser una ilustración en cuanto se marca el punto
+del local desde el panel: ahí pasa a ser un mapa de verdad. Ver
+[20-mapa.md](20-mapa.md).
+
+**La galería de instalaciones se eliminó.** Su lista de fotos estaba fija en
+vacío en `contenido.ts` y no había forma de cargarla desde ningún lado, así que
+la sección no se dibujaba nunca: era código que no se ejecutaba. Si algún día se
+quieren fotos de las instalaciones, se hace con carga desde el panel, como las
+de los vehículos.
+
+---
+
+## 5a. Qué enlaces muestra el menú
+
+El menú **no es una lista fija**. Un enlace solo se dibuja si su sección va a
+existir en la página, y hay dos motivos para que no exista:
+
+| Motivo | Ejemplo |
+|---|---|
+| La academia la ocultó desde el panel | Se apaga «Planes» mientras se revisan los precios |
+| La sección se esconde sola por no tener contenido | «Egresados», mientras no haya ninguno publicado |
+
+Sin esto, el menú ofrecería un ancla que no está en el documento: al tocarla el
+navegador no hace nada y la persona queda donde estaba, sin ningún aviso de que
+algo falló.
+
+El enlace de **Egresados** lleva a la sección de fotos de egresados con su
+diploma. La sección y el menú se apoyan en la **misma** petición —
+`lib/egresados.ts` la comparte— para no pedir dos veces lo mismo al cargar la
+página.
 
 ---
 
@@ -248,7 +278,9 @@ Todo en un Chromium real, contra la API y la base corriendo de verdad, a
 | Servicio sin duración (gestoría) no dice "0 minutos" | Corregido y OK |
 | Ningún bloque queda invisible tras la animación | OK (42/42) |
 | Sin scroll horizontal en móvil | OK (0 px de desborde) |
-| Secciones sin datos reales no se renderizan | OK (vehículos, instructores, testimonios, galería) |
+| Secciones sin datos reales no se renderizan | OK (vehículos, instructores, testimonios, egresados) |
+| Sin egresados publicados, «Egresados» desaparece del menú | OK |
+| Con egresados, el enlace baja hasta la sección | OK |
 | Sin WhatsApp: no hay formulario ni botón flotante | OK |
 | Con WhatsApp: el formulario arma el mensaje correcto | OK |
 | El formulario no manda datos a ningún servidor | OK (0 peticiones no-GET) |

@@ -19,7 +19,7 @@ edita desde **Panel → Sitio web**.
 Los **precios** siguen en su propia pantalla (Panel → Precios), porque son parte
 del catálogo y los usa también la agenda.
 
-Las fotos —vehículos, instructores, testimonios, galería— todavía no se cargan
+Las fotos —vehículos, instructores, testimonios— todavía no se cargan
 desde acá. De esas secciones se puede editar el encabezado y la visibilidad.
 
 ---
@@ -192,7 +192,7 @@ Dos cosas que salieron de hacer el cambio:
 
 ## 7. Lo que todavía no hace
 
-- **Fotos.** Vehículos, instructores, testimonios y galería siguen esperando la
+- **Fotos.** Vehículos, instructores y testimonios siguen esperando la
   carga de imágenes.
 - **Previsualizar antes de publicar.** Lo que se guarda se ve enseguida en el
   sitio. Para un sitio de esta escala es lo razonable; si algún día hace falta

@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent } fro
 import { Menu, MessageCircle, X } from 'lucide-react';
 
 import { navegacion } from '../contenido';
-import { useEnlaceWhatsApp, useDestinoPrincipal, useNegocio } from '../contexto/ContenidoContexto';
+import {
+  useEnlaceWhatsApp,
+  useDestinoPrincipal,
+  useNegocio,
+  useSeccionVisible,
+} from '../contexto/ContenidoContexto';
+import { useEgresados } from '../lib/egresados';
 import { useSeccionActiva } from '../lib/seccionActiva';
 import { esAtajoDePanel, urlIngresoPanel } from '../lib/panel';
 import { clasesBoton } from './ui/Boton';
@@ -21,9 +27,30 @@ export function Encabezado() {
   const wa = useEnlaceWhatsApp();
   const principal = useDestinoPrincipal();
 
-  // `navegacion` es una constante del módulo, pero el hook recibe un array y
-  // useMemo evita volver a suscribir el listener en cada render.
-  const destinos = useMemo(() => navegacion.map((enlace) => enlace.destino), []);
+  const esVisible = useSeccionVisible();
+  const egresados = useEgresados();
+
+  /**
+   * Solo los enlaces que llevan a algo.
+   *
+   * Una sección que la academia ocultó desde el panel, o una que se esconde sola
+   * por no tener contenido —la de egresados, mientras no haya ninguno
+   * publicado—, no dibuja su ancla. El enlace quedaría apuntando a un `#` que no
+   * existe y el navegador dejaría a la persona donde estaba, sin ningún aviso.
+   */
+  const enlaces = useMemo(
+    () =>
+      navegacion.filter((enlace) => {
+        if (enlace.seccion && !esVisible(enlace.seccion)) return false;
+        if (enlace.soloConEgresados && egresados.total === 0) return false;
+        return true;
+      }),
+    [esVisible, egresados.total],
+  );
+
+  // El hook recibe un array; useMemo evita volver a suscribir el listener en
+  // cada render.
+  const destinos = useMemo(() => enlaces.map((enlace) => enlace.destino), [enlaces]);
   const activa = useSeccionActiva(destinos);
 
   useEffect(() => {
@@ -88,7 +115,7 @@ export function Encabezado() {
         </a>
 
         <ul className="hidden items-center gap-7 lg:flex">
-          {navegacion.map((enlace) => {
+          {enlaces.map((enlace) => {
             const esActiva = activa === enlace.destino;
             return (
               <li key={enlace.destino}>
@@ -142,7 +169,7 @@ export function Encabezado() {
            el menú con transparencia se vuelve difícil de leer. */
         <div id="menu-movil" className="border-t border-white/10 bg-carbon-950 lg:hidden">
           <ul className="mx-auto max-w-6xl px-4 py-2">
-            {navegacion.map((enlace) => {
+            {enlaces.map((enlace) => {
               const esActiva = activa === enlace.destino;
               return (
                 <li key={enlace.destino}>

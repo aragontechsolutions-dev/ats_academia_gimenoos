@@ -28,6 +28,9 @@ export interface NegocioRemoto {
   email: string | null;
   horarios: string | null;
   mapaUrl: string | null;
+  /** Punto exacto del local. Null las dos mientras nadie lo marque en el panel. */
+  latitud: number | null;
+  longitud: number | null;
   instagram: string | null;
   facebook: string | null;
 }

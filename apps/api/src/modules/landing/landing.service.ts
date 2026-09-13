@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
@@ -18,6 +18,8 @@ const CAMPOS_NEGOCIO = {
   email: true,
   horarios: true,
   mapaUrl: true,
+  latitud: true,
+  longitud: true,
   instagram: true,
   facebook: true,
 } as const;
@@ -153,6 +155,8 @@ export class LandingService {
   }
 
   async actualizarNegocio(dto: ActualizarNegocioDto, usuarioId: string) {
+    this.comprobarCoordenadas(dto);
+
     const negocio = await this.prisma.configuracionAcademia.update({
       where: { id: 1 },
       data: {
@@ -165,6 +169,8 @@ export class LandingService {
         email: this.aNulo(dto.email),
         horarios: this.aNulo(dto.horarios),
         mapaUrl: this.aNulo(dto.mapaUrl),
+        latitud: dto.latitud,
+        longitud: dto.longitud,
         instagram: this.aNulo(dto.instagram),
         facebook: this.aNulo(dto.facebook),
       },
@@ -181,6 +187,29 @@ export class LandingService {
       detalle: { campos: Object.keys(dto) },
     });
     return negocio;
+  }
+
+  /**
+   * Las dos coordenadas o ninguna.
+   *
+   * La base lo obliga con un CHECK, pero un error de constraint le llega a quien
+   * atiende como un texto en inglés con el nombre de la restricción adentro.
+   * Acá se dice qué falta.
+   *
+   * Solo se mira cuando el pedido toca alguna de las dos: guardar el teléfono no
+   * tiene por qué exigir que el local ya esté ubicado en el mapa.
+   */
+  private comprobarCoordenadas(dto: ActualizarNegocioDto) {
+    const toca = dto.latitud !== undefined || dto.longitud !== undefined;
+    if (!toca) return;
+
+    const lat = dto.latitud ?? null;
+    const lon = dto.longitud ?? null;
+    if ((lat === null) !== (lon === null)) {
+      throw new BadRequestException(
+        'La ubicación en el mapa necesita latitud y longitud. Marcá el punto en el mapa o quitá las dos.',
+      );
+    }
   }
 
   /** `undefined` se ignora (no se tocó el campo); `''` borra el dato. */

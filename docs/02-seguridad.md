@@ -90,6 +90,29 @@ Configuradas en `apps/api/src/main.ts`:
 | Swagger deshabilitado en producción | Exponer el mapa completo de la API |
 | Validación de entorno con Zod | Arrancar sin credenciales y fallar en runtime |
 
+### Lo que escribe el panel y se muestra en el sitio público
+
+El nombre, la dirección y los textos de las secciones los escribe quien
+administra y se muestran en la página pública. Eso convierte al panel en una vía
+de entrada: no hace falta un atacante externo para que termine HTML ajeno en el
+sitio; alcanza con una cuenta de administración comprometida.
+
+| Dónde | Cómo se cierra |
+|---|---|
+| Enlaces del panel (`mapaUrl`, `instagram`, `facebook`) | El DTO solo acepta `http://` y `https://`. Sin eso, un `javascript:` en un `href` ejecuta código en el navegador de cada visitante |
+| Textos dentro de React | React escapa el contenido por su cuenta. No hay ningún `dangerouslySetInnerHTML` en el sitio |
+| **El globo del marcador del mapa** | Se arma como elemento con `textContent`. `bindPopup` de Leaflet, si recibe una cadena, la inserta con `innerHTML` |
+
+El último apareció al escribir el mapa y **estaba explotable**: con
+`<img src=x onerror=…>` en el nombre de la academia, el código se ejecutaba en la
+página pública al abrir el globo. Comprobado en un navegador de verdad antes y
+después del arreglo.
+
+**La regla que deja:** cualquier cosa que entregue contenido a una biblioteca de
+terceros —Leaflet, un editor, un gráfico— sale de la protección de React. Ahí hay
+que mirar la firma del método: si acepta una cadena y la trata como HTML, se le
+pasa un elemento.
+
 ## Gestión de secretos
 
 | Clave | Dónde vive | Nota |
