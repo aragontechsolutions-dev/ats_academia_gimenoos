@@ -78,7 +78,10 @@ export interface Cliente {
   ciudad: string;
   activo: boolean;
   /** Solo llegan si quien consulta es administrador. */
-  cedula?: string | null;
+  tipoDocumento?: 'CEDULA' | 'PASAPORTE';
+  /** País emisor del pasaporte, ISO alfa-2. Para la cédula siempre UY. */
+  paisDocumento?: string;
+  documento?: string | null;
   fechaNacimiento?: string | null;
   direccion?: string | null;
   notasInternas?: string | null;

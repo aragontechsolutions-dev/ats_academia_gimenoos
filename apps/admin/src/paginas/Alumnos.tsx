@@ -6,6 +6,7 @@ import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
 import { clientes as api } from '../lib/recursos';
+import { PAISES, documentoLegible } from '../lib/paises';
 import { useSesion } from '../lib/sesion';
 import type { Cliente } from '../lib/tipos';
 
@@ -75,7 +76,7 @@ export function Alumnos() {
               <th className="px-4 py-3 font-medium">Alumno</th>
               <th className="px-4 py-3 font-medium">Teléfono</th>
               <th className="px-4 py-3 font-medium">Correo</th>
-              {esAdmin && <th className="px-4 py-3 font-medium">Cédula</th>}
+              {esAdmin && <th className="px-4 py-3 font-medium">Documento</th>}
               <th className="px-4 py-3 font-medium">Cuenta</th>
               <th className="px-4 py-3" />
             </tr>
@@ -90,7 +91,7 @@ export function Alumnos() {
                 </td>
                 <td className="px-4 py-3 text-slate-600">{alumno.telefono ?? '—'}</td>
                 <td className="px-4 py-3 text-slate-600">{alumno.email ?? '—'}</td>
-                {esAdmin && <td className="px-4 py-3 text-slate-600">{alumno.cedula ?? '—'}</td>}
+                {esAdmin && <td className="px-4 py-3 text-slate-600">{documentoLegible(alumno)}</td>}
                 <td className="px-4 py-3">
                   {alumno.usuarioId ? (
                     <span className="rounded bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
@@ -148,7 +149,9 @@ export function FormularioAlumno({
     apellido: alumno?.apellido ?? '',
     telefono: alumno?.telefono ?? '',
     email: alumno?.email ?? '',
-    cedula: alumno?.cedula ?? '',
+    tipoDocumento: alumno?.tipoDocumento ?? 'CEDULA',
+    paisDocumento: alumno?.paisDocumento ?? 'UY',
+    documento: alumno?.documento ?? '',
     fechaNacimiento: alumno?.fechaNacimiento?.slice(0, 10) ?? '',
     direccion: alumno?.direccion ?? '',
     ciudad: alumno?.ciudad ?? 'San Carlos',
@@ -166,7 +169,11 @@ export function FormularioAlumno({
       apellido: datos.apellido,
       telefono: datos.telefono || undefined,
       email: datos.email || undefined,
-      cedula: datos.cedula || undefined,
+      tipoDocumento: datos.tipoDocumento,
+      // El país solo importa para el pasaporte: la cédula uruguaya la emite
+      // Uruguay por definición, y el servidor lo fuerza igual.
+      ...(datos.tipoDocumento === 'PASAPORTE' ? { paisDocumento: datos.paisDocumento } : {}),
+      documento: datos.documento || undefined,
       fechaNacimiento: datos.fechaNacimiento || undefined,
       direccion: datos.direccion || undefined,
       ciudad: datos.ciudad || undefined,
@@ -226,18 +233,73 @@ export function FormularioAlumno({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Campo etiqueta="Cédula" ayuda="Solo dígitos, sin puntos ni guiones">
-            <input
-              value={datos.cedula}
-              onChange={(e) => setDatos({ ...datos, cedula: e.target.value })}
+          <Campo etiqueta="Documento">
+            <select
+              value={datos.tipoDocumento}
+              onChange={(e) =>
+                setDatos({
+                  ...datos,
+                  tipoDocumento: e.target.value as 'CEDULA' | 'PASAPORTE',
+                  // Al cambiar de tipo se limpia el número: una cédula no es un
+                  // pasaporte válido ni al revés, y dejarlo puesto solo genera
+                  // un error al guardar.
+                  documento: '',
+                  paisDocumento: e.target.value === 'CEDULA' ? 'UY' : datos.paisDocumento,
+                })
+              }
               className={clasesControl}
-            />
+            >
+              <option value="CEDULA">Cédula uruguaya</option>
+              <option value="PASAPORTE">Pasaporte (extranjero)</option>
+            </select>
           </Campo>
           <Campo etiqueta="Fecha de nacimiento">
             <input
               type="date"
               value={datos.fechaNacimiento}
               onChange={(e) => setDatos({ ...datos, fechaNacimiento: e.target.value })}
+              className={clasesControl}
+            />
+          </Campo>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {datos.tipoDocumento === 'PASAPORTE' && (
+            <Campo etiqueta="País que lo emitió" requerido>
+              <select
+                value={datos.paisDocumento}
+                onChange={(e) => setDatos({ ...datos, paisDocumento: e.target.value })}
+                className={clasesControl}
+              >
+                {PAISES.map((pais) => (
+                  <option key={pais.codigo} value={pais.codigo}>
+                    {pais.nombre}
+                  </option>
+                ))}
+              </select>
+            </Campo>
+          )}
+          <Campo
+            etiqueta={datos.tipoDocumento === 'CEDULA' ? 'Número de cédula' : 'Número de pasaporte'}
+            ayuda={
+              datos.tipoDocumento === 'CEDULA'
+                ? 'Solo dígitos. Los puntos y guiones se quitan solos.'
+                : 'Letras y números. Las letras se pasan a mayúscula solas.'
+            }
+          >
+            <input
+              value={datos.documento}
+              onChange={(e) =>
+                setDatos({
+                  ...datos,
+                  // El pasaporte se escribe en mayúsculas: se convierte mientras
+                  // se tipea para que se vea guardado igual que como va a quedar.
+                  documento:
+                    datos.tipoDocumento === 'PASAPORTE'
+                      ? e.target.value.toUpperCase()
+                      : e.target.value,
+                })
+              }
               className={clasesControl}
             />
           </Campo>

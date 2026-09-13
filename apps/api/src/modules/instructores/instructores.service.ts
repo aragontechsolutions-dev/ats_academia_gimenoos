@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { normalizarTelefono } from '../../common/formato/telefono';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
 import type {
   ActualizarInstructorDto,
@@ -42,7 +43,7 @@ export class InstructoresService {
       data: {
         nombre: dto.nombre,
         apellido: dto.apellido,
-        telefono: dto.telefono ?? null,
+        telefono: normalizarTelefono(dto.telefono),
         habilitaMoto: dto.habilitaMoto ?? false,
         habilitaAuto: dto.habilitaAuto ?? true,
         colorAgenda: dto.colorAgenda ?? '#2563eb',
@@ -68,7 +69,7 @@ export class InstructoresService {
       data: {
         nombre: dto.nombre,
         apellido: dto.apellido,
-        telefono: dto.telefono ?? null,
+        telefono: normalizarTelefono(dto.telefono),
         habilitaMoto: dto.habilitaMoto ?? false,
         habilitaAuto: dto.habilitaAuto ?? true,
         colorAgenda: dto.colorAgenda,

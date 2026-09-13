@@ -11,7 +11,7 @@ import {
   IsString,
   IsUUID,
   Length,
-  Matches,
+  MaxLength,
   Max,
   Min,
   ValidateNested,
@@ -27,9 +27,13 @@ export class CrearInstructorDto {
   @Length(2, 60)
   apellido!: string;
 
+  /**
+   * Se acepta como lo escriba la persona y el servicio lo normaliza a
+   * `+598 98663201`. Ver `normalizarTelefono`.
+   */
   @IsOptional()
   @IsString()
-  @Matches(/^[\d\s+()-]{8,20}$/, { message: 'El teléfono no tiene un formato válido' })
+  @MaxLength(25, { message: 'El teléfono es demasiado largo' })
   telefono?: string;
 
   @IsOptional()

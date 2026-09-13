@@ -45,7 +45,9 @@ export interface MiFicha {
   telefono: string | null;
   email: string | null;
   ciudad: string;
-  cedula: string | null;
+  tipoDocumento: 'CEDULA' | 'PASAPORTE';
+  paisDocumento: string;
+  documento: string | null;
   fechaNacimiento: string | null;
   direccion: string | null;
   compras: Pack[];

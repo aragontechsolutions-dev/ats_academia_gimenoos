@@ -5,6 +5,7 @@ import { Aviso } from '../componentes/ui/Aviso';
 import { Boton } from '../componentes/ui/Boton';
 import { FormularioAlumno } from './Alumnos';
 import { clientes as api } from '../lib/recursos';
+import { documentoLegible } from '../lib/paises';
 import { fechaCorta, fechaYHora } from '../lib/fecha';
 import { useSesion } from '../lib/sesion';
 import { ETIQUETA_ESTADO, type FichaCliente } from '../lib/tipos';
@@ -69,7 +70,10 @@ export function AlumnoFicha() {
         <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
           <h2 className="font-semibold text-slate-900">Datos personales</h2>
           <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-            <Dato etiqueta="Cédula" valor={ficha.cedula} />
+            <Dato
+              etiqueta={ficha.tipoDocumento === 'PASAPORTE' ? 'Pasaporte' : 'Cédula'}
+              valor={documentoLegible(ficha)}
+            />
             <Dato
               etiqueta="Fecha de nacimiento"
               valor={ficha.fechaNacimiento ? fechaCorta(ficha.fechaNacimiento) : null}
