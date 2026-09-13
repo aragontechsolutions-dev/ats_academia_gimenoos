@@ -269,16 +269,10 @@ academia y no desde una de Supabase.
 
 #### Cómo se configura
 
-1. Abrir cuenta en un proveedor de correo transaccional. Cualquiera sirve; con
-   plan gratuito alcanza de sobra para el volumen de una academia —se manda un
-   puñado de invitaciones por día—. Brevo, por ejemplo, permite 300 por día sin
-   costo y no exige verificar un dominio para empezar, aunque **conviene
-   verificarlo**: sin eso reescribe el remitente y el correo llega desde una
-   dirección que no es la de la academia.
-2. En el panel de Supabase, **Authentication → Emails → Set up SMTP**, con los
-   datos que da el proveedor (servidor, puerto, usuario y clave) y la dirección
-   y el nombre del remitente.
-3. Recién ahí se habilitan las plantillas. Pegar las dos:
+El paso a paso completo, con el proveedor que usa el proyecto (Brevo), está en
+**[19-correo.md](19-correo.md)**. En resumen: se configura el servidor de correo
+en **Authentication → Emails → Set up SMTP**, y recién ahí se habilitan las
+plantillas. Pegar las dos:
 
 | Archivo | Dónde se pega | Quién lo recibe |
 |---|---|---|
