@@ -26,6 +26,7 @@ distintas, lo que no está en la suya no se le muestra nunca.
 | **Ingreso** | Enlace por correo, sin contraseña. Igual que la app del alumno |
 | **Mi agenda** | Las clases de un día: hora, alumno, vehículo, dónde es el encuentro |
 | **Cerrar la clase** | Marcarla como dictada, o al alumno como ausente |
+| **Anotar cómo fue** | Una observación por clase, que el alumno **no** ve |
 
 De cada clase se puede **llamar al alumno o escribirle por WhatsApp** con un
 toque: es lo que hace falta cuando alguien no aparece en el punto de encuentro.
@@ -48,6 +49,37 @@ se dio. Descontarla igual sería cobrarle al alumno una clase que no tuvo.
 
 Si la API rechaza el cambio —por ejemplo, porque el pack ya no tiene clases—, el
 motivo se muestra en la misma tarjeta y se puede reintentar.
+
+### Anotar cómo fue la clase
+
+Una observación por clase: qué practicaron, qué le cuesta, qué conviene ver la
+próxima. Se puede escribir desde que la clase empezó, **también en las ya
+cerradas**: lo más común es anotar justo después de terminar, y a veces al día
+siguiente.
+
+**El alumno no la ve, y eso no lo decide la pantalla.** La API elige los campos
+según el rol de quien consulta, y `notaInstructor` no entra en los que recibe un
+`CLIENTE`: el dato no sale de la base para él. Hay una prueba que lo comprueba en
+el listado y en el detalle, y que además verifica que el instructor **sí** la
+recibe —si no, la prueba pasaría sin probar nada—.
+
+El formulario lo dice igual, porque quien escribe tiene que saber para quién está
+escribiendo: *«Esto lo ve la academia, no el alumno»*.
+
+Vaciar el texto borra la observación. La academia la lee desde el panel, en el
+detalle de la clase.
+
+#### Dos observaciones distintas, con nombre
+
+En la misma tarjeta pueden convivir dos textos, y sin decir de quién es cada uno
+se confunden:
+
+| Campo | Quién la escribe | ¿La ve el alumno? |
+|---|---|---|
+| `observaciones` — «De la academia» | Administración, al agendar | **Sí** |
+| `notaInstructor` — «Cómo fue» | El instructor que dio la clase | **No** |
+
+Por eso son dos columnas y no una, y por eso las dos llevan etiqueta en pantalla.
 
 **Un día por vez, no una semana.** La semana completa es una vista de escritorio
 y vive en el panel. Acá se navega con dos flechas y un atajo de «volver a hoy».
@@ -113,6 +145,7 @@ No hizo falta tocar nada: ya estaba acotado.
 | `GET /agenda/reservas/:id` | Solo si la clase es suya; si no, 403 |
 | Ficha de un alumno | Nombre, apellido, teléfono, correo y ciudad. **No** el documento, ni la fecha de nacimiento, ni la dirección, ni las notas internas |
 | `PATCH /agenda/reservas/:id/estado` | Solo sobre una clase suya. Descuenta del pack dentro de la misma transacción, y deja rastro en la auditoría |
+| `PATCH /agenda/reservas/:id/nota` | Solo sobre una clase suya. La auditoría registra quién anotó, **sin copiar el texto**: es una observación sobre una persona, y auditar no es guardar una segunda copia |
 
 **Un detalle que conviene conocer:** lo único que impide que un ALUMNO marque su
 propia clase como dictada —y se descuente una del pack— es el `@Roles` de ese
@@ -129,8 +162,6 @@ no elige qué agenda ver, y mandarlo daría la impresión contraria.
 
 Esta es la primera entrega de la Etapa 2.D. Queda:
 
-- **Observaciones de la clase**, para que el instructor deje anotado cómo fue.
-  Ver más abajo.
 - **Cerrarle el panel al instructor**, que es el objetivo final de la etapa: hoy
   todavía puede entrar, porque hasta que esta app no esté completa sacarle el
   panel lo dejaría sin herramienta.
@@ -180,13 +211,15 @@ En un navegador real, a 390 px de ancho, que es el tamaño en el que se va a usa
 | Sin desborde horizontal | OK |
 | La pantalla de ingreso, y su aviso para el alumno que se equivocó de app | OK |
 | Cerrar la clase: solo si ya empezó, con confirmación y con la opción de arrepentirse | OK |
+| Anotar, editar y borrar la observación; cancelar sin mandar nada | OK |
+| Las dos observaciones se distinguen en pantalla | OK |
 | El PATCH manda el estado correcto, a la clase correcta, una sola vez | OK |
 | Un rechazo de la API se lee en la tarjeta y se puede reintentar | OK |
 
-Más 221 pruebas de la API: 4 sobre el destino de cada rol —incluida la que
-comprueba que un instructor **no** caiga en el panel— y 5 sobre el cierre de la
-clase, entre ellas que un instructor no pueda cerrar la de otro y que marcar
-ausente no descuente del pack. `typecheck` 6/6 y `build` 6/6.
+Más 227 pruebas de la API: 4 sobre el destino de cada rol —incluida la que
+comprueba que un instructor **no** caiga en el panel—, 5 sobre el cierre de la
+clase y 6 sobre la observación, entre ellas **que el alumno no la reciba** ni en
+el listado ni en el detalle. `typecheck` 6/6 y `build` 6/6.
 
 **Lo que no se pudo comprobar desde el entorno de desarrollo:** el ingreso real
 con Supabase, porque el proxy de ese entorno lo bloquea. Las pantallas que

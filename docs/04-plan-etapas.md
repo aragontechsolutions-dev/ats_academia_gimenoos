@@ -301,7 +301,7 @@ panel de administración. Ver [21-pwa-instructor.md](21-pwa-instructor.md).
 | Llamar al alumno o escribirle por WhatsApp desde la clase | ✅ |
 | La invitación de un instructor lleva a **su** app y ya no al panel | ✅ |
 | Cerrar la clase desde la app (dictada / ausente) | ✅ |
-| Observaciones de la clase, escritas por el instructor | ⏳ |
+| Observaciones de la clase, escritas por el instructor | ✅ |
 | Cerrarle el panel al rol `INSTRUCTOR` | ⏳ |
 
 El orden no es casual: **el panel se le cierra al final**. Hasta que la app no

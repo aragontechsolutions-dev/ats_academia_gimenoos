@@ -11,7 +11,17 @@ import { numeroParaWhatsApp } from '../lib/whatsapp';
  * vistazo antes de salir. El vehículo y el lugar van debajo; el estado, a un
  * costado.
  */
-export function TarjetaClase({ reserva, accion }: { reserva: Reserva; accion?: ReactNode }) {
+export function TarjetaClase({
+  reserva,
+  accion,
+  nota,
+}: {
+  reserva: Reserva;
+  /** Cerrar la clase, cuando corresponde. */
+  accion?: ReactNode;
+  /** La observación del instructor sobre cómo fue. */
+  nota?: ReactNode;
+}) {
   const telefono = numeroParaWhatsApp(reserva.cliente.telefono);
 
   return (
@@ -71,9 +81,16 @@ export function TarjetaClase({ reserva, accion }: { reserva: Reserva; accion?: R
       </dl>
 
       {reserva.observaciones && (
-        <p className="mt-3 rounded-lg bg-slate-50 p-2 text-sm text-slate-700">
-          {reserva.observaciones}
-        </p>
+        <div className="mt-3">
+          {/* Con etiqueta: justo debajo aparece la observación del instructor, y
+              sin decir de quién es cada una se confunden. */}
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            De la academia
+          </p>
+          <p className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 p-2 text-sm text-slate-700">
+            {reserva.observaciones}
+          </p>
+        </div>
       )}
 
       {reserva.motivoCancelacion && (
@@ -81,6 +98,8 @@ export function TarjetaClase({ reserva, accion }: { reserva: Reserva; accion?: R
       )}
 
       {accion && <div className="mt-3">{accion}</div>}
+
+      {nota && <div className="mt-3 border-t border-slate-100 pt-3">{nota}</div>}
     </article>
   );
 }

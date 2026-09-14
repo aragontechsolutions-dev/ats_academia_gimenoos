@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { DateTime } from 'luxon';
 
 import { CerrarClase } from '../componentes/CerrarClase';
+import { NotaDeClase } from '../componentes/NotaDeClase';
 import { TarjetaClase } from '../componentes/TarjetaClase';
 import { Aviso } from '../componentes/ui/Aviso';
 import { miAgenda } from '../lib/recursos';
@@ -131,6 +132,11 @@ export function MiAgenda() {
             accion={
               yaEmpezo(reserva) ? <CerrarClase reserva={reserva} onCerrada={cargar} /> : undefined
             }
+            // Se puede anotar desde que la clase empezó. Antes no hay nada que
+            // contar.
+            nota={
+              yaEmpezo(reserva) ? <NotaDeClase reserva={reserva} onGuardada={cargar} /> : undefined
+            }
           />
         ))}
       </div>
@@ -142,7 +148,13 @@ export function MiAgenda() {
           </h2>
           <div className="mt-3 space-y-3">
             {cerradas.map((reserva) => (
-              <TarjetaClase key={reserva.id} reserva={reserva} />
+              <TarjetaClase
+                key={reserva.id}
+                reserva={reserva}
+                // También en las cerradas: lo más común es anotar justo después
+                // de terminar, y a veces al día siguiente.
+                nota={<NotaDeClase reserva={reserva} onGuardada={cargar} />}
+              />
             ))}
           </div>
         </section>
