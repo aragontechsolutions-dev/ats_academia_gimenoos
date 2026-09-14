@@ -83,8 +83,19 @@ export function DetalleReserva({
         </div>
         {reserva.observaciones && (
           <div>
-            <dt className="text-slate-500">Observaciones</dt>
+            {/* «De la academia» y no «Observaciones» a secas: justo debajo puede
+                aparecer la del instructor, y sin decir de quién es cada una se
+                confunden. */}
+            <dt className="text-slate-500">Observaciones de la academia</dt>
             <dd className="mt-1 text-slate-700">{reserva.observaciones}</dd>
+          </div>
+        )}
+        {reserva.notaInstructor && (
+          <div>
+            <dt className="text-slate-500">Cómo fue la clase (lo anotó el instructor)</dt>
+            <dd className="mt-1 whitespace-pre-wrap rounded-lg bg-amber-50 p-2 text-amber-950">
+              {reserva.notaInstructor}
+            </dd>
           </div>
         )}
         {reserva.motivoCancelacion && (

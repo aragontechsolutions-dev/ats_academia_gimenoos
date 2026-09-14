@@ -42,6 +42,24 @@ const SELECCION_RESERVA = {
   vehiculo: { select: { id: true, patente: true, tipo: true } },
 } satisfies Prisma.ReservaSelect;
 
+/**
+ * Lo mismo, mas la nota que escribe el instructor sobre como fue la clase.
+ *
+ * Va aparte porque el alumno NO la recibe: son observaciones de desempeño para
+ * la academia, no un mensaje para él. Que no le llegue no depende de que su
+ * pantalla la oculte —eso sería confiar en el cliente—: directamente no se pide
+ * a la base cuando quien consulta es un alumno.
+ */
+const SELECCION_CON_NOTA = {
+  ...SELECCION_RESERVA,
+  notaInstructor: true,
+} satisfies Prisma.ReservaSelect;
+
+/** Qué campos ve cada rol. Un alumno nunca recibe la nota del instructor. */
+function camposPara(rol: RolUsuario) {
+  return rol === RolUsuario.CLIENTE ? SELECCION_RESERVA : SELECCION_CON_NOTA;
+}
+
 @Injectable()
 export class ReservasService {
   constructor(
@@ -91,7 +109,7 @@ export class ReservasService {
 
     return this.prisma.reserva.findMany({
       where: filtro,
-      select: SELECCION_RESERVA,
+      select: camposPara(usuario.rol),
       orderBy: { inicio: 'asc' },
     });
   }
@@ -99,7 +117,7 @@ export class ReservasService {
   async obtener(id: string, usuario: UsuarioAutenticado) {
     const reserva = await this.prisma.reserva.findUnique({
       where: { id },
-      select: { ...SELECCION_RESERVA, clienteId: true, instructorId: true },
+      select: { ...camposPara(usuario.rol), clienteId: true, instructorId: true },
     });
     if (!reserva) throw new NotFoundException('La reserva no existe');
 
@@ -301,6 +319,45 @@ export class ReservasService {
       entidad: 'Reserva',
       entidadId: id,
       detalle: { de: reserva.estado, a: estado, consumioClase: seConsumeClase },
+    });
+
+    return actualizada;
+  }
+
+  /**
+   * Guarda cómo fue la clase.
+   *
+   * La escribe el instructor que la dio, desde su app. El alumno NO la recibe:
+   * la elección de campos según el rol está en `camposPara`, así que no depende
+   * de que ninguna pantalla se acuerde de ocultarla.
+   *
+   * Ojo con quién puede llegar acá: `verificarAcceso` deja pasar a un alumno
+   * sobre SU propia clase, así que lo único que impide que un alumno se escriba
+   * su propia observación es el `@Roles` del controlador.
+   */
+  async guardarNota(id: string, nota: string | undefined, usuario: UsuarioAutenticado) {
+    const reserva = await this.prisma.reserva.findUnique({
+      where: { id },
+      select: { clienteId: true, instructorId: true },
+    });
+    if (!reserva) throw new NotFoundException('La reserva no existe');
+    await this.verificarAcceso(reserva, usuario);
+
+    const limpia = nota?.trim() ?? '';
+    const actualizada = await this.prisma.reserva.update({
+      where: { id },
+      data: { notaInstructor: limpia === '' ? null : limpia },
+      select: camposPara(usuario.rol),
+    });
+
+    await this.auditoria.registrar({
+      usuarioId: usuario.id,
+      accion: 'RESERVA_NOTA_GUARDADA',
+      entidad: 'Reserva',
+      entidadId: id,
+      // El TEXTO no va al registro: es una observación sobre una persona, y la
+      // auditoría responde "quién y cuándo", no guarda una segunda copia.
+      detalle: { borrada: limpia === '' },
     });
 
     return actualizada;

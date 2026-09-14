@@ -458,7 +458,16 @@ model Reserva {
 
   /// Punto de encuentro acordado con el alumno.
   lugarEncuentro String? @map("lugar_encuentro")
+  /// Indicaciones de la academia para esta clase. El alumno LAS VE en su app.
   observaciones  String?
+
+  /// Como fue la clase, escrito por el instructor que la dio.
+  ///
+  /// NO se le muestra al alumno: son observaciones de desempeno para la academia
+  /// y para la proxima clase, no un mensaje para el. Que no le llegue no depende
+  /// de que la pantalla lo oculte: la API elige los campos segun el rol de quien
+  /// consulta, y este no entra en los que recibe un CLIENTE.
+  notaInstructor String? @map("nota_instructor")
 
   canceladaAt     DateTime? @map("cancelada_at") @db.Timestamptz(3)
   motivoCancelacion String? @map("motivo_cancelacion")

@@ -16,7 +16,10 @@ export interface Reserva {
   estado: EstadoReserva;
   tipo: TipoVehiculo;
   lugarEncuentro: string | null;
+  /** Indicación de la academia para esta clase. El alumno también la ve. */
   observaciones: string | null;
+  /** Cómo fue la clase, escrito por el instructor. El alumno NO la recibe. */
+  notaInstructor: string | null;
   motivoCancelacion: string | null;
   /** El alumno de la clase. Es lo primero que necesita ver el instructor. */
   cliente: {

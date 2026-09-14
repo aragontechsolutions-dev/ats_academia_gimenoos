@@ -523,6 +523,89 @@ describe('El instructor cierra su clase', () => {
   });
 });
 
+describe('La observación de la clase', () => {
+  // La escribe el instructor que la dio. El alumno NO la recibe: son
+  // observaciones de desempeño para la academia, no un mensaje para él.
+
+  const claseDeAna = (hora: number, instructorId = ID.instructor) =>
+    servicio.crear(
+      { ...baseReserva, clienteId: ID.clienteAna, instructorId, inicio: enCincoDias(hora) },
+      ADMIN,
+      AHORA.toJSDate(),
+    );
+
+  it('el instructor la escribe sobre su propia clase', async () => {
+    const reserva = await claseDeAna(8);
+
+    const guardada = await servicio.guardarNota(reserva.id, '  Le cuesta el estacionamiento  ', INSTRUCTOR);
+
+    expect(guardada).toMatchObject({ notaInstructor: 'Le cuesta el estacionamiento' });
+  });
+
+  it('EL ALUMNO NO LA RECIBE, ni en el listado ni en el detalle', async () => {
+    // Esta es la prueba que importa. Que la pantalla del alumno no la dibuje no
+    // alcanzaría: el dato no tiene que salir de la base para él.
+    const reserva = await claseDeAna(9);
+    await servicio.guardarNota(reserva.id, 'Todavía no mira los espejos', INSTRUCTOR);
+
+    const detalle = await servicio.obtener(reserva.id, ANA);
+    expect(detalle).not.toHaveProperty('notaInstructor');
+
+    const listado = await servicio.listar(
+      { desde: enCincoDias(0), hasta: enCincoDias(23, 59) },
+      ANA,
+    );
+    expect(listado.length).toBeGreaterThan(0);
+    for (const fila of listado) expect(fila).not.toHaveProperty('notaInstructor');
+
+    // Y para que la prueba valga: el instructor SÍ la recibe.
+    const suyo = await servicio.obtener(reserva.id, INSTRUCTOR);
+    expect(suyo).toMatchObject({ notaInstructor: 'Todavía no mira los espejos' });
+  });
+
+  it('un instructor NO puede anotar sobre la clase de otro', async () => {
+    const ajena = await claseDeAna(10, ID.instructorAjeno);
+
+    await expect(servicio.guardarNota(ajena.id, 'no es mía', INSTRUCTOR)).rejects.toThrow(
+      /no es de tu agenda/i,
+    );
+  });
+
+  it('la cadena vacía borra la observación', async () => {
+    const reserva = await claseDeAna(11);
+    await servicio.guardarNota(reserva.id, 'algo', INSTRUCTOR);
+
+    const borrada = await servicio.guardarNota(reserva.id, '   ', INSTRUCTOR);
+    expect(borrada).toMatchObject({ notaInstructor: null });
+  });
+
+  it('la auditoría deja rastro de quién anotó, pero NO copia el texto', async () => {
+    // Es una observación sobre una persona: la auditoría responde "quién y
+    // cuándo", no guarda una segunda copia del dato en otra tabla.
+    const reserva = await claseDeAna(12);
+    await servicio.guardarNota(reserva.id, 'Un texto muy particular y reconocible', INSTRUCTOR);
+
+    const registro = await prisma.registroAuditoria.findFirst({
+      where: { accion: 'RESERVA_NOTA_GUARDADA', entidadId: reserva.id },
+    });
+    expect(registro).not.toBeNull();
+    expect(JSON.stringify(registro)).not.toContain('reconocible');
+  });
+
+  it('un alumno no llega a este endpoint: lo frena el rol', () => {
+    // Igual que con el cierre de la clase: `verificarAcceso` dejaría pasar a un
+    // alumno sobre SU propia clase, así que el `@Roles` es lo único que impide
+    // que se escriba su propia observación.
+    const roles = Reflect.getMetadata(
+      ROLES_REQUERIDOS,
+      AgendaController.prototype.guardarNota,
+    ) as RolUsuario[] | undefined;
+
+    expect(roles).toEqual([RolUsuario.ADMIN, RolUsuario.INSTRUCTOR]);
+    expect(roles).not.toContain(RolUsuario.CLIENTE);
+  });
+});
+
 describe('Packs de clases', () => {
   const crearPack = (clienteId: string) =>
     prisma.compraServicio.create({

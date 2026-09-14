@@ -65,6 +65,25 @@ Permisos previstos:
 Los guards del frontend (`RutaProtegida`) son **comodidad de interfaz, no
 seguridad**. Quien fuerce la ruta en el navegador igual recibe 401/403.
 
+### No alcanza con filtrar por fila: hay campos que dependen del rol
+
+Acotar **qué filas** ve cada rol es lo primero, pero no siempre alcanza. Hay
+campos que están en una fila a la que el rol sí tiene acceso y que igual no le
+corresponden:
+
+| Dato | Quién lo ve | Dónde se decide |
+|---|---|---|
+| `Cliente.notasInternas` | Solo `ADMIN` | `clientes.service.ts`, `campos(rol)` |
+| `Reserva.notaInstructor` — cómo fue la clase | `ADMIN` e `INSTRUCTOR`, nunca el alumno | `reservas.service.ts`, `camposPara(rol)` |
+
+La regla es la misma en los dos casos: **el campo no se le pide a la base** para
+el rol que no debe verlo. No se trae y se oculta en la pantalla, porque ocultar
+en el frontend es confiar en el cliente, y el dato viaja igual en la respuesta.
+
+Las dos tienen pruebas que comprueban la ausencia del campo —no solo que no se
+dibuje—, y que el rol que **sí** debe verlo lo recibe: sin esa segunda mitad, la
+prueba pasaría aunque el campo no existiera.
+
 ### El atajo al panel desde la landing NO es un control de seguridad
 
 El sitio público no enlaza el panel; se llega con Ctrl + Shift + clic en el logo.

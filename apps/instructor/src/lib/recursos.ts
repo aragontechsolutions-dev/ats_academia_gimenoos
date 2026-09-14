@@ -26,6 +26,18 @@ export const miAgenda = {
 
   obtener: (id: string) => llamarApi<Reserva>(`/agenda/reservas/${id}`),
 
+  /**
+   * Guarda cómo fue la clase.
+   *
+   * Mandar una cadena vacía la borra. La API la guarda en un campo que el alumno
+   * no recibe.
+   */
+  guardarNota: (id: string, nota: string) =>
+    llamarApi<Reserva>(`/agenda/reservas/${id}/nota`, {
+      method: 'PATCH',
+      body: JSON.stringify({ nota }),
+    }),
+
   /** Cierra la clase: dictada o el alumno faltó. */
   cambiarEstado: (id: string, estado: EstadoReserva) =>
     llamarApi<Reserva>(`/agenda/reservas/${id}/estado`, {

@@ -167,7 +167,10 @@ export interface Reserva {
   estado: EstadoReserva;
   tipo: TipoVehiculo;
   lugarEncuentro: string | null;
+  /** Indicación de la academia para esta clase. El alumno también la ve. */
   observaciones: string | null;
+  /** Cómo fue la clase, escrita por el instructor desde su app. El alumno NO la ve. */
+  notaInstructor: string | null;
   motivoCancelacion: string | null;
   createdAt: string;
   cliente: { id: string; nombre: string; apellido: string; telefono: string | null; email: string | null };

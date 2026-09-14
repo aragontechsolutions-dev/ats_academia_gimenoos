@@ -10,6 +10,7 @@ import { ListarReservasDto } from './dto/listar-reservas.dto';
 import { CancelarReservaDto } from './dto/cancelar-reserva.dto';
 import { ReprogramarReservaDto } from './dto/reprogramar-reserva.dto';
 import { CambiarEstadoReservaDto } from './dto/cambiar-estado-reserva.dto';
+import { GuardarNotaReservaDto } from './dto/guardar-nota-reserva.dto';
 import { Roles } from '../../common/auth/roles.decorator';
 import { UsuarioActual } from '../../common/auth/usuario-actual.decorator';
 import type { UsuarioAutenticado } from '../../common/auth/jwt-payload.interface';
@@ -78,5 +79,21 @@ export class AgendaController {
     @UsuarioActual() usuario: UsuarioAutenticado,
   ) {
     return this.reservas.cambiarEstado(id, dto.estado, usuario);
+  }
+
+  /**
+   * El `@Roles` de acá es lo único que impide que un ALUMNO se escriba una
+   * observación sobre su propia clase: el servicio lo dejaría pasar, porque la
+   * clase es suya. Hay una prueba que lo comprueba sobre este decorador.
+   */
+  @Patch('reservas/:id/nota')
+  @Roles(RolUsuario.ADMIN, RolUsuario.INSTRUCTOR)
+  @ApiOperation({ summary: 'Guarda cómo fue la clase. El alumno no la ve' })
+  guardarNota(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: GuardarNotaReservaDto,
+    @UsuarioActual() usuario: UsuarioAutenticado,
+  ) {
+    return this.reservas.guardarNota(id, dto.nota, usuario);
   }
 }
