@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { DateTime } from 'luxon';
 
+import { CerrarClase } from '../componentes/CerrarClase';
 import { TarjetaClase } from '../componentes/TarjetaClase';
 import { Aviso } from '../componentes/ui/Aviso';
 import { miAgenda } from '../lib/recursos';
@@ -55,6 +56,19 @@ export function MiAgenda() {
   // igual, el instructor tiene que poder ver que esa clase se dio de baja.
   const vigentes = reservas.filter((r) => ESTADOS_VIGENTES.includes(r.estado));
   const cerradas = reservas.filter((r) => !ESTADOS_VIGENTES.includes(r.estado));
+
+  /**
+   * Una clase se cierra recién cuando empezó.
+   *
+   * Antes de la hora no hay nada que informar: no se sabe si se dio ni si el
+   * alumno vino. Y marcarla como dictada descuenta una clase del pack, así que
+   * un botón de más en la pantalla es un error caro.
+   *
+   * Se calcula en cada dibujado. Con la app abierta y quieta no aparece solo al
+   * dar la hora, pero cualquier cambio de día o recarga lo actualiza, y esta es
+   * una pantalla que se mira y se cierra.
+   */
+  const yaEmpezo = (reserva: Reserva) => new Date(reserva.inicio) <= new Date();
 
   return (
     <>
@@ -111,7 +125,13 @@ export function MiAgenda() {
 
       <div className="mt-4 space-y-3">
         {vigentes.map((reserva) => (
-          <TarjetaClase key={reserva.id} reserva={reserva} />
+          <TarjetaClase
+            key={reserva.id}
+            reserva={reserva}
+            accion={
+              yaEmpezo(reserva) ? <CerrarClase reserva={reserva} onCerrada={cargar} /> : undefined
+            }
+          />
         ))}
       </div>
 

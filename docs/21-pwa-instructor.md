@@ -25,9 +25,29 @@ distintas, lo que no está en la suya no se le muestra nunca.
 |---|---|
 | **Ingreso** | Enlace por correo, sin contraseña. Igual que la app del alumno |
 | **Mi agenda** | Las clases de un día: hora, alumno, vehículo, dónde es el encuentro |
+| **Cerrar la clase** | Marcarla como dictada, o al alumno como ausente |
 
 De cada clase se puede **llamar al alumno o escribirle por WhatsApp** con un
 toque: es lo que hace falta cuando alguien no aparece en el punto de encuentro.
+
+### Cerrar la clase
+
+Dos botones en cada clase: **Dictada** y **Faltó**.
+
+Aparecen **solo cuando la clase ya empezó**. Antes de la hora no hay nada que
+informar —no se sabe si se dio ni si el alumno vino— y un botón de más en la
+pantalla es un error caro: marcarla como dictada **descuenta una clase del pack
+del alumno**, y deshacerlo requiere a alguien de administración.
+
+Por lo mismo, **pide confirmación**. Desde el teléfono un botón se toca sin
+querer, y la pregunta es distinta según el caso: «¿La clase se dio?» y «¿El
+alumno no vino?». Lo que se responde no es lo mismo.
+
+Marcar **ausente no descuenta** nada: solo se consume una clase cuando de verdad
+se dio. Descontarla igual sería cobrarle al alumno una clase que no tuvo.
+
+Si la API rechaza el cambio —por ejemplo, porque el pack ya no tiene clases—, el
+motivo se muestra en la misma tarjeta y se puede reintentar.
 
 **Un día por vez, no una semana.** La semana completa es una vista de escritorio
 y vive en el panel. Acá se navega con dos flechas y un atajo de «volver a hoy».
@@ -92,6 +112,13 @@ No hizo falta tocar nada: ya estaba acotado.
 | `GET /agenda/reservas` | **Solo su propia agenda.** Un `instructorId` ajeno en la consulta se ignora |
 | `GET /agenda/reservas/:id` | Solo si la clase es suya; si no, 403 |
 | Ficha de un alumno | Nombre, apellido, teléfono, correo y ciudad. **No** el documento, ni la fecha de nacimiento, ni la dirección, ni las notas internas |
+| `PATCH /agenda/reservas/:id/estado` | Solo sobre una clase suya. Descuenta del pack dentro de la misma transacción, y deja rastro en la auditoría |
+
+**Un detalle que conviene conocer:** lo único que impide que un ALUMNO marque su
+propia clase como dictada —y se descuente una del pack— es el `@Roles` de ese
+endpoint. `verificarAcceso` lo dejaría pasar, porque la clase es suya. Hay una
+prueba que lo comprueba sobre el decorador, justamente porque el servicio no lo
+frenaría.
 
 Por eso la app **no manda ningún identificador de instructor** en sus consultas:
 no elige qué agenda ver, y mandarlo daría la impresión contraria.
@@ -102,9 +129,6 @@ no elige qué agenda ver, y mandarlo daría la impresión contraria.
 
 Esta es la primera entrega de la Etapa 2.D. Queda:
 
-- **Cerrar la clase** desde la app: marcarla como dictada o al alumno como
-  ausente. El endpoint ya existe (`PATCH /agenda/reservas/:id/estado`, que ya
-  acepta el rol `INSTRUCTOR`); falta la pantalla.
 - **Observaciones de la clase**, para que el instructor deje anotado cómo fue.
   Ver más abajo.
 - **Cerrarle el panel al instructor**, que es el objetivo final de la etapa: hoy
@@ -155,10 +179,14 @@ En un navegador real, a 390 px de ancho, que es el tamaño en el que se va a usa
 | Cada día es una consulta acotada, **sin** mandar ningún `instructorId` | OK |
 | Sin desborde horizontal | OK |
 | La pantalla de ingreso, y su aviso para el alumno que se equivocó de app | OK |
+| Cerrar la clase: solo si ya empezó, con confirmación y con la opción de arrepentirse | OK |
+| El PATCH manda el estado correcto, a la clase correcta, una sola vez | OK |
+| Un rechazo de la API se lee en la tarjeta y se puede reintentar | OK |
 
-Más 216 pruebas de la API —4 nuevas sobre el destino de cada rol, incluida la que
-comprueba que un instructor **no** caiga en el panel—, `typecheck` 6/6 y
-`build` 6/6.
+Más 221 pruebas de la API: 4 sobre el destino de cada rol —incluida la que
+comprueba que un instructor **no** caiga en el panel— y 5 sobre el cierre de la
+clase, entre ellas que un instructor no pueda cerrar la de otro y que marcar
+ausente no descuente del pack. `typecheck` 6/6 y `build` 6/6.
 
 **Lo que no se pudo comprobar desde el entorno de desarrollo:** el ingreso real
 con Supabase, porque el proxy de ese entorno lo bloquea. Las pantallas que
