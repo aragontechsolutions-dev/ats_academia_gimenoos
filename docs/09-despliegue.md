@@ -4,10 +4,11 @@ Guía para dejar el sistema en línea **sin clonar el repositorio**. Todo se hac
 desde los paneles web, conectando cada servicio a GitHub.
 
 ```
-  Visitante ──▶ Vercel: landing      ─┐
-  Academia  ──▶ Vercel: admin        ─┼──▶ Render: API ──▶ Supabase (Postgres)
-  Alumno    ──▶ Vercel: cliente PWA  ─┘         │                   ▲
-                      │                         └───────────────────┘
+  Visitante  ──▶ Vercel: landing         ─┐
+  Academia   ──▶ Vercel: admin           ─┤
+  Alumno     ──▶ Vercel: cliente PWA     ─┼─▶ Render: API ──▶ Supabase (Postgres)
+  Instructor ──▶ Vercel: instructor PWA  ─┘        │                    ▲
+                      │                            └────────────────────┘
                       └──────────────▶ Supabase Auth (login)     Storage
 ```
 
@@ -218,12 +219,12 @@ sirven tal cual, porque el *rewrite* solo actúa cuando ningún archivo coincide
 **Los cuatro campos se cambian juntos.** Copiar el Build Command de un proyecto
 al otro sin cambiar el resto es la forma más fácil de romper el deploy.
 
-| Campo | `gimenoos-landing` | `gimenoos-admin` | `gimenoos-cliente` |
-|---|---|---|---|
-| Root Directory | `apps/landing` | `apps/admin` | `apps/cliente` |
-| Install Command | `pnpm install --frozen-lockfile` | ídem | ídem |
-| Build Command | `pnpm --filter @gimenoos/landing build` | `pnpm --filter @gimenoos/admin build` | `pnpm --filter @gimenoos/cliente build` |
-| Output Directory | `dist` | `dist` | `dist` |
+| Campo | `gimenoos-landing` | `gimenoos-admin` | `gimenoos-cliente` | `gimenoos-instructor` |
+|---|---|---|---|---|
+| Root Directory | `apps/landing` | `apps/admin` | `apps/cliente` | `apps/instructor` |
+| Install Command | `pnpm install --frozen-lockfile` | ídem | ídem | ídem |
+| Build Command | `pnpm --filter @gimenoos/landing build` | `pnpm --filter @gimenoos/admin build` | `pnpm --filter @gimenoos/cliente build` | `pnpm --filter @gimenoos/instructor build` |
+| Output Directory | `dist` | `dist` | `dist` | `dist` |
 
 El Output Directory va **relativo al Root Directory**: con el Root Directory en
 `apps/admin`, el `dist` correcto es `dist`, no `apps/admin/dist`.
@@ -237,11 +238,11 @@ falla aunque el campo muestre el texto correcto.
 
 ### Variables de entorno
 
-| Variable | landing | admin | cliente |
-|---|:---:|:---:|:---:|
-| `VITE_API_URL` = `https://gimenoos-api.onrender.com/api/v1` | sí | sí | sí |
-| `VITE_SUPABASE_URL` = `https://<REF>.supabase.co` | — | sí | sí |
-| `VITE_SUPABASE_ANON_KEY` = clave `anon` | — | sí | sí |
+| Variable | landing | admin | cliente | instructor |
+|---|:---:|:---:|:---:|:---:|
+| `VITE_API_URL` = `https://gimenoos-api.onrender.com/api/v1` | sí | sí | sí | sí |
+| `VITE_SUPABASE_URL` = `https://<REF>.supabase.co` | — | sí | sí | sí |
+| `VITE_SUPABASE_ANON_KEY` = clave `anon` | — | sí | sí | sí |
 
 > **Solo la clave `anon`.** Cualquier variable `VITE_` termina dentro del
 > JavaScript que descarga el visitante. La `service_role` jamás va acá — el CI
@@ -267,7 +268,7 @@ los tres. En **Settings → Git → Ignored Build Step**, poner en cada uno:
 git diff --quiet HEAD^ HEAD -- apps/<APP> packages pnpm-lock.yaml
 ```
 
-reemplazando `<APP>` por `landing`, `admin` o `cliente`.
+reemplazando `<APP>` por `landing`, `admin`, `cliente` o `instructor`.
 
 ---
 
@@ -277,11 +278,11 @@ Ya existen las URLs definitivas. Ahora se cierran los permisos.
 
 ### 4.1 CORS en Render
 
-Actualizar `CORS_ORIGINS` con las tres URLs de Vercel, separadas por coma, **sin
-barra final**:
+Actualizar `CORS_ORIGINS` con las cuatro URLs de Vercel, separadas por coma,
+**sin barra final**:
 
 ```
-https://gimenoos-landing.vercel.app,https://gimenoos-admin.vercel.app,https://gimenoos-cliente.vercel.app
+https://gimenoos-landing.vercel.app,https://gimenoos-admin.vercel.app,https://gimenoos-cliente.vercel.app,https://gimenoos-instructor.vercel.app
 ```
 
 Guardar dispara un redeploy. Sin esto, los frontends no pueden llamar a la API.
@@ -291,7 +292,9 @@ Guardar dispara un redeploy. Sin esto, los frontends no pueden llamar a la API.
 **Authentication → URL Configuration**:
 
 - *Site URL*: la URL de la PWA del alumno.
-- *Redirect URLs*: agregar las URLs del panel y de la PWA.
+- *Redirect URLs*: agregar las URLs del panel, de la PWA del alumno y de la del
+  instructor. **Las tres**: el enlace de invitación de cada rol cae en su propia
+  aplicación, y la que falte en esta lista termina redirigida al *Site URL*.
 
 Supabase solo redirige a URLs de esa lista: sin esto, el enlace de ingreso por
 correo no funciona.
