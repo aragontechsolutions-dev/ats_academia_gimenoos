@@ -14,16 +14,16 @@ import { Sitio } from './paginas/Sitio';
 import { Graduados } from './paginas/Graduados';
 import { Cuentas } from './paginas/Cuentas';
 
-/** Envuelve una página con el guard de rol y la disposición del panel. */
-function Pagina({
-  children,
-  rolesPermitidos,
-}: {
-  children: React.ReactNode;
-  rolesPermitidos?: Array<'ADMIN' | 'INSTRUCTOR' | 'CLIENTE'>;
-}) {
+/**
+ * Envuelve una página con el guard y la disposición del panel.
+ *
+ * Ya no recibe qué roles se permiten: el panel entero es de administración. El
+ * instructor tiene su propia app desde la Etapa 2.D, así que la única pregunta
+ * que queda es «¿sos ADMIN?», y esa la contesta `RutaProtegida` por su cuenta.
+ */
+function Pagina({ children }: { children: React.ReactNode }) {
   return (
-    <RutaProtegida rolesPermitidos={rolesPermitidos}>
+    <RutaProtegida>
       <Disposicion>{children}</Disposicion>
     </RutaProtegida>
   );
@@ -38,7 +38,6 @@ export function App() {
           {/* Fuera del guard de rol: es donde se consigue la sesión. */}
           <Route path="/entrar" element={<Entrar />} />
 
-          {/* La agenda y los alumnos también los usa el instructor. */}
           <Route path="/" element={<Pagina><Agenda /></Pagina>} />
           <Route path="/alumnos" element={<Pagina><Alumnos /></Pagina>} />
           <Route path="/alumnos/:id" element={<Pagina><AlumnoFicha /></Pagina>} />
@@ -46,27 +45,27 @@ export function App() {
           {/* La configuración de la academia es solo del administrador. */}
           <Route
             path="/instructores"
-            element={<Pagina rolesPermitidos={['ADMIN']}><Instructores /></Pagina>}
+            element={<Pagina><Instructores /></Pagina>}
           />
           <Route
             path="/vehiculos"
-            element={<Pagina rolesPermitidos={['ADMIN']}><Vehiculos /></Pagina>}
+            element={<Pagina><Vehiculos /></Pagina>}
           />
           <Route
             path="/servicios"
-            element={<Pagina rolesPermitidos={['ADMIN']}><Servicios /></Pagina>}
+            element={<Pagina><Servicios /></Pagina>}
           />
           <Route
             path="/graduados"
-            element={<Pagina rolesPermitidos={['ADMIN']}><Graduados /></Pagina>}
+            element={<Pagina><Graduados /></Pagina>}
           />
           <Route
             path="/sitio"
-            element={<Pagina rolesPermitidos={['ADMIN']}><Sitio /></Pagina>}
+            element={<Pagina><Sitio /></Pagina>}
           />
           <Route
             path="/cuentas"
-            element={<Pagina rolesPermitidos={['ADMIN']}><Cuentas /></Pagina>}
+            element={<Pagina><Cuentas /></Pagina>}
           />
 
           <Route path="*" element={<Pagina><Agenda /></Pagina>} />

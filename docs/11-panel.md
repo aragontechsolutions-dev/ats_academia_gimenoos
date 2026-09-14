@@ -1,6 +1,6 @@
 # Panel de administración
 
-Aplicación: `apps/admin` · Roles que entran: `ADMIN` e `INSTRUCTOR`
+Aplicación: `apps/admin` · Rol que entra: **solo `ADMIN`**
 
 ---
 
@@ -8,8 +8,8 @@ Aplicación: `apps/admin` · Roles que entran: `ADMIN` e `INSTRUCTOR`
 
 | Sección | Quién la ve | Para qué |
 |---|---|---|
-| **Agenda** | admin e instructor | La operación diaria: ver, agendar, mover y cerrar clases |
-| **Alumnos** | admin e instructor | Buscar alumnos y consultar su ficha e historial |
+| **Agenda** | solo admin | La operación diaria: ver, agendar, mover y cerrar clases |
+| **Alumnos** | solo admin | Buscar alumnos y consultar su ficha e historial |
 | **Instructores** | solo admin | Alta, horarios semanales y licencias |
 | **Vehículos** | solo admin | Alta, foto, estado y vencimiento del SOA |
 | **Precios** | solo admin | Catálogo de servicios y sus dos precios |
@@ -26,8 +26,11 @@ El acceso de un **alumno** se habilita desde su ficha, o desde «Dar acceso» en
 listado, y se le puede mandar por correo o por WhatsApp. Ver
 [18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md).
 
-El instructor ve la agenda y los alumnos porque los necesita para dar clase. La
-configuración de la academia es del administrador.
+**El panel es solo de administración.** Hasta la Etapa 2.D el instructor también
+entraba, porque era el único lugar donde veía su agenda; ahora tiene su propia
+app y el panel volvió a ser lo que dice su nombre. Si entra igual, la pantalla le
+dice dónde está su trabajo y le ofrece el enlace. Ver
+[21-pwa-instructor.md](21-pwa-instructor.md).
 
 ---
 
@@ -74,13 +77,16 @@ otra persona.
 
 ### Qué ve cada rol
 
-La cédula, el domicilio y las notas internas **solo viajan al administrador**.
-No es que el instructor los tenga ocultos en pantalla: no se le envían. La
-cédula es un dato identificatorio protegido por la Ley 18.331 y no hace falta
-para dictar una clase.
+Desde la Etapa 2.D el listado de alumnos y la ficha son **solo del
+administrador**: al instructor ya no se le abren, ni desde acá ni desde la API.
+De los alumnos a los que sí les da clase recibe lo que necesita —nombre,
+teléfono y correo— dentro de cada reserva, en su propia app.
 
-Por lo mismo, la búsqueda por cédula funciona para el administrador y no para el
-instructor.
+La regla de fondo sigue siendo la misma y es anterior a ese cambio: la cédula, el
+domicilio y las notas internas **solo viajan al administrador**, y nunca se
+trataba de ocultarlos en pantalla sino de no enviarlos. La cédula es un dato
+identificatorio protegido por la Ley 18.331 y no hace falta para dictar una
+clase.
 
 ---
 

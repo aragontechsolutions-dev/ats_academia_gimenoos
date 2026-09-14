@@ -2,26 +2,30 @@ import { useState, type ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useSesion } from '../lib/sesion';
 
+/**
+ * Sin marca de «solo admin»: al panel entra solo administración, así que todas
+ * las secciones se ven siempre. La distinción existía para el instructor, que
+ * desde la Etapa 2.D tiene su propia app.
+ */
 const SECCIONES = [
   { ruta: '/', texto: 'Agenda', exacto: true },
   { ruta: '/alumnos', texto: 'Alumnos', exacto: false },
-  { ruta: '/instructores', texto: 'Instructores', exacto: false, soloAdmin: true },
-  { ruta: '/vehiculos', texto: 'Vehículos', exacto: false, soloAdmin: true },
-  { ruta: '/servicios', texto: 'Precios', exacto: false, soloAdmin: true },
-  { ruta: '/graduados', texto: 'Egresados', exacto: false, soloAdmin: true },
-  { ruta: '/sitio', texto: 'Sitio web', exacto: false, soloAdmin: true },
-  { ruta: '/cuentas', texto: 'Cuentas', exacto: false, soloAdmin: true },
+  { ruta: '/instructores', texto: 'Instructores', exacto: false },
+  { ruta: '/vehiculos', texto: 'Vehículos', exacto: false },
+  { ruta: '/servicios', texto: 'Precios', exacto: false },
+  { ruta: '/graduados', texto: 'Egresados', exacto: false },
+  { ruta: '/sitio', texto: 'Sitio web', exacto: false },
+  { ruta: '/cuentas', texto: 'Cuentas', exacto: false },
 ];
 
 export function Disposicion({ children }: { children: ReactNode }) {
   const { perfil, cerrarSesion } = useSesion();
   const [menuAbierto, setMenuAbierto] = useState(false);
 
-  const visibles = SECCIONES.filter((s) => !s.soloAdmin || perfil?.rol === 'ADMIN');
 
   const enlaces = (
     <>
-      {visibles.map((seccion) => (
+      {SECCIONES.map((seccion) => (
         <NavLink
           key={seccion.ruta}
           to={seccion.ruta}

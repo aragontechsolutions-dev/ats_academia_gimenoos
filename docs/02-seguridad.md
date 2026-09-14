@@ -59,11 +59,21 @@ Permisos previstos:
 | Rol | Alcance |
 |---|---|
 | `ADMIN` | Todo |
-| `INSTRUCTOR` | Su agenda, sus clases, fichas de sus alumnos |
+| `INSTRUCTOR` | **Solo su agenda**: ver sus clases, cerrarlas y anotar cómo fueron. No entra al panel ni consulta el padrón de alumnos, los vehículos ni los instructores. Ver [21-pwa-instructor.md](21-pwa-instructor.md) |
 | `CLIENTE` | Sus clases, sus pagos, su expediente |
 
 Los guards del frontend (`RutaProtegida`) son **comodidad de interfaz, no
 seguridad**. Quien fuerce la ruta en el navegador igual recibe 401/403.
+
+Por eso, cerrarle una aplicación a un rol se hace **en los dos lados**: la
+pantalla, para que la persona sepa a dónde ir, y el `@Roles` de cada endpoint,
+que es lo que de verdad cierra la puerta. Cerrar solo la pantalla deja la API
+abierta a quien conozca su dirección y tenga un token válido.
+
+`apps/api/test/permisos.spec.ts` fija quién puede llamar a qué leyendo los
+decoradores. Se hace ahí y no llamando a los servicios porque varios dejan pasar
+a quien la fila le pertenece —un alumno sobre SU propia clase—: en esos casos el
+decorador es lo único que separa a un rol de otro.
 
 ### No alcanza con filtrar por fila: hay campos que dependen del rol
 

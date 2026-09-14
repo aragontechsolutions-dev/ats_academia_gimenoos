@@ -18,15 +18,19 @@ import type { UsuarioAutenticado } from '../../common/auth/jwt-payload.interface
 export class VehiculosController {
   constructor(private readonly vehiculos: VehiculosService) {}
 
+  /**
+   * Sin `INSTRUCTOR`: desde la Etapa 2.D trabaja en su propia app, que no
+   * consulta esto. Ver docs/21-pwa-instructor.md.
+   */
   @Get()
-  @Roles(RolUsuario.ADMIN, RolUsuario.INSTRUCTOR)
+  @Roles(RolUsuario.ADMIN)
   @ApiOperation({ summary: 'Vehículos de la academia' })
   listar(@Query() consulta: ListarVehiculosDto) {
     return this.vehiculos.listar(consulta.incluirInactivos ?? false, consulta);
   }
 
   @Get(':id')
-  @Roles(RolUsuario.ADMIN, RolUsuario.INSTRUCTOR)
+  @Roles(RolUsuario.ADMIN)
   @ApiOperation({ summary: 'Detalle de un vehículo' })
   obtener(@Param('id', ParseUUIDPipe) id: string) {
     return this.vehiculos.obtener(id);
