@@ -2,28 +2,26 @@ import type { ReactNode } from 'react';
 
 import { hora } from '../lib/fecha';
 import { COLOR_ESTADO, ETIQUETA_ESTADO, type Reserva } from '../lib/tipos';
-import { numeroParaWhatsApp } from '../lib/whatsapp';
+import { ContactoDelAlumno } from './ContactoDelAlumno';
 
 /**
  * Una clase, vista por el instructor.
  *
  * Lo primero y más grande es **la hora y el alumno**: es lo que se busca de un
  * vistazo antes de salir. El vehículo y el lugar van debajo; el estado, a un
- * costado.
+ * costado. Al pie, lo que se toca: contactar al alumno y cerrar la clase.
  */
 export function TarjetaClase({
   reserva,
-  accion,
+  acciones,
   nota,
 }: {
   reserva: Reserva;
-  /** Cerrar la clase, cuando corresponde. */
-  accion?: ReactNode;
+  /** Cerrar o cancelar la clase, cuando corresponde. */
+  acciones?: ReactNode;
   /** La observación del instructor sobre cómo fue. */
   nota?: ReactNode;
 }) {
-  const telefono = numeroParaWhatsApp(reserva.cliente.telefono);
-
   return (
     <article className="rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex items-start justify-between gap-3">
@@ -59,23 +57,7 @@ export function TarjetaClase({
         {reserva.cliente.telefono && (
           <div className="flex gap-2">
             <dt className="text-slate-400">Teléfono</dt>
-            <dd className="flex flex-wrap items-center gap-x-3">
-              {/* Llamar y escribir son dos cosas distintas y las dos hacen falta
-                  cuando el alumno no aparece en el punto de encuentro. */}
-              <a href={`tel:${reserva.cliente.telefono.replace(/\s/g, '')}`} className="underline">
-                {reserva.cliente.telefono}
-              </a>
-              {telefono && (
-                <a
-                  href={`https://wa.me/${telefono}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-marca-600 underline"
-                >
-                  WhatsApp
-                </a>
-              )}
-            </dd>
+            <dd className="tabular-nums">{reserva.cliente.telefono}</dd>
           </div>
         )}
       </dl>
@@ -97,7 +79,14 @@ export function TarjetaClase({
         <p className="mt-3 text-xs text-slate-500">Motivo: {reserva.motivoCancelacion}</p>
       )}
 
-      {accion && <div className="mt-3">{accion}</div>}
+      <div className="mt-3">
+        <ContactoDelAlumno
+          telefono={reserva.cliente.telefono}
+          nombre={reserva.cliente.nombre}
+        />
+      </div>
+
+      {acciones && <div className="mt-3">{acciones}</div>}
 
       {nota && <div className="mt-3 border-t border-slate-100 pt-3">{nota}</div>}
     </article>

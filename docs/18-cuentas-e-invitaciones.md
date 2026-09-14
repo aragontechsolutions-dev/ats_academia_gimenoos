@@ -186,6 +186,28 @@ Quien lo tenga entra como esa persona. Por eso:
   el acceso de alguien a otra persona le entrega su cuenta, y el número es lo
   único que separa un caso del otro.
 
+### La invitación se exige UNA sola vez, no en cada ingreso
+
+Vale la pena dejarlo escrito porque la duda aparece sola al ver que el enlace
+vence a las 24 horas y se usa una vez: **eso rige para el primer ingreso**.
+
+`resolverDesdeToken` (`apps/api/src/modules/usuarios/usuarios.service.ts`) busca
+la fila del usuario en la base. Si **existe**, solo comprueba que esté activa y
+deja pasar. La tabla `invitaciones` se consulta únicamente en `aprovisionar()`,
+que corre cuando esa fila **todavía no existe**.
+
+De ahí en más:
+
+- La sesión se mantiene sola en las tres aplicaciones (`persistSession` y
+  `autoRefreshToken` en el cliente de Supabase).
+- Si igual se pierde, cada app tiene su `/ingresar`, que manda un enlace nuevo
+  con `shouldCreateUser: false`: sirve para quien ya está habilitado y **no puede
+  dar de alta a nadie**.
+
+O sea que una cuenta se cierra dándola de baja o quitándole el acceso, **no**
+dejando vencer su invitación: la invitación ya cumplió su función el primer día.
+Ver [21-pwa-instructor.md](21-pwa-instructor.md), §3.
+
 El teléfono se guarda como `+598 98663201` y `wa.me` quiere `59898663201`:
 pasarle el guardado tal cual abre un chat con un número inexistente y sin ningún
 error visible. La conversión está en `apps/admin/src/lib/whatsapp.ts`, y el botón

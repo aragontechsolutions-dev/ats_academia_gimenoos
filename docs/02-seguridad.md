@@ -119,6 +119,24 @@ Configuradas en `apps/api/src/main.ts`:
 | Swagger deshabilitado en producción | Exponer el mapa completo de la API |
 | Validación de entorno con Zod | Arrancar sin credenciales y fallar en runtime |
 
+### Cuánto puede pedir una sola consulta
+
+Dos límites, por el mismo motivo: una cuenta legítima no debería poder hacer que
+la base recorra una tabla entera con una petición.
+
+| Dónde | Límite | Por qué |
+|---|---|---|
+| Listados paginados | `porPagina` acotado a 10, 20, 50 o 100, **en el DTO y otra vez en el servicio** | Un `porPagina=100000` devuelve la tabla completa en cada petición |
+| `GET /agenda/reservas` | El rango `desde`–`hasta` no puede superar **62 días** | `desde` y `hasta` los elige quien consulta: sin tope, cualquiera pide diez años de agenda de una vez |
+
+El tope de 62 días no distingue rol a propósito: un administrador tampoco
+necesita diez años de agenda en una sola llamada. Se eligió 62 porque el peor
+caso real es la grilla de un mes con sus días de relleno —42 casilleros—, y deja
+margen para cualquier vista que venga. Está en `reservas.service.ts` y lo fijan
+cuatro pruebas, dos de ellas comprobando que la grilla del mes y el tope exacto
+sí pasan: un límite demasiado ajustado rompería la vista de mes del panel y la de
+la app del instructor.
+
 ### Lo que escribe el panel y se muestra en el sitio público
 
 El nombre, la dirección y los textos de las secciones los escribe quien

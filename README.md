@@ -60,7 +60,7 @@ Guía completa: [`docs/06-guia-desarrollo.md`](docs/06-guia-desarrollo.md).
 | [Panel](docs/11-panel.md) | Pantallas del panel de administración |
 | [PWA del alumno](docs/12-pwa-alumno.md) | La app del alumno y sus permisos |
 | [El mapa](docs/20-mapa.md) | Ubicación en el sitio y cómo marcarla desde el panel |
-| [App del instructor](docs/21-pwa-instructor.md) | Su agenda del día, y por qué no entra al panel |
+| [App del instructor](docs/21-pwa-instructor.md) | Su agenda por día, semana o mes; cerrar y cancelar clases; por qué no entra al panel |
 
 ## Antes de publicar
 

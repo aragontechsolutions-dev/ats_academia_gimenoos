@@ -24,12 +24,67 @@ distintas, lo que no está en la suya no se le muestra nunca.
 | Pantalla | Para qué |
 |---|---|
 | **Ingreso** | Enlace por correo, sin contraseña. Igual que la app del alumno |
-| **Mi agenda** | Las clases de un día: hora, alumno, vehículo, dónde es el encuentro |
-| **Cerrar la clase** | Marcarla como dictada, o al alumno como ausente |
+| **Mi agenda** | Las clases del **día**, la **semana** o el **mes** |
+| **Contactar al alumno** | Llamarlo o escribirle por WhatsApp, con un toque |
+| **Cerrar la clase** | Dictada, o el alumno faltó |
+| **Cancelar la clase** | Cuando no va a pasar, con motivo obligatorio |
 | **Anotar cómo fue** | Una observación por clase, que el alumno **no** ve |
 
-De cada clase se puede **llamar al alumno o escribirle por WhatsApp** con un
-toque: es lo que hace falta cuando alguien no aparece en el punto de encuentro.
+### Las tres vistas de la agenda
+
+Abre siempre en **día**, que es la vista de trabajo: esta app se usa parado al
+lado del auto, con una mano, para saber quién viene ahora. La semana y el mes
+son para ubicarse.
+
+| Vista | Qué muestra | Para qué |
+|---|---|---|
+| **Día** | Las clases completas, con todas las acciones | Trabajar |
+| **Semana** | Lista agrupada por día: hora, alumno y estado | Cómo viene la semana |
+| **Mes** | Grilla de calendario con la cantidad de clases por día | Dónde tengo lugar |
+
+Tres decisiones que conviene no revertir sin pensarlas:
+
+- **La semana es una lista, no una grilla de siete columnas.** Siete columnas es
+  la vista del panel y funciona en una pantalla ancha; en un teléfono cada
+  columna queda de cuarenta píxeles y no entra ni el nombre del alumno.
+- **Las acciones viven solo en la vista de día.** La semana y el mes llevan al
+  día al tocarlos. Repetir «Dictada» en una lista apretada es la forma más fácil
+  de cerrar la clase equivocada.
+- **El selector es un control segmentado arriba, no una barra de navegación
+  abajo.** Las tres no son secciones distintas sino tres recortes de la misma
+  agenda; una barra inferior prometería lugares a los que ir.
+
+### Una clase pertenece al día en que empieza
+
+La API filtra por **solapamiento** (`inicio < hasta && fin > desde`), así que una
+clase de 23:30 a 00:15 vuelve en los dos días que ocupa. Para la grilla del panel
+eso está bien: hay que dibujarla en ambos.
+
+Acá no, y el error que provoca no es estético. Esta app **lista** clases
+ordenadas por hora de inicio: sin filtrar, la clase de anoche aparece **primera**
+bajo el título «Mañana», arriba de las de mañana. La primera tarjeta es la que se
+toca, y tocarla cierra o cancela la clase equivocada.
+
+Por eso `queEmpiezanEn()` (`src/lib/agenda.ts`) se queda solo con las que
+**empiezan** dentro del período. No es una hipótesis: la prueba de navegador
+canceló la clase equivocada por este motivo antes de que el filtro existiera, y
+ahora hay una comprobación que falla si vuelve a colarse.
+
+### Llamar y escribir al alumno
+
+Dos botones grandes en cada clase, no dos enlaces subrayados dentro de la lista
+de datos: se tocan parado al lado del auto, sin apuntar. Miden 44px de alto, que
+es el mínimo cómodo para el pulgar, y hay una comprobación de navegador que lo
+mide.
+
+Las dos cosas hacen falta y no una: **llamar** sirve cuando el alumno está por
+llegar, y el **mensaje** queda escrito cuando no atiende.
+
+Si el alumno no tiene teléfono cargado, **no se dibuja ningún botón**. Un botón
+que no llama a nadie es peor que ningún botón. El número se convierte con las
+mismas reglas que usa la API y el sitio público (`digitosParaWhatsApp`, en
+`@gimenoos/shared`), y si no se puede convertir con seguridad tampoco aparece:
+antes que abrir un chat con quien no es, no hay enlace.
 
 ### Cerrar la clase
 
@@ -49,6 +104,36 @@ se dio. Descontarla igual sería cobrarle al alumno una clase que no tuvo.
 
 Si la API rechaza el cambio —por ejemplo, porque el pack ya no tiene clases—, el
 motivo se muestra en la misma tarjeta y se puede reintentar.
+
+### Cancelar la clase
+
+Es la tercera acción, y **no es un cierre**: la clase no se dio ni el alumno
+faltó, directamente no va a pasar. El instructor se enfermó, el auto quedó en el
+taller.
+
+Por eso se comporta distinto de las otras dos:
+
+| | Dictada / Faltó | Cancelar |
+|---|---|---|
+| Cuándo aparece | Solo si la clase ya empezó | Siempre que siga en pie |
+| Peso en pantalla | Botones grandes | Acción secundaria, subrayada |
+| El pack del alumno | «Dictada» descuenta una clase | **No descuenta nada** |
+| El horario | Queda ocupado | **Queda libre** para otro |
+| Motivo | No se pide | **Obligatorio** |
+
+El motivo es obligatorio en la app aunque la API lo acepte vacío: quien lea eso
+en el panel mañana necesita saber qué pasó, y el instructor es el único que lo
+sabe en ese momento.
+
+La **antelación mínima no lo frena**, y es a propósito: esa política rige para el
+alumno. Si el instructor se enferma, la clase no se da igual, y obligarlo a
+respetar la antelación lo dejaría sin forma de avisar.
+
+El endpoint es otro (`PATCH /agenda/reservas/:id/cancelar`, no `/estado`) y ya
+existía sin `@Roles`: lo acota el servicio a las clases propias del instructor.
+Esta etapa no cambió ese permiso, solo lo expuso en la app — y agregó las pruebas
+que faltaban, incluida la que comprueba que **no puede cancelar la clase de otro
+instructor**.
 
 ### Anotar cómo fue la clase
 
@@ -114,6 +199,48 @@ Las tres variables tienen que estar cargadas en Render **y** las tres
 direcciones tienen que figurar en las *Redirect URLs* de Supabase. Si una queda
 sin cargar, la API corta el envío en vez de mandar a alguien a su propia
 computadora; eso ya estaba y sigue igual.
+
+### La invitación hace falta UNA sola vez
+
+Esto ya era así desde siempre, pero no estaba escrito en ningún lado y generó la
+duda en la práctica: como el primer acceso llega con una invitación que **vence a
+las 24 horas y se usa una sola vez**, es natural suponer que hay que pedir una
+nueva cada vez que se quiere entrar. No es así.
+
+Lo que pasa de verdad:
+
+1. **El primer ingreso** exige invitación vigente. El guard busca la fila del
+   usuario en la base y, si no existe, entra a `aprovisionar()`
+   (`apps/api/src/modules/usuarios/usuarios.service.ts`), que es el único lugar
+   donde se consulta la tabla `invitaciones`.
+2. **Desde el segundo en adelante** esa fila ya existe, así que el guard solo
+   comprueba que la cuenta esté **activa**. La invitación deja de participar.
+3. **La sesión se mantiene sola.** El cliente de Supabase está configurado con
+   `persistSession` y `autoRefreshToken`, así que el token se renueva sin pedirle
+   nada al instructor. No tiene que volver a ingresar cada día.
+4. **Si igual la pierde** —teléfono nuevo, datos del navegador borrados—, se
+   manda el enlace él mismo desde `/ingresar`, con `shouldCreateUser: false` para
+   que ese formulario no pueda dar de alta a nadie. No depende de que alguien de
+   la academia esté disponible.
+
+Por eso, cuando un enlace vence, la pantalla ahora ofrece **«Mandarme un enlace
+nuevo» como botón principal** y recién después menciona a la academia. Antes se
+leía primero «escribile a la academia», y era justo eso lo que instalaba la idea
+de depender de ella.
+
+**Conviene instalar la app en el teléfono**, y no es un adorno: en el navegador
+—sobre todo en iPhone— los datos del sitio pueden borrarse tras un tiempo sin
+usarlo, y ahí sí habría que volver a ingresar. Instalada en la pantalla de inicio
+eso no pasa. El componente `ComoNoVolverAEntrar` lo explica en la pantalla de
+ingreso.
+
+**Lo que NO se hizo, y por qué.** Se evaluó agregarle contraseña al instructor
+para que pueda entrar sin depender del correo. Se descartó por ahora: no resuelve
+ningún problema real —la sesión ya persiste— y suma superficie de ataque
+(contraseñas débiles o reutilizadas, fuerza bruta, un formulario más que
+proteger). Si algún día hace falta de verdad, el cambio es acotado, pero tiene
+que venir con mínimo de largo, límite de intentos y la opción de Supabase que
+rechaza contraseñas filtradas.
 
 ---
 
@@ -261,10 +388,33 @@ En un navegador real, a 390 px de ancho, que es el tamaño en el que se va a usa
 | El PATCH manda el estado correcto, a la clase correcta, una sola vez | OK |
 | Un rechazo de la API se lee en la tarjeta y se puede reintentar | OK |
 
-Más 235 pruebas de la API: 4 sobre el destino de cada rol —incluida la que
+A eso se sumaron, al agregar las tres vistas y cancelar, **41 comprobaciones de
+navegador** en una sola corrida:
+
+| Qué | Resultado |
+|---|---|
+| El selector ofrece Día, Semana y Mes, y abre en Día | OK |
+| El resumen del período cuenta bien («4 clases · 1 en pie») | OK |
+| Los botones de llamar y WhatsApp arman `tel:` y `wa.me` correctos | OK |
+| El botón de llamar mide al menos 44 px de alto | OK |
+| WhatsApp abre en pestaña nueva con `rel="noopener noreferrer"` | OK |
+| Un alumno sin teléfono no dibuja ningún botón de contacto | OK |
+| Una clase que no empezó **no** ofrece Dictada ni Faltó, pero sí cancelar | OK |
+| Cancelar no deja confirmar sin motivo, y con motivo sí | OK |
+| La clase queda cancelada y con su motivo a la vista | OK |
+| **La clase de anoche no se cuela en el día siguiente** | OK |
+| La semana agrupa por día, marca «Hoy» y **no** repite los botones de cerrar | OK |
+| Tocar un renglón de la semana o un día del mes abre ese día | OK |
+| La grilla del mes son semanas completas, con contador por día | OK |
+| Ningún rango pedido supera el tope de 62 días de la API | OK |
+| Sin errores de consola ni peticiones fallidas | OK |
+
+Más 243 pruebas de la API: 4 sobre el destino de cada rol —incluida la que
 comprueba que un instructor **no** caiga en el panel—, 5 sobre el cierre de la
-clase, 6 sobre la observación —entre ellas **que el alumno no la reciba**— y 8
-sobre la matriz de permisos. `typecheck` 6/6 y `build` 6/6.
+clase, **4 sobre cancelar** —entre ellas que no puede cancelar la clase de otro
+instructor—, **4 sobre el tope del rango**, 6 sobre la observación —entre ellas
+**que el alumno no la reciba**— y 8 sobre la matriz de permisos. `typecheck` 6/6
+y `build` 6/6.
 
 **Lo que no se pudo comprobar desde el entorno de desarrollo:** el ingreso real
 con Supabase, porque el proxy de ese entorno lo bloquea. Las pantallas que

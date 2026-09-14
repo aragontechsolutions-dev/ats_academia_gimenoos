@@ -307,6 +307,37 @@ panel de administración. Ver [21-pwa-instructor.md](21-pwa-instructor.md).
 El orden no es casual: **el panel se le cierra al final**. Hasta que la app no
 cubra lo que hoy hace en el panel, sacárselo lo dejaría sin herramienta.
 
+### Etapa 2.I — La app del instructor con su propia forma de trabajar ✅ COMPLETADA
+
+La 2.D dejó la app en pie, pero con la forma de la app del alumno: una pantalla,
+un día por vez. Esta etapa le da la forma de su trabajo.
+Ver [21-pwa-instructor.md](21-pwa-instructor.md).
+
+| Qué | Estado |
+|---|---|
+| Tres vistas de la agenda: **día, semana y mes**, con selector segmentado | ✅ |
+| La semana como lista agrupada por día, no como grilla de siete columnas | ✅ |
+| El mes como grilla de calendario, con la cantidad de clases por día | ✅ |
+| Tocar un día en semana o mes abre ese día; las acciones viven solo ahí | ✅ |
+| Llamar y WhatsApp como **botones grandes**, no enlaces al pie de una lista | ✅ |
+| **Cancelar la clase** desde la app, con motivo obligatorio | ✅ |
+| Resumen del período en el encabezado («4 clases · 1 en pie») | ✅ |
+| Una clase pertenece al día en que **empieza**: la de las 23:30 no se cuela en el día siguiente | ✅ |
+| Tope de 62 días al rango de `GET /agenda/reservas`, en la API | ✅ |
+| Textos de acceso: la invitación hace falta una sola vez, y cómo instalar la app | ✅ |
+| Limpieza: se sacó de la app lo copiado del panel que no usaba | ✅ |
+
+Dos cosas que salieron de la verificación y no del plan:
+
+- **Un error real, encontrado en el navegador:** la API filtra por solapamiento,
+  así que una clase de 23:30 a 00:15 volvía en los dos días y aparecía *primera*
+  bajo «Mañana». La prueba canceló la clase equivocada por eso, que es el mismo
+  error que podría cometer un instructor. Corregido y con prueba de regresión.
+- **El acceso no era un problema de arquitectura sino de texto.** La invitación
+  se exige solo en el primer ingreso; después la sesión se mantiene sola y el
+  instructor puede pedirse el enlace él mismo. No se agregó ningún mecanismo
+  nuevo: se hizo visible el que ya existía.
+
 ## Etapa 2 — Pagos
 
 **Objetivo:** cobrar por los tres canales y conciliar.

@@ -19,7 +19,7 @@ export default defineConfig({
       manifest: {
         name: 'Gimenoos Instructores',
         short_name: 'Gimenoos Inst.',
-        description: 'La agenda del día y el cierre de cada clase.',
+        description: 'Tu agenda, el contacto con el alumno y el cierre de cada clase.',
         lang: 'es-UY',
         start_url: '/',
         scope: '/',

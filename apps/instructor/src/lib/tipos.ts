@@ -21,15 +21,19 @@ export interface Reserva {
   /** Cómo fue la clase, escrito por el instructor. El alumno NO la recibe. */
   notaInstructor: string | null;
   motivoCancelacion: string | null;
-  /** El alumno de la clase. Es lo primero que necesita ver el instructor. */
+  /**
+   * El alumno de la clase. Es lo primero que necesita ver el instructor.
+   *
+   * Sin el correo a propósito: la API lo manda, pero esta app no escribe correos
+   * —contacta por teléfono o WhatsApp— y declarar un dato personal que no se usa
+   * invita a usarlo sin pensarlo.
+   */
   cliente: {
     id: string;
     nombre: string;
     apellido: string;
     telefono: string | null;
-    email: string | null;
   };
-  instructor: { id: string; nombre: string; apellido: string };
   vehiculo: { id: string; patente: string; tipo: TipoVehiculo } | null;
 }
 

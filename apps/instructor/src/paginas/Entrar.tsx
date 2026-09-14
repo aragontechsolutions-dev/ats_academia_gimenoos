@@ -76,15 +76,21 @@ export function Entrar() {
                 Los enlaces de acceso vencen a las 24 horas y se usan una sola vez. Puede que
                 este ya lo hayas usado, o que haya pasado el plazo.
               </p>
-              <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                Escribile a la academia y te mandamos uno nuevo al toque.
-              </p>
+              {/* La salida propia va primero y como botón, no como enlace al pie.
+                  Antes lo primero que se leía era «escribile a la academia», y eso
+                  instalaba la idea de que cada ingreso depende de que alguien de la
+                  academia esté disponible. No depende: la invitación hace falta una
+                  sola vez, y de ahí en más el instructor se manda el enlace solo. */}
               <a
                 href="/ingresar"
-                className="mt-5 inline-block text-sm font-medium text-marca-600 hover:text-marca-700"
+                className="mt-5 block rounded-lg bg-marca-600 py-3 font-semibold text-white transition hover:bg-marca-700"
               >
-                Pedir un enlace por correo
+                Mandarme un enlace nuevo
               </a>
+              <p className="mt-4 text-sm leading-relaxed text-slate-600">
+                Llega a tu correo en unos segundos. Si no te llega, ahí sí escribile a la
+                academia.
+              </p>
             </>
           )}
         </div>
