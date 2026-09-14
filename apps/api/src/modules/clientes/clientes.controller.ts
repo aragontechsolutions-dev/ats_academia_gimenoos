@@ -14,7 +14,16 @@ import type { UsuarioAutenticado } from '../../common/auth/jwt-payload.interface
 @Controller('clientes')
 // Las fichas de alumnos no son accesibles para el rol CLIENTE: cada alumno ve
 // lo suyo a través de /usuarios/me y /agenda/reservas.
-@Roles(RolUsuario.ADMIN, RolUsuario.INSTRUCTOR)
+/**
+ * Sin `INSTRUCTOR`: desde la Etapa 2.D el instructor trabaja en su propia app, y
+ * de cada alumno recibe lo que necesita dentro de la clase —nombre, teléfono y
+ * correo— en la propia reserva. Buscar en el padrón de alumnos y abrir una ficha
+ * con su historial es trabajo de administración.
+ *
+ * Los métodos con su propio `@Roles` mandan sobre este: el guard usa
+ * `getAllAndOverride`, así que `/clientes/me` sigue siendo del alumno.
+ */
+@Roles(RolUsuario.ADMIN)
 export class ClientesController {
   constructor(private readonly clientes: ClientesService) {}
 

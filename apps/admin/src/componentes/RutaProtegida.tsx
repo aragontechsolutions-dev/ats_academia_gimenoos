@@ -3,19 +3,28 @@ import { Navigate } from 'react-router-dom';
 import { useSesion } from '../lib/sesion';
 
 /**
- * Bloquea el acceso a las rutas del panel.
+ * A dónde mandar a un instructor que llegó acá.
+ *
+ * Es opcional a propósito: si no está cargada, la pantalla explica igual dónde
+ * está su trabajo, solo que sin enlace. Una variable más que sea obligatoria es
+ * una forma más de que el despliegue falle.
+ */
+const APP_INSTRUCTOR = import.meta.env.VITE_APP_INSTRUCTOR_URL as string | undefined;
+
+/**
+ * Deja pasar solo a administración.
+ *
+ * Hasta la Etapa 2.D el instructor también entraba acá: era el único lugar donde
+ * podía ver su agenda. Ahora tiene su propia app, y el panel volvió a ser lo que
+ * dice su nombre. No es solo una cuestión de orden: mientras el instructor tenga
+ * la puerta abierta, cada pantalla nueva que se agregue al panel queda, por
+ * omisión, a un paso suyo.
  *
  * Esto es una comodidad de interfaz, NO un control de seguridad: la autorizacion
  * real la aplica la API con sus guards. Un usuario que fuerce la ruta en el
  * navegador igual recibe 401/403 en cada peticion.
  */
-export function RutaProtegida({
-  children,
-  rolesPermitidos = ['ADMIN', 'INSTRUCTOR'],
-}: {
-  children: ReactNode;
-  rolesPermitidos?: Array<'ADMIN' | 'INSTRUCTOR' | 'CLIENTE'>;
-}) {
+export function RutaProtegida({ children }: { children: ReactNode }) {
   const { sesion, perfil, cargando, cerrarSesion } = useSesion();
 
   if (cargando) {
@@ -30,14 +39,28 @@ export function RutaProtegida({
     return <p className="p-8 text-slate-500">Verificando permisos…</p>;
   }
 
-  if (!rolesPermitidos.includes(perfil.rol)) {
+  if (perfil.rol !== 'ADMIN') {
     return (
       <div className="flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 text-center">
-          <h1 className="text-xl font-bold text-slate-900">Acceso restringido</h1>
+          <h1 className="text-xl font-bold text-slate-900">
+            {perfil.rol === 'INSTRUCTOR' ? 'Tu agenda está en la app' : 'Acceso restringido'}
+          </h1>
+          {/* A un instructor no le sirve «no tenés permisos»: lo que necesita es
+              dónde está ahora su trabajo. Al resto, el mensaje de siempre. */}
           <p className="mt-2 text-slate-600">
-            Esta cuenta no tiene permisos para usar el panel de administración.
+            {perfil.rol === 'INSTRUCTOR'
+              ? 'Las clases del día, cerrarlas y anotar cómo fueron están en la app de instructores, con el enlace que te mandó la academia.'
+              : 'Esta cuenta no tiene permisos para usar el panel de administración.'}
           </p>
+          {perfil.rol === 'INSTRUCTOR' && APP_INSTRUCTOR && (
+            <a
+              href={APP_INSTRUCTOR}
+              className="mt-5 inline-block rounded-lg bg-marca-600 px-4 py-2 font-semibold text-white transition hover:bg-marca-700"
+            >
+              Ir a la app de instructores
+            </a>
+          )}
           {/* Saber con que cuenta se entro es lo primero que se necesita para
               resolverlo: casi siempre es la cuenta equivocada. */}
           <p className="mt-4 text-sm text-slate-500">

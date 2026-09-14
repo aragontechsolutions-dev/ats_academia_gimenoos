@@ -158,13 +158,55 @@ no elige qué agenda ver, y mandarlo daría la impresión contraria.
 
 ---
 
-## 6. Qué falta
+## 6. El panel ya no es suyo
 
-Esta es la primera entrega de la Etapa 2.D. Queda:
+Con la app cubriendo su trabajo, el rol `INSTRUCTOR` dejó de entrar al panel. Es
+el objetivo de la etapa, y se hizo **al final** a propósito: sacárselo antes lo
+habría dejado sin herramienta.
 
-- **Cerrarle el panel al instructor**, que es el objetivo final de la etapa: hoy
-  todavía puede entrar, porque hasta que esta app no esté completa sacarle el
-  panel lo dejaría sin herramienta.
+### Qué se cerró, y por qué en dos lugares
+
+| Dónde | Qué cambió |
+|---|---|
+| El panel | `RutaProtegida` deja pasar solo a `ADMIN`. A un instructor le dice **dónde está ahora su trabajo**, con un enlace a su app, en vez de «no tenés permisos» |
+| La API | Se le quitó `INSTRUCTOR` a los seis endpoints que solo el panel usaba |
+
+Los seis: `GET /clientes` y `GET /clientes/:id` —buscar en el padrón de alumnos y
+abrir una ficha con su historial—, `GET /instructores` y `GET /instructores/:id`,
+y `GET /vehiculos` y `GET /vehiculos/:id`.
+
+**Cerrar solo el panel no habría alcanzado.** El panel es una comodidad de
+interfaz; quien conozca la dirección de la API la llama igual con su token. Lo
+que de verdad cierra la puerta es el `@Roles` de cada endpoint.
+
+### Qué pierde un instructor
+
+Concretamente: **buscar a cualquier alumno del padrón y ver su ficha con el
+historial completo**. De los alumnos a los que sí les da clase recibe lo que
+necesita —nombre, teléfono y correo— dentro de cada reserva.
+
+Es una pérdida real y es la intención: el instructor necesita a los alumnos que
+tiene hoy, no el padrón. Si alguna vez hiciera falta, se agrega a su app y
+acotado a sus propios alumnos, no reabriendo el panel.
+
+### Lo que NO se tocó
+
+Reprogramar y cancelar una clase siguen sin pedir rol, y el servicio las acota a
+las clases propias. El instructor ya no tiene pantalla para hacerlo, pero
+quitarle el permiso sería un cambio de comportamiento sin nadie que lo pida, y
+no expone ningún dato: solo puede tocar lo suyo.
+
+### Una prueba que fija la matriz
+
+`apps/api/test/permisos.spec.ts` lee los decoradores y afirma tres cosas: qué
+puede todavía un instructor, qué dejó de poder, y **que ningún método de esos
+tres controladores admita `INSTRUCTOR`** —más fuerte que la lista, porque atrapa
+también al endpoint que se agregue mañana—. Comprobado revirtiendo un decorador:
+la prueba se pone en rojo.
+
+También fija que el cambio no se llevó puesto lo ajeno: `/clientes/me` sigue
+siendo del alumno, porque el guard usa `getAllAndOverride` y el `@Roles` del
+método manda sobre el de la clase.
 
 ### Sobre las notas internas del alumno
 
@@ -211,15 +253,18 @@ En un navegador real, a 390 px de ancho, que es el tamaño en el que se va a usa
 | Sin desborde horizontal | OK |
 | La pantalla de ingreso, y su aviso para el alumno que se equivocó de app | OK |
 | Cerrar la clase: solo si ya empezó, con confirmación y con la opción de arrepentirse | OK |
+| Un instructor en el panel ve a dónde ir, con enlace a su app | OK |
+| Un alumno en el panel ve el mensaje de siempre, sin ese enlace | OK |
+| Administración entra y ve las ocho secciones | OK |
 | Anotar, editar y borrar la observación; cancelar sin mandar nada | OK |
 | Las dos observaciones se distinguen en pantalla | OK |
 | El PATCH manda el estado correcto, a la clase correcta, una sola vez | OK |
 | Un rechazo de la API se lee en la tarjeta y se puede reintentar | OK |
 
-Más 227 pruebas de la API: 4 sobre el destino de cada rol —incluida la que
+Más 235 pruebas de la API: 4 sobre el destino de cada rol —incluida la que
 comprueba que un instructor **no** caiga en el panel—, 5 sobre el cierre de la
-clase y 6 sobre la observación, entre ellas **que el alumno no la reciba** ni en
-el listado ni en el detalle. `typecheck` 6/6 y `build` 6/6.
+clase, 6 sobre la observación —entre ellas **que el alumno no la reciba**— y 8
+sobre la matriz de permisos. `typecheck` 6/6 y `build` 6/6.
 
 **Lo que no se pudo comprobar desde el entorno de desarrollo:** el ingreso real
 con Supabase, porque el proxy de ese entorno lo bloquea. Las pantallas que

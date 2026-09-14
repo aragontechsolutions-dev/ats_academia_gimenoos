@@ -287,7 +287,7 @@ vista previa del mensaje. Lo mismo hacen los antivirus de correo.
 | Mensajes en español cuando el código ya no sirve | ✅ |
 | Pruebas | ✅ 183, más una que carga la página **sin JavaScript** y comprueba que no se consuma el código |
 
-### Etapa 2.D — PWA del instructor ⏳ EN CURSO
+### Etapa 2.D — PWA del instructor ✅ COMPLETADA
 
 App propia para los instructores, y cerrar el acceso del rol `INSTRUCTOR` al
 panel de administración. Ver [21-pwa-instructor.md](21-pwa-instructor.md).
@@ -302,7 +302,7 @@ panel de administración. Ver [21-pwa-instructor.md](21-pwa-instructor.md).
 | La invitación de un instructor lleva a **su** app y ya no al panel | ✅ |
 | Cerrar la clase desde la app (dictada / ausente) | ✅ |
 | Observaciones de la clase, escritas por el instructor | ✅ |
-| Cerrarle el panel al rol `INSTRUCTOR` | ⏳ |
+| Cerrarle el panel al rol `INSTRUCTOR`, en el panel **y** en la API | ✅ |
 
 El orden no es casual: **el panel se le cierra al final**. Hasta que la app no
 cubra lo que hoy hace en el panel, sacárselo lo dejaría sin herramienta.
