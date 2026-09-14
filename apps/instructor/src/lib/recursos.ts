@@ -24,8 +24,6 @@ export const miAgenda = {
       `/agenda/reservas${query({ desde: desde.toISOString(), hasta: hasta.toISOString() })}`,
     ),
 
-  obtener: (id: string) => llamarApi<Reserva>(`/agenda/reservas/${id}`),
-
   /**
    * Guarda cómo fue la clase.
    *
@@ -43,5 +41,19 @@ export const miAgenda = {
     llamarApi<Reserva>(`/agenda/reservas/${id}/estado`, {
       method: 'PATCH',
       body: JSON.stringify({ estado }),
+    }),
+
+  /**
+   * Cancela la clase y libera el horario.
+   *
+   * Va por un camino distinto del de cerrar y no es un detalle: cancelar NO
+   * descuenta la clase del pack del alumno y deja el horario disponible para
+   * otro, mientras que marcarla dictada la consume. La API comprueba que la
+   * clase sea de este instructor y que todavía esté en pie.
+   */
+  cancelar: (id: string, motivo: string) =>
+    llamarApi<Reserva>(`/agenda/reservas/${id}/cancelar`, {
+      method: 'PATCH',
+      body: JSON.stringify({ motivo }),
     }),
 };

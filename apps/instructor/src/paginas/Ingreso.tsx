@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useSesion } from '../lib/sesion';
 import { Logotipo } from '../componentes/Logotipo';
+import { ComoNoVolverAEntrar } from '../componentes/ComoNoVolverAEntrar';
 
 /**
  * Ingreso del instructor con enlace por correo (magic link).
@@ -96,6 +97,8 @@ export function Ingreso() {
             </>
           )}
         </form>
+
+        <ComoNoVolverAEntrar />
 
         {/* slate-400 y no slate-500: sobre el negro de la marca, slate-500 da 4.13
             de contraste y el criterio AA pide 4.5 para texto de este tamaño. */}

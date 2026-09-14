@@ -269,6 +269,50 @@ describe('Alcance del instructor y del administrador', () => {
   });
 });
 
+describe('El rango de la consulta está acotado', () => {
+  // Sin tope, cualquier cuenta autenticada puede pedir la tabla entera en una
+  // sola llamada. El límite no distingue rol a propósito: un administrador
+  // tampoco necesita diez años de agenda de una vez.
+  it('rechaza pedir diez años de agenda', async () => {
+    await expect(
+      servicio.listar(
+        { desde: AHORA.toJSDate(), hasta: AHORA.plus({ years: 10 }).toJSDate() },
+        INSTRUCTOR,
+      ),
+    ).rejects.toThrow(/no puede superar 62 días/);
+  });
+
+  it('lo rechaza también al administrador', async () => {
+    await expect(
+      servicio.listar(
+        { desde: AHORA.toJSDate(), hasta: AHORA.plus({ days: 90 }).toJSDate() },
+        ADMIN,
+      ),
+    ).rejects.toThrow(/no puede superar 62 días/);
+  });
+
+  // 42 es el peor caso real: la grilla de un mes con los días de relleno de la
+  // semana anterior y la siguiente. Si esta prueba falla, la vista de mes de la
+  // app del instructor deja de cargar.
+  it('deja pasar la grilla completa de un mes', async () => {
+    await expect(
+      servicio.listar(
+        { desde: AHORA.toJSDate(), hasta: AHORA.plus({ days: 42 }).toJSDate() },
+        INSTRUCTOR,
+      ),
+    ).resolves.toBeDefined();
+  });
+
+  it('deja pasar el tope exacto', async () => {
+    await expect(
+      servicio.listar(
+        { desde: AHORA.toJSDate(), hasta: AHORA.plus({ days: 62 }).toJSDate() },
+        INSTRUCTOR,
+      ),
+    ).resolves.toBeDefined();
+  });
+});
+
 describe('Dos personas no pueden tomar el mismo horario', () => {
   it('rechaza una segunda clase superpuesta para el mismo instructor', async () => {
     await servicio.crear(
@@ -520,6 +564,79 @@ describe('El instructor cierra su clase', () => {
 
     expect(roles).toEqual([RolUsuario.ADMIN, RolUsuario.INSTRUCTOR]);
     expect(roles).not.toContain(RolUsuario.CLIENTE);
+  });
+});
+
+describe('El instructor cancela su clase', () => {
+  // Es la tercera acción de su app, y la única que no es un cierre: la clase no
+  // se dio ni el alumno faltó, directamente no va a pasar.
+
+  const claseDe = (instructorId: string, hora: number) =>
+    servicio.crear(
+      { ...baseReserva, clienteId: ID.clienteAna, instructorId, inicio: enCincoDias(hora) },
+      ADMIN,
+      AHORA.toJSDate(),
+    );
+
+  const crearPack = (clienteId: string) =>
+    prisma.compraServicio.create({
+      data: { clienteId, servicioId: ID.servicio, clasesTotales: 2, montoTotal: 0 },
+    });
+
+  it('puede cancelar una clase suya, con motivo', async () => {
+    const reserva = await claseDe(ID.instructor, 8);
+
+    const cancelada = await servicio.cancelar(
+      reserva.id,
+      'El auto quedó en el taller',
+      INSTRUCTOR,
+      AHORA.toJSDate(),
+    );
+
+    expect(cancelada.estado).toBe(EstadoReserva.CANCELADA);
+    expect(cancelada.motivoCancelacion).toBe('El auto quedó en el taller');
+  });
+
+  it('NO puede cancelar la clase de otro instructor', async () => {
+    // El id viaja en la dirección: cambiarlo es el ataque más obvio, y cancelar
+    // la clase ajena le dejaría el horario libre a costa de otro.
+    const ajena = await claseDe(ID.instructorAjeno, 9);
+
+    await expect(
+      servicio.cancelar(ajena.id, 'no es mía', INSTRUCTOR, AHORA.toJSDate()),
+    ).rejects.toThrow(/no es de tu agenda/);
+  });
+
+  it('cancelar NO descuenta la clase del pack del alumno', async () => {
+    // Es la diferencia de fondo con marcarla dictada, y por eso son dos botones
+    // distintos en la app: si cancelar gastara la clase, el alumno pagaría una
+    // clase que no se dio.
+    const pack = await crearPack(ID.clienteAna);
+    const reserva = await servicio.crear(
+      { ...baseReserva, compraId: pack.id, inicio: enCincoDias(11) },
+      ANA,
+      AHORA.toJSDate(),
+    );
+
+    await servicio.cancelar(reserva.id, 'llovía', ADMIN, AHORA.toJSDate());
+
+    const actualizado = await prisma.compraServicio.findUniqueOrThrow({ where: { id: pack.id } });
+    expect(actualizado.clasesUsadas).toBe(0);
+  });
+
+  it('el instructor puede cancelar sobre la hora: la antelación rige para el alumno', async () => {
+    // Si el instructor se enferma o el auto no arranca, la clase no se da igual.
+    // Obligarlo a respetar la antelación mínima lo dejaría sin forma de avisar.
+    const reserva = await claseDe(ID.instructor, 12);
+    const casiLaHora = DateTime.fromJSDate(reserva.inicio).minus({ hours: 1 }).toJSDate();
+
+    const cancelada = await servicio.cancelar(
+      reserva.id,
+      'instructor enfermo',
+      INSTRUCTOR,
+      casiLaHora,
+    );
+    expect(cancelada.estado).toBe(EstadoReserva.CANCELADA);
   });
 });
 

@@ -1,10 +1,14 @@
 @import 'tailwindcss';
 
 /*
-  La app del alumno comparte la identidad del sitio público y del panel: mismo
-  rojo, mismo amarillo, mismos negros. El alumno llega al sitio, entra a la app y
-  después pisa la academia: si las tres cosas no se parecen, parecen tres
-  empresas distintas.
+  Los colores son los del sitio, el panel y la app del alumno: mismo rojo, mismo
+  amarillo, mismos negros. Es la misma academia, y cuatro paletas distintas
+  parecerían cuatro empresas.
+
+  Lo que diferencia esta app de la del alumno no es el color sino la forma: acá
+  el trabajo es mirar la agenda y cerrar clases, así que hay selector de día,
+  semana y mes, botones grandes para llamar y escribir, y ninguna navegación
+  inferior —no hay secciones a las que ir, hay una agenda—.
 
   Los tokens se llaman igual que en la landing y el panel (`marca-*`, `acento-*`,
   `carbon-*`), así una clase copiada de cualquiera de los tres funciona acá.

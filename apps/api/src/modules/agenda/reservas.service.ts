@@ -21,6 +21,20 @@ import type { ListarReservasDto } from './dto/listar-reservas.dto';
 import type { ReprogramarReservaDto } from './dto/reprogramar-reserva.dto';
 import type { EstadoAsignable } from './dto/cambiar-estado-reserva.dto';
 
+/**
+ * Cuánto puede abarcar una consulta de agenda, en días.
+ *
+ * La vista de mes de la app del instructor pide como mucho la grilla de un mes
+ * —hasta 42 casilleros contando los de relleno—, así que 62 deja margen de
+ * sobra para cualquier vista que venga.
+ *
+ * El tope existe porque `desde` y `hasta` los elige quien consulta: sin él,
+ * cualquier cuenta autenticada puede pedir diez años de reservas en una sola
+ * llamada y hacer que la base recorra la tabla entera. Es la misma razón por la
+ * que los listados acotan `porPagina` a una lista cerrada.
+ */
+const RANGO_MAXIMO_DIAS = 62;
+
 /** Estados que siguen ocupando el horario. Coincide con las EXCLUDE constraints. */
 const ESTADOS_QUE_OCUPAN: EstadoReserva[] = [EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA];
 
@@ -79,6 +93,13 @@ export class ReservasService {
    * propias reservas, no las ajenas.
    */
   async listar(dto: ListarReservasDto, usuario: UsuarioAutenticado) {
+    const dias = DateTime.fromJSDate(dto.hasta).diff(DateTime.fromJSDate(dto.desde), 'days').days;
+    if (dias > RANGO_MAXIMO_DIAS) {
+      throw new BadRequestException(
+        `El rango de la consulta no puede superar ${RANGO_MAXIMO_DIAS} días. Pedí un período más corto.`,
+      );
+    }
+
     const filtro: Prisma.ReservaWhereInput = {
       inicio: { lt: dto.hasta },
       fin: { gt: dto.desde },
