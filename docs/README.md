@@ -23,6 +23,7 @@
 | [18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md) | **Quién puede entrar al sistema y cómo se lo habilita** |
 | [19-correo.md](19-correo.md) | **Configuración del correo (Brevo + Supabase), paso a paso** |
 | [20-mapa.md](20-mapa.md) | El mapa del sitio, el botón de ruta y cómo marcar la ubicación |
+| [21-pwa-instructor.md](21-pwa-instructor.md) | La app del instructor: su agenda y por qué no entra al panel |
 
 **Por dónde empezar:** `07-roadmap.md` si sos quien decide,
 `06-guia-desarrollo.md` para levantar el entorno,

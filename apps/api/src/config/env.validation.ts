@@ -44,8 +44,10 @@ export const envSchema = z.object({
   // --- Direcciones de los frontends ----------------------------------------
   /** A donde cae un alumno al tocar el enlace de su invitacion. */
   APP_ALUMNO_URL: z.string().url().default('http://localhost:5175'),
-  /** A donde cae un instructor o un administrador. */
+  /** A donde cae un administrador: el panel. */
   APP_PANEL_URL: z.string().url().default('http://localhost:5174'),
+  /** La PWA del instructor: su agenda del dia. */
+  APP_INSTRUCTOR_URL: z.string().url().default('http://localhost:5176'),
 
   // --- Seguridad HTTP ------------------------------------------------------
   /** Origenes permitidos para CORS, separados por coma. Sin comodines. */

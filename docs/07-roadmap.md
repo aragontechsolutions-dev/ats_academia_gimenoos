@@ -120,7 +120,8 @@ las fotos y el logo:
          nada. Paso a paso en [`19-correo.md`](19-correo.md).
       3. Dejar el **vencimiento del enlace en 24 horas**.
 
-      Y en Render: `ADMIN_INICIAL_EMAIL`, `APP_ALUMNO_URL` y `APP_PANEL_URL`.
+      Y en Render: `ADMIN_INICIAL_EMAIL`, `APP_ALUMNO_URL`, `APP_INSTRUCTOR_URL`
+      y `APP_PANEL_URL`.
       Después, mandarse una invitación a uno mismo por los dos canales y
       comprobar que el correo llegue en español y que el enlace lleve a la app.
 - [ ] **Comprar el dominio de la academia** (por ejemplo
@@ -138,6 +139,12 @@ las fotos y el logo:
       Vehículos. La sección del sitio aparece sola cuando hay fotos. No se usan
       imágenes de banco: mostrar un auto que no es el de la academia sería
       afirmar algo que no es cierto.
+- [ ] **Crear el proyecto de Vercel de la app del instructor**
+      (`gimenoos-instructor`, Root Directory `apps/instructor`), agregar su URL a
+      `CORS_ORIGINS` y a las *Redirect URLs* de Supabase, y cargar
+      `APP_INSTRUCTOR_URL` en Render. Sin eso, la invitación de un instructor no
+      llega a ninguna parte. Ver [`09-despliegue.md`](09-despliegue.md) y
+      [`21-pwa-instructor.md`](21-pwa-instructor.md).
 - [ ] **Marcar la ubicación de la academia en el mapa**: Panel → Sitio público →
       Datos de contacto → *Ubicación en el mapa*. Se toca el mapa, se arrastra el
       marcador, o se usa «Usar mi ubicación» estando en el local. Hasta que no se

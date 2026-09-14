@@ -295,6 +295,72 @@ describe('Entrega del acceso por enlace, para mandar por WhatsApp', () => {
   });
 });
 
+describe('Cada rol entra por su propia aplicación', () => {
+  /**
+   * Antes de que existiera la app del instructor, un instructor invitado caía en
+   * el panel: era el único lugar donde podía trabajar. Ahora tiene el suyo, y
+   * mandarlo al panel sería mandarlo a una pantalla que ya no le corresponde.
+   *
+   * Se mira el destino que recibe Supabase, que es el que termina en el enlace.
+   */
+  const APPS = {
+    APP_ALUMNO_URL: 'https://alumnos.ejemplo.uy',
+    APP_INSTRUCTOR_URL: 'https://instructores.ejemplo.uy',
+    APP_PANEL_URL: 'https://panel.ejemplo.uy',
+  };
+
+  /** Anota a dónde se pidió mandar a la persona y corta ahí. */
+  function servicioQueAnotaElDestino() {
+    const destinos: string[] = [];
+    const supabase = {
+      invitar: async (_email: string, destino: string) => {
+        destinos.push(destino);
+      },
+    } as unknown as SupabaseAdminService;
+    return {
+      destinos,
+      invitaciones: new InvitacionesService(prisma, auditoria, supabase, configCon(APPS)),
+    };
+  }
+
+  it('un alumno va a la app de alumnos', async () => {
+    const cliente = await prisma.cliente.create({
+      data: { nombre: 'Destino', apellido: 'Alumno', email: `destalumno${SUFIJO}` },
+    });
+    const { destinos, invitaciones } = servicioQueAnotaElDestino();
+
+    await invitaciones.crear({ rol: RolUsuario.CLIENTE, clienteId: cliente.id }, ID_ADMIN);
+    expect(destinos).toEqual([APPS.APP_ALUMNO_URL]);
+  });
+
+  it('un instructor va a la app de instructores, NO al panel', async () => {
+    const instructor = await prisma.instructor.create({
+      data: { nombre: 'Destino', apellido: 'Instructor' },
+    });
+    const { destinos, invitaciones } = servicioQueAnotaElDestino();
+
+    await invitaciones.crear(
+      { rol: RolUsuario.INSTRUCTOR, instructorId: instructor.id, email: `destinst${SUFIJO}` },
+      ID_ADMIN,
+    );
+    expect(destinos).toEqual([APPS.APP_INSTRUCTOR_URL]);
+    expect(destinos).not.toContain(APPS.APP_PANEL_URL);
+  });
+
+  it('administración va al panel', async () => {
+    const { destinos, invitaciones } = servicioQueAnotaElDestino();
+
+    await invitaciones.crear({ rol: RolUsuario.ADMIN, email: `destadmin${SUFIJO}` }, ID_ADMIN);
+    expect(destinos).toEqual([APPS.APP_PANEL_URL]);
+  });
+
+  it('los tres destinos son distintos entre sí', async () => {
+    // Si alguien cargara la misma dirección en dos variables, las pruebas de
+    // arriba pasarían igual y no se estaría comprobando nada.
+    expect(new Set(Object.values(APPS)).size).toBe(3);
+  });
+});
+
 describe('Un enlace que no lleva a ninguna parte no se manda', () => {
   /**
    * Si `APP_ALUMNO_URL` queda sin cargar en el servidor, el destino cae en

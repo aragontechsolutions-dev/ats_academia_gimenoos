@@ -19,6 +19,19 @@ import { exigirEmail, normalizarEmail } from '../../common/formato/email';
 import type { CrearInvitacionDto, ListarInvitacionesDto } from './dto/invitacion.dto';
 
 /**
+ * Qué aplicación abre el enlace de acceso de cada rol.
+ *
+ * Los valores por defecto son los puertos del entorno de desarrollo. En
+ * producción tienen que estar cargadas las tres variables; si alguna quedó sin
+ * cargar, `destinoDe` corta en vez de mandar a alguien a su propia computadora.
+ */
+const DESTINO_POR_ROL: Record<RolUsuario, { variable: string; porDefecto: string }> = {
+  [RolUsuario.CLIENTE]: { variable: 'APP_ALUMNO_URL', porDefecto: 'http://localhost:5175' },
+  [RolUsuario.INSTRUCTOR]: { variable: 'APP_INSTRUCTOR_URL', porDefecto: 'http://localhost:5176' },
+  [RolUsuario.ADMIN]: { variable: 'APP_PANEL_URL', porDefecto: 'http://localhost:5174' },
+};
+
+/**
  * Lo que se devuelve al entregar un acceso.
  *
  * `enlace` viene SOLO cuando el canal es ENLACE, y viaja una única vez: es una
@@ -226,14 +239,12 @@ export class InvitacionesService {
   /**
    * A dónde cae la persona al tocar el enlace del correo.
    *
-   * Un alumno va a su app; un instructor o un administrador, al panel. Mandar a
-   * todos al mismo lado dejaría al alumno en una pantalla que no puede usar.
+   * Cada rol tiene su aplicación: el alumno la suya, el instructor la suya, y
+   * administración el panel. Mandar a todos al mismo lado deja a la persona en
+   * una pantalla que no puede usar, sin ninguna explicación.
    */
   private destinoDe(rol: RolUsuario): string {
-    const variable = rol === RolUsuario.CLIENTE ? 'APP_ALUMNO_URL' : 'APP_PANEL_URL';
-    const porDefecto = rol === RolUsuario.CLIENTE
-      ? 'http://localhost:5175'
-      : 'http://localhost:5174';
+    const { variable, porDefecto } = DESTINO_POR_ROL[rol];
     const destino = this.config.get<string>(variable) ?? porDefecto;
 
     // En producción, un destino local significa que la variable quedó sin

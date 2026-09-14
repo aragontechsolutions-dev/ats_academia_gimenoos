@@ -262,14 +262,18 @@ En **Authentication → URL Configuration** (buscar *Site URL* y *Redirect URLs*
 | Campo | Qué poner |
 |---|---|
 | **Site URL** | La dirección de la app del alumno |
-| **Redirect URLs** | La app del alumno **y** el panel, las dos |
+| **Redirect URLs** | Las tres: la app del alumno, la del instructor y el panel |
 
 Y en el servidor (Render), las variables que arman el `redirect_to`:
 
 ```
-APP_ALUMNO_URL   la dirección de la app del alumno
-APP_PANEL_URL    la dirección del panel
+APP_ALUMNO_URL      la dirección de la app del alumno
+APP_INSTRUCTOR_URL  la dirección de la app del instructor
+APP_PANEL_URL       la dirección del panel
 ```
+
+Cada rol cae en **su** aplicación: un alumno en la suya, un instructor en la
+suya, y administración en el panel. Ver [21-pwa-instructor.md](21-pwa-instructor.md).
 
 Las dos listas tienen que coincidir. Si `APP_ALUMNO_URL` dice una cosa y la lista
 de Supabase no la incluye, vuelve a pasar lo mismo.

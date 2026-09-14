@@ -140,6 +140,7 @@ Las variables que arman el destino del enlace y la puerta de arranque:
 ```
 ADMIN_INICIAL_EMAIL   el correo del administrador (vaciar tras el primer ingreso)
 APP_ALUMNO_URL        la dirección de la app del alumno
+APP_INSTRUCTOR_URL    la dirección de la app del instructor
 APP_PANEL_URL         la dirección del panel
 ```
 
