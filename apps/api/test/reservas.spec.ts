@@ -11,6 +11,8 @@ import { DateTime } from 'luxon';
 import { PrismaService } from '../src/common/prisma/prisma.service';
 import { AuditoriaService } from '../src/common/auditoria/auditoria.service';
 import { ReservasService } from '../src/modules/agenda/reservas.service';
+import { AgendaController } from '../src/modules/agenda/agenda.controller';
+import { ROLES_REQUERIDOS } from '../src/common/auth/roles.decorator';
 import type { UsuarioAutenticado } from '../src/common/auth/jwt-payload.interface';
 
 const prisma = new PrismaService();
@@ -445,6 +447,79 @@ describe('Validación de recursos', () => {
         AHORA.toJSDate(),
       ),
     ).rejects.toThrow(/no corresponde al tipo/);
+  });
+});
+
+describe('El instructor cierra su clase', () => {
+  // Es lo que hace desde su app: marcarla como dictada, o al alumno como ausente.
+
+  const claseDe = (instructorId: string, hora: number) =>
+    servicio.crear(
+      { ...baseReserva, clienteId: ID.clienteAna, instructorId, inicio: enCincoDias(hora) },
+      ADMIN,
+      AHORA.toJSDate(),
+    );
+
+  it('puede cerrar una clase suya como dictada', async () => {
+    const reserva = await claseDe(ID.instructor, 14);
+
+    const cerrada = await servicio.cambiarEstado(
+      reserva.id,
+      EstadoReserva.COMPLETADA,
+      INSTRUCTOR,
+    );
+    expect(cerrada.estado).toBe(EstadoReserva.COMPLETADA);
+  });
+
+  it('y marcar que el alumno faltó', async () => {
+    const reserva = await claseDe(ID.instructor, 15);
+
+    const cerrada = await servicio.cambiarEstado(reserva.id, EstadoReserva.AUSENTE, INSTRUCTOR);
+    expect(cerrada.estado).toBe(EstadoReserva.AUSENTE);
+  });
+
+  it('NO puede cerrar la clase de otro instructor', async () => {
+    // El id de la clase viaja en la dirección: cambiarlo es el ataque más obvio.
+    const ajena = await claseDe(ID.instructorAjeno, 16);
+
+    await expect(
+      servicio.cambiarEstado(ajena.id, EstadoReserva.COMPLETADA, INSTRUCTOR),
+    ).rejects.toThrow(/no es de tu agenda/i);
+  });
+
+  it('marcar ausente NO descuenta del pack del alumno', async () => {
+    // Solo se consume una clase cuando de verdad se dio. Descontarla igual sería
+    // cobrarle al alumno una clase que no tuvo.
+    const pack = await prisma.compraServicio.create({
+      data: { clienteId: ID.clienteAna, servicioId: ID.servicio, clasesTotales: 2, montoTotal: 0 },
+    });
+    const reserva = await servicio.crear(
+      { ...baseReserva, clienteId: ID.clienteAna, compraId: pack.id, inicio: enCincoDias(17) },
+      ADMIN,
+      AHORA.toJSDate(),
+    );
+
+    await servicio.cambiarEstado(reserva.id, EstadoReserva.AUSENTE, INSTRUCTOR);
+
+    const despues = await prisma.compraServicio.findUniqueOrThrow({ where: { id: pack.id } });
+    expect(despues.clasesUsadas).toBe(0);
+  });
+
+  it('un alumno no llega a este endpoint: lo frena el rol', () => {
+    /**
+     * Esto se comprueba sobre el decorador y no llamando al servicio, y el
+     * motivo importa: `verificarAcceso` deja pasar a un alumno sobre SU propia
+     * clase. Lo único que impide que un alumno marque su clase como dictada
+     * —y se descuente una del pack— es este `@Roles`. Si alguien lo sacara, el
+     * servicio no lo frenaría.
+     */
+    const roles = Reflect.getMetadata(
+      ROLES_REQUERIDOS,
+      AgendaController.prototype.cambiarEstado,
+    ) as RolUsuario[] | undefined;
+
+    expect(roles).toEqual([RolUsuario.ADMIN, RolUsuario.INSTRUCTOR]);
+    expect(roles).not.toContain(RolUsuario.CLIENTE);
   });
 });
 
