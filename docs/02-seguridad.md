@@ -59,8 +59,8 @@ Permisos previstos:
 | Rol | Alcance |
 |---|---|
 | `ADMIN` | Todo |
-| `INSTRUCTOR` | **Solo su agenda**: ver sus clases, cerrarlas y anotar cómo fueron. No entra al panel ni consulta el padrón de alumnos, los vehículos ni los instructores. Ver [21-pwa-instructor.md](21-pwa-instructor.md) |
-| `CLIENTE` | Sus clases, sus pagos, su expediente |
+| `INSTRUCTOR` | **Solo su agenda**: ver sus clases, cerrarlas, cancelarlas y anotar cómo fueron. No entra al panel, no consulta el padrón de alumnos, los vehículos ni los instructores, y **no agenda ni reprograma**. Ver [21-pwa-instructor.md](21-pwa-instructor.md) |
+| `CLIENTE` | Sus clases, sus pagos, su expediente. Reserva y cancela las suyas, pero **no** las reprograma: mover una clase cambia instructor y vehículo, o sea que toca la agenda de otros |
 
 Los guards del frontend (`RutaProtegida`) son **comodidad de interfaz, no
 seguridad**. Quien fuerce la ruta en el navegador igual recibe 401/403.
@@ -74,6 +74,49 @@ abierta a quien conozca su dirección y tenga un token válido.
 decoradores. Se hace ahí y no llamando a los servicios porque varios dejan pasar
 a quien la fila le pertenece —un alumno sobre SU propia clase—: en esos casos el
 decorador es lo único que separa a un rol de otro.
+
+### Un endpoint sin `@Roles` está abierto a los tres roles
+
+Parece obvio escrito así, pero es el tipo de cosa que se escapa: los endpoints de
+agenda se fueron escribiendo cuando los tres roles trabajaban en el panel, y
+varios quedaron sin decorador. Al revisarlos se encontró que un **instructor**
+podía agendar una clase para cualquier alumno —confirmada, salteándose la
+antelación mínima y con una observación que el alumno sí ve—, y que un **alumno**
+podía reprogramar su propia clase eligiendo instructor y vehículo. `verificarAcceso`
+no lo impedía porque comprueba **de quién es** la fila, no **quién puede hacer qué**
+con ella.
+
+La matriz completa de agenda quedó así, y está fijada por pruebas que además
+fallan si aparece un método nuevo sin decidir su rol:
+
+| Endpoint | Quién |
+|---|---|
+| `GET /agenda/disponibilidad` | ADMIN, CLIENTE |
+| `POST /agenda/reservas` | ADMIN, CLIENTE |
+| `PATCH /agenda/reservas/:id/reprogramar` | ADMIN |
+| `PATCH /agenda/reservas/:id/estado` | ADMIN, INSTRUCTOR |
+| `PATCH /agenda/reservas/:id/nota` | ADMIN, INSTRUCTOR |
+| `GET /agenda/reservas`, `GET /agenda/reservas/:id` | Los tres, acotado por el servicio |
+| `PATCH /agenda/reservas/:id/cancelar` | Los tres, acotado por el servicio |
+
+Los tres últimos no llevan `@Roles` **a propósito**, y eso también está escrito en
+el código: los tres roles los usan legítimamente y lo que cambia es qué reciben o
+sobre qué pueden operar, que lo decide el servicio.
+
+### Tener sesión no dice en cuál de las tres apps se está
+
+Las tres aplicaciones usan las mismas cuentas de Supabase. Una sesión válida sirve
+en las tres, así que cada una tiene que comprobar el **rol**, no solo que haya
+sesión.
+
+Pasó en producción: un instructor entró a la app del alumno —su enlace de acceso
+lo llevó ahí— y la app lo saludó por su nombre y le mostró «Tus clases de manejo».
+No fue una fuga de datos, porque la API solo le devuelve lo suyo, pero estaba en
+la app equivocada y nada se lo decía.
+
+Las tres comprueban el rol y, a quien se equivocó de puerta, le dicen cuál es la
+suya y le dan el enlace. El rol se pide a la API, que lo lee de la base: nunca se
+saca del token del navegador.
 
 ### No alcanza con filtrar por fila: hay campos que dependen del rol
 
@@ -124,18 +167,27 @@ Configuradas en `apps/api/src/main.ts`:
 Dos límites, por el mismo motivo: una cuenta legítima no debería poder hacer que
 la base recorra una tabla entera con una petición.
 
-| Dónde | Límite | Por qué |
-|---|---|---|
-| Listados paginados | `porPagina` acotado a 10, 20, 50 o 100, **en el DTO y otra vez en el servicio** | Un `porPagina=100000` devuelve la tabla completa en cada petición |
-| `GET /agenda/reservas` | El rango `desde`–`hasta` no puede superar **62 días** | `desde` y `hasta` los elige quien consulta: sin tope, cualquiera pide diez años de agenda de una vez |
+| Dónde | Límite |
+|---|---|
+| Listados paginados | `porPagina` acotado a 10, 20, 50 o 100, **en el DTO y otra vez en el servicio** |
+| `GET /agenda/reservas` | El rango `desde`–`hasta`, con un tope **por rol** |
 
-El tope de 62 días no distingue rol a propósito: un administrador tampoco
-necesita diez años de agenda en una sola llamada. Se eligió 62 porque el peor
-caso real es la grilla de un mes con sus días de relleno —42 casilleros—, y deja
-margen para cualquier vista que venga. Está en `reservas.service.ts` y lo fijan
-cuatro pruebas, dos de ellas comprobando que la grilla del mes y el tope exacto
-sí pasan: un límite demasiado ajustado rompería la vista de mes del panel y la de
-la app del instructor.
+| Rol | Tope | Por qué ese número |
+|---|---|---|
+| `ADMIN` | 62 días | Es la única consulta **sin** acotar por persona, o sea la que de verdad puede recorrer la tabla entera. El panel no pide más que la grilla de un mes: 42 casilleros con los días de relleno |
+| `INSTRUCTOR` | 62 días | Acotada a su agenda. Su app tampoco pide más que la grilla de un mes |
+| `CLIENTE` | 730 días | Acotada a sus propias reservas por `clienteId`, así que el rango casi no influye: un alumno tiene decenas de clases, no miles. Su pantalla de «Mis clases» pide un año hacia atrás y tres meses hacia adelante |
+
+**Por qué es por rol, y no un número único.** Empezó siendo uno solo, de 62 días,
+y eso rompió la app del alumno en producción: «Mis clases» quedó mostrando un
+error rojo en vez del historial. Lo que cambia entre roles no es la confianza
+sino cuánto trabajo puede costar la consulta, y eso depende de si ya está
+acotada a las filas de una persona.
+
+Si alguna app necesita un período más largo, se sube el número de **ese** rol y
+se ajusta la prueba que fija cuánto pide cada una. Hay siete pruebas sobre esto,
+y una de ellas —la que más importa— comprueba justamente que el rango que pide la
+app del alumno entra en su tope.
 
 ### Lo que escribe el panel y se muestra en el sitio público
 

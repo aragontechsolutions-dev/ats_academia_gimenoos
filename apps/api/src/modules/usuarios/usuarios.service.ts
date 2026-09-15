@@ -264,6 +264,8 @@ export class UsuariosService {
    *     entrar a la base a mano.
    *   - Ascender a ADMIN a alguien con ficha de alumno o de instructor: la
    *     cuenta veria datos de todos los demás desde la ficha de uno.
+   *   - Darle a alguien el rol de un lado teniendo la ficha del otro: un alumno
+   *     marcado como instructor, o al revés. Ver abajo.
    */
   async actualizar(id: string, dto: ActualizarUsuarioDto, administradorId: string) {
     if (id === administradorId) {
@@ -290,6 +292,31 @@ export class UsuariosService {
     if (rolNuevo === RolUsuario.ADMIN && (usuario.cliente || usuario.instructor)) {
       throw new ConflictException(
         'Esa cuenta está vinculada a una ficha de alumno o instructor. Un administrador no puede tener ficha.',
+      );
+    }
+
+    /**
+     * El rol y la ficha tienen que ser del mismo lado.
+     *
+     * Cambiar el desplegable de «Alumno» a «Instructor» sobre alguien que tiene
+     * ficha de alumno **no lo convierte en instructor**: lo deja en una cuenta
+     * que no sirve para nada. Su app le diría «tu usuario no está asociado a
+     * ningún instructor», y la del alumno lo rechazaría por el rol. Sin salida,
+     * y sin que nada avisara qué pasó.
+     *
+     * Un instructor se da de alta en Instructores y se le invita desde ahí. El
+     * desplegable de Cuentas corrige un rol mal puesto, no crea una persona.
+     */
+    if (rolNuevo === RolUsuario.INSTRUCTOR && usuario.cliente) {
+      throw new ConflictException(
+        'Esa cuenta es la de un alumno: tiene ficha de alumno. Para que alguien sea instructor, ' +
+          'dalo de alta en Instructores y mandale el acceso desde ahí.',
+      );
+    }
+    if (rolNuevo === RolUsuario.CLIENTE && usuario.instructor) {
+      throw new ConflictException(
+        'Esa cuenta es la de un instructor: tiene ficha de instructor. Para que alguien sea alumno, ' +
+          'registralo en Alumnos y mandale el acceso desde ahí.',
       );
     }
 

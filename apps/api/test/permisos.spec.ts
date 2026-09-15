@@ -85,6 +85,48 @@ describe('Lo que dejó de poder hacer: lo que solo existía en el panel', () => 
   });
 });
 
+describe('La agenda: cada rol solo lo que le corresponde', () => {
+  /**
+   * La matriz completa del controlador de agenda. Es la tabla que hay que mirar
+   * y actualizar a propósito: un endpoint sin `@Roles` queda abierto a los tres
+   * roles, y eso tiene que ser una decisión, no un olvido.
+   */
+  const MATRIZ: Array<[string, RolUsuario[], string]> = [
+    ['consultarDisponibilidad', [RolUsuario.ADMIN, RolUsuario.CLIENTE], 'el instructor no agenda'],
+    ['crearReserva', [RolUsuario.ADMIN, RolUsuario.CLIENTE], 'agendar es de la academia y del alumno'],
+    ['reprogramarReserva', [RolUsuario.ADMIN], 'mover una clase toca la agenda de otros'],
+    ['cambiarEstado', [RolUsuario.ADMIN, RolUsuario.INSTRUCTOR], 'cerrar la clase es del que la da'],
+    ['guardarNota', [RolUsuario.ADMIN, RolUsuario.INSTRUCTOR], 'el alumno no se escribe su propia nota'],
+    ['listarReservas', [], 'los tres, acotado por el servicio'],
+    ['obtenerReserva', [], 'los tres, acotado por el servicio'],
+    ['cancelarReserva', [], 'los tres cancelan legítimamente'],
+  ];
+
+  for (const [metodo, esperados, porQue] of MATRIZ) {
+    it(`${metodo}: ${esperados.length ? esperados.join(' y ') : 'sin @Roles'} — ${porQue}`, () => {
+      expect(rolesDe(AgendaController, metodo).sort()).toEqual([...esperados].sort());
+    });
+  }
+
+  it('la matriz cubre TODOS los métodos del controlador', () => {
+    // Sin esto, un endpoint nuevo entraría sin que nadie decidiera su rol.
+    expect(metodosDe(AgendaController).sort()).toEqual(MATRIZ.map(([m]) => m).sort());
+  });
+
+  it('un INSTRUCTOR no puede agendar ni reprogramar', () => {
+    // Lo que esta etapa vino a cerrar, dicho de la forma en que importa.
+    for (const metodo of ['crearReserva', 'reprogramarReserva', 'consultarDisponibilidad']) {
+      expect(rolesDe(AgendaController, metodo)).not.toContain(RolUsuario.INSTRUCTOR);
+    }
+  });
+
+  it('un ALUMNO no puede cerrar una clase ni reprogramarla', () => {
+    for (const metodo of ['cambiarEstado', 'guardarNota', 'reprogramarReserva']) {
+      expect(rolesDe(AgendaController, metodo)).not.toContain(RolUsuario.CLIENTE);
+    }
+  });
+});
+
 describe('Lo que el cambio NO se llevó puesto', () => {
   it('el alumno sigue siendo dueño de su propia ficha', () => {
     // `/clientes` pasó a ser solo de administración a nivel de clase. Los dos

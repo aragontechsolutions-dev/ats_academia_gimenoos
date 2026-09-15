@@ -311,6 +311,39 @@ describe('El rango de la consulta está acotado', () => {
       ),
     ).resolves.toBeDefined();
   });
+
+  /**
+   * Esta es la prueba que faltaba y que costó una regresión en producción: el
+   * tope se puso igual para todos, y la pantalla de «Mis clases» del alumno
+   * —que pide un año hacia atrás y tres meses hacia adelante— quedó mostrando
+   * un error rojo en vez de sus clases.
+   *
+   * Si alguien cambia el rango que pide esa pantalla, tiene que cambiar esta
+   * prueba, y ahí se va a encontrar con el tope antes de romper nada.
+   */
+  it('EL RANGO QUE PIDE LA APP DEL ALUMNO ENTRA: un año atrás y tres meses adelante', async () => {
+    const desde = AHORA.minus({ years: 1 }).toJSDate();
+    const hasta = AHORA.plus({ months: 3 }).toJSDate();
+
+    await expect(servicio.listar({ desde, hasta }, ANA)).resolves.toBeDefined();
+  });
+
+  it('pero el alumno tampoco pide diez años', async () => {
+    await expect(
+      servicio.listar({ desde: AHORA.toJSDate(), hasta: AHORA.plus({ years: 10 }).toJSDate() }, ANA),
+    ).rejects.toThrow(/no puede superar 730 días/);
+  });
+
+  it('el mismo rango del alumno NO se le permite al administrador', async () => {
+    // Su consulta es la única que no está acotada a las reservas de una
+    // persona, asi que es la que de verdad puede recorrer la tabla entera.
+    await expect(
+      servicio.listar(
+        { desde: AHORA.minus({ years: 1 }).toJSDate(), hasta: AHORA.plus({ months: 3 }).toJSDate() },
+        ADMIN,
+      ),
+    ).rejects.toThrow(/no puede superar 62 días/);
+  });
 });
 
 describe('Dos personas no pueden tomar el mismo horario', () => {

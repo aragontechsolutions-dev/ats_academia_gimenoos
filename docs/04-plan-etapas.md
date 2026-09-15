@@ -338,6 +338,37 @@ Dos cosas que salieron de la verificación y no del plan:
   instructor puede pedirse el enlace él mismo. No se agregó ningún mecanismo
   nuevo: se hizo visible el que ya existía.
 
+### Etapa 2.J — Cada rol, en su lugar ✅ COMPLETADA
+
+Salió de dos capturas: un instructor había entrado a la app del alumno con su
+enlace de invitación, y la app del alumno mostraba un error rojo en vez de las
+clases.
+
+| Qué | Estado |
+|---|---|
+| **Corregida la regresión del tope de rango**, que rompió «Mis clases» del alumno | ✅ |
+| El tope pasa a ser **por rol**: 730 días el alumno, 62 el instructor y administración | ✅ |
+| Las **tres apps** comprueban el rol, no solo que haya sesión | ✅ |
+| Quien se equivoca de app recibe el enlace de la suya, en las tres | ✅ |
+| `POST /agenda/reservas` cerrado al instructor: no agenda para otros | ✅ |
+| `PATCH …/reprogramar` solo administración: mover una clase toca la agenda de otros | ✅ |
+| `GET /agenda/disponibilidad` cerrado al instructor | ✅ |
+| No se puede dar rol de instructor a quien tiene ficha de alumno, ni al revés | ✅ |
+| La matriz de agenda fijada por pruebas, con una que falla si aparece un endpoint sin rol decidido | ✅ |
+
+Lo que se aprendió, que vale más que la lista:
+
+- **Un tope único para todos no existe.** Lo que cambia entre roles no es la
+  confianza sino cuánto trabajo puede costar la consulta. El alumno pide un año
+  de historial sobre *sus* filas; administración pide un mes sobre *todas*.
+- **Un endpoint sin `@Roles` está abierto a los tres roles**, y eso tiene que ser
+  una decisión escrita, no un olvido. Tres endpoints de agenda lo eran.
+- **`verificarAcceso` comprueba de quién es la fila, no quién puede hacer qué con
+  ella.** Por eso un alumno podía reprogramar su propia clase eligiendo
+  instructor y vehículo.
+- **Tener sesión no dice en cuál de las tres apps se está**, porque las tres usan
+  las mismas cuentas de Supabase.
+
 ## Etapa 2 — Pagos
 
 **Objetivo:** cobrar por los tres canales y conciliar.

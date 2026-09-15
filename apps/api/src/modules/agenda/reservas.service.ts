@@ -22,18 +22,38 @@ import type { ReprogramarReservaDto } from './dto/reprogramar-reserva.dto';
 import type { EstadoAsignable } from './dto/cambiar-estado-reserva.dto';
 
 /**
- * Cuánto puede abarcar una consulta de agenda, en días.
- *
- * La vista de mes de la app del instructor pide como mucho la grilla de un mes
- * —hasta 42 casilleros contando los de relleno—, así que 62 deja margen de
- * sobra para cualquier vista que venga.
+ * Cuánto puede abarcar una consulta de agenda, en días, según quién consulta.
  *
  * El tope existe porque `desde` y `hasta` los elige quien consulta: sin él,
  * cualquier cuenta autenticada puede pedir diez años de reservas en una sola
- * llamada y hacer que la base recorra la tabla entera. Es la misma razón por la
- * que los listados acotan `porPagina` a una lista cerrada.
+ * llamada. Es la misma razón por la que los listados acotan `porPagina`.
+ *
+ * Pero el número no puede ser el mismo para todos, y esto se aprendió rompiendo
+ * la app del alumno en producción: un tope único de 62 días dejó su pantalla de
+ * «Mis clases» mostrando un error rojo, porque pide un año hacia atrás y tres
+ * meses hacia adelante —unos 470 días— para armar su historial.
+ *
+ * Lo que cambia entre roles no es la confianza sino **cuánto trabajo puede
+ * costar la consulta**:
+ *
+ * - `CLIENTE`: la consulta ya está acotada a sus propias reservas por
+ *   `clienteId`, así que el rango casi no influye: un alumno tiene decenas de
+ *   clases, no miles. Dos años cubren su historial completo con margen.
+ * - `INSTRUCTOR`: acotada a su agenda. Su app no pide más que la grilla de un
+ *   mes (42 casilleros contando los días de relleno), así que 62 sobra.
+ * - `ADMIN`: es la única consulta **sin** acotar por persona, o sea la que de
+ *   verdad puede recorrer la tabla entera. El panel tampoco pide más que la
+ *   grilla de un mes.
+ *
+ * Si alguna de las tres apps necesita un período más largo, se sube el número de
+ * ESE rol y se ajusta la prueba que fija cuánto pide cada una. No se sube el de
+ * todos.
  */
-const RANGO_MAXIMO_DIAS = 62;
+const RANGO_MAXIMO_DIAS: Record<RolUsuario, number> = {
+  [RolUsuario.CLIENTE]: 730,
+  [RolUsuario.INSTRUCTOR]: 62,
+  [RolUsuario.ADMIN]: 62,
+};
 
 /** Estados que siguen ocupando el horario. Coincide con las EXCLUDE constraints. */
 const ESTADOS_QUE_OCUPAN: EstadoReserva[] = [EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA];
@@ -93,10 +113,11 @@ export class ReservasService {
    * propias reservas, no las ajenas.
    */
   async listar(dto: ListarReservasDto, usuario: UsuarioAutenticado) {
+    const maximo = RANGO_MAXIMO_DIAS[usuario.rol];
     const dias = DateTime.fromJSDate(dto.hasta).diff(DateTime.fromJSDate(dto.desde), 'days').days;
-    if (dias > RANGO_MAXIMO_DIAS) {
+    if (dias > maximo) {
       throw new BadRequestException(
-        `El rango de la consulta no puede superar ${RANGO_MAXIMO_DIAS} días. Pedí un período más corto.`,
+        `El rango de la consulta no puede superar ${maximo} días. Pedí un período más corto.`,
       );
     }
 

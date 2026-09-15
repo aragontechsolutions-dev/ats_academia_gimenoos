@@ -3,13 +3,14 @@ import { Navigate } from 'react-router-dom';
 import { useSesion } from '../lib/sesion';
 
 /**
- * A dónde mandar a un instructor que llegó acá.
+ * A dónde mandar a quien llegó acá con una cuenta que no es de administración.
  *
- * Es opcional a propósito: si no está cargada, la pantalla explica igual dónde
- * está su trabajo, solo que sin enlace. Una variable más que sea obligatoria es
- * una forma más de que el despliegue falle.
+ * Son opcionales a propósito: si no están cargadas, la pantalla explica igual
+ * dónde está su trabajo, solo que sin enlace. Una variable más que sea
+ * obligatoria es una forma más de que el despliegue falle.
  */
-const APP_INSTRUCTOR = import.meta.env.VITE_APP_INSTRUCTOR_URL as string | undefined;
+const APP_INSTRUCTOR = import.meta.env.VITE_APP_INSTRUCTOR_URL;
+const APP_ALUMNO = import.meta.env.VITE_APP_ALUMNO_URL;
 
 /**
  * Deja pasar solo a administración.
@@ -40,25 +41,28 @@ export function RutaProtegida({ children }: { children: ReactNode }) {
   }
 
   if (perfil.rol !== 'ADMIN') {
+    const esInstructor = perfil.rol === 'INSTRUCTOR';
+    const destino = esInstructor ? APP_INSTRUCTOR : APP_ALUMNO;
+
     return (
       <div className="flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 text-center">
           <h1 className="text-xl font-bold text-slate-900">
-            {perfil.rol === 'INSTRUCTOR' ? 'Tu agenda está en la app' : 'Acceso restringido'}
+            {esInstructor ? 'Tu agenda está en la app' : 'Tus clases están en la app de alumnos'}
           </h1>
-          {/* A un instructor no le sirve «no tenés permisos»: lo que necesita es
-              dónde está ahora su trabajo. Al resto, el mensaje de siempre. */}
+          {/* A nadie le sirve «no tenés permisos» a secas: lo que necesita es
+              dónde está ahora su trabajo, y el enlace para llegar. */}
           <p className="mt-2 text-slate-600">
-            {perfil.rol === 'INSTRUCTOR'
-              ? 'Las clases del día, cerrarlas y anotar cómo fueron están en la app de instructores, con el enlace que te mandó la academia.'
-              : 'Esta cuenta no tiene permisos para usar el panel de administración.'}
+            {esInstructor
+              ? 'Las clases del día, cerrarlas y anotar cómo fueron están en la app de instructores.'
+              : 'Ver tus clases, reservar una nueva y tus datos están en la app de alumnos.'}
           </p>
-          {perfil.rol === 'INSTRUCTOR' && APP_INSTRUCTOR && (
+          {destino && (
             <a
-              href={APP_INSTRUCTOR}
+              href={destino}
               className="mt-5 inline-block rounded-lg bg-marca-600 px-4 py-2 font-semibold text-white transition hover:bg-marca-700"
             >
-              Ir a la app de instructores
+              {esInstructor ? 'Ir a la app de instructores' : 'Ir a la app de alumnos'}
             </a>
           )}
           {/* Saber con que cuenta se entro es lo primero que se necesita para
