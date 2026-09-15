@@ -243,6 +243,23 @@ falla aunque el campo muestre el texto correcto.
 | `VITE_API_URL` = `https://gimenoos-api.onrender.com/api/v1` | sí | sí | sí | sí |
 | `VITE_SUPABASE_URL` = `https://<REF>.supabase.co` | — | sí | sí | sí |
 | `VITE_SUPABASE_ANON_KEY` = clave `anon` | — | sí | sí | sí |
+| `VITE_APP_INSTRUCTOR_URL` | — | sí | sí | — |
+| `VITE_APP_ALUMNO_URL` | — | sí | — | sí |
+| `VITE_APP_PANEL_URL` | — | — | sí | sí |
+
+> **`VITE_API_URL` termina en `/api/v1`, y eso no es opcional.** La API monta
+> todo bajo ese prefijo (`setGlobalPrefix` en `apps/api/src/main.ts`). Sin él,
+> cada llamada da **404** y la app no muestra nada.
+>
+> Ya pasó en el proyecto del instructor: la variable quedó en
+> `https://gimenoos-api.onrender.com` a secas, y la app se quedaba en
+> «Cargando…» sin decir por qué. Hoy esa misma falla muestra una pantalla con el
+> detalle —«Cannot GET /usuarios/me (404)»—, que nombra el problema solo.
+
+Las tres `VITE_APP_*_URL` son **opcionales**: sirven para que, cuando alguien
+entra a la app equivocada, el cartel traiga el botón a la suya. Sin ellas el
+cartel aparece igual, solo que sin enlace. Cada app necesita las de las **otras
+dos**, nunca la propia.
 
 > **Solo la clave `anon`.** Cualquier variable `VITE_` termina dentro del
 > JavaScript que descarga el visitante. La `service_role` jamás va acá — el CI
