@@ -4,6 +4,10 @@ import { Navigate } from 'react-router-dom';
 import { useSesion } from '../lib/sesion';
 import { Logotipo } from './Logotipo';
 
+/** A dónde mandar a quien se equivocó de app. Opcionales: sin la variable no se ofrece enlace. */
+const APP_ALUMNO = import.meta.env.VITE_APP_ALUMNO_URL;
+const APP_PANEL = import.meta.env.VITE_APP_PANEL_URL;
+
 /**
  * Deja pasar solo a un instructor.
  *
@@ -39,6 +43,7 @@ export function RutaProtegida({ children }: { children: ReactNode }) {
 /** Quién sos y a dónde tenés que ir. Sin un callejón sin salida. */
 function NoEsTuApp({ rol }: { rol: 'ADMIN' | 'CLIENTE' }) {
   const { cerrarSesion } = useSesion();
+  const destino = rol === 'CLIENTE' ? APP_ALUMNO : APP_PANEL;
 
   return (
     <div className="flex min-h-screen flex-col justify-center bg-carbon-950 px-4 py-10">
@@ -49,14 +54,23 @@ function NoEsTuApp({ rol }: { rol: 'ADMIN' | 'CLIENTE' }) {
           <h1 className="text-xl font-bold text-slate-900">Esta app es para instructores</h1>
           <p className="mt-2 text-sm text-slate-600">
             {rol === 'CLIENTE'
-              ? 'Tu cuenta es de alumno. Tus clases las ves en la app de alumnos, con el enlace que te mandó la academia.'
+              ? 'Tu cuenta es de alumno. Tus clases, y reservar una nueva, están en la app de alumnos.'
               : 'Tu cuenta es de administración. La agenda completa y el resto de la gestión están en el panel.'}
           </p>
+
+          {destino && (
+            <a
+              href={destino}
+              className="mt-5 block rounded-lg bg-marca-600 py-3 text-center font-semibold text-white transition hover:bg-marca-700"
+            >
+              {rol === 'CLIENTE' ? 'Ir a la app de alumnos' : 'Ir al panel'}
+            </a>
+          )}
 
           <button
             type="button"
             onClick={() => void cerrarSesion()}
-            className="mt-6 w-full rounded-lg border border-slate-300 py-3 font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="mt-3 w-full rounded-lg border border-slate-300 py-3 font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Salir
           </button>

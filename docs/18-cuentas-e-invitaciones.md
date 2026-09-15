@@ -186,6 +186,29 @@ Quien lo tenga entra como esa persona. Por eso:
   el acceso de alguien a otra persona le entrega su cuenta, y el número es lo
   único que separa un caso del otro.
 
+### El rol y la ficha tienen que ser del mismo lado
+
+En **Cuentas** hay un desplegable de rol por fila. Sirve para **corregir un rol
+mal puesto**, no para convertir a una persona en otra cosa.
+
+Cambiarle el rol a «Instructor» a alguien que tiene **ficha de alumno** no lo
+convierte en instructor: lo deja en una cuenta que no sirve para nada. Su app le
+diría «tu usuario no está asociado a ningún instructor», y la del alumno lo
+rechazaría por el rol. Sin salida y sin que nada avise qué pasó.
+
+Por eso la API ahora lo rechaza, en las dos direcciones, y el mensaje dice cuál
+es el camino bueno:
+
+| Se intenta | Qué pasa |
+|---|---|
+| Rol `INSTRUCTOR` a quien tiene ficha de alumno | Se rechaza: «dalo de alta en Instructores y mandale el acceso desde ahí» |
+| Rol `CLIENTE` a quien tiene ficha de instructor | Se rechaza: «registralo en Alumnos y mandale el acceso desde ahí» |
+| Rol `ADMIN` a quien tiene cualquiera de las dos fichas | Se rechaza, y es anterior a este cambio |
+| Cambiar el rol de una cuenta **sin ficha** | Se permite: es justo la que puede necesitar la corrección |
+
+Una persona es instructor porque está dada de alta en **Instructores**, y alumno
+porque está en **Alumnos**. El acceso se le manda desde su ficha.
+
 ### La invitación se exige UNA sola vez, no en cada ingreso
 
 Vale la pena dejarlo escrito porque la duda aparece sola al ver que el enlace
@@ -296,6 +319,20 @@ APP_PANEL_URL       la dirección del panel
 
 Cada rol cae en **su** aplicación: un alumno en la suya, un instructor en la
 suya, y administración en el panel. Ver [21-pwa-instructor.md](21-pwa-instructor.md).
+
+**Esto pasó de verdad, y conviene saber cómo se ve.** Un instructor recibió su
+invitación y el enlace lo dejó dentro de la **app del alumno**, que lo saludó por
+su nombre y le mostró «Tus clases de manejo». El correo salió bien y el enlace
+funcionó: lo que falló fue que el destino de la app del instructor no estaba en
+las *Redirect URLs*, así que Supabase lo descartó y usó el Site URL —la app del
+alumno—. Nada en el servidor puede detectarlo: la API pidió el destino correcto y
+Supabase respondió que todo salió bien.
+
+Como no se puede detectar del lado del servidor, **se corrigió del lado del que
+llega**: desde la Etapa 2.J las tres aplicaciones comprueban el rol y, a quien se
+equivocó de puerta, le dicen cuál es la suya y le dan el enlace. La configuración
+sigue siendo necesaria —sin ella el instructor tiene que dar un paso de más—,
+pero ya no termina trabajando en la app equivocada sin enterarse.
 
 Las dos listas tienen que coincidir. Si `APP_ALUMNO_URL` dice una cosa y la lista
 de Supabase no la incluye, vuelve a pasar lo mismo.

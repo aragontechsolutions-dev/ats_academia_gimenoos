@@ -236,7 +236,12 @@ Quién puede entrar al sistema. Está documentada en
 del control de acceso.
 
 Lo que conviene saber acá: **nadie entra si la academia no lo invitó**, ni
-siquiera con un token válido de Supabase, y la API impide tres cosas que dejarían
-al sistema sin forma de entrar —tocarse la propia cuenta, sacar al último
-administrador activo, y ascender a administrador a alguien con ficha de alumno o
-instructor—.
+siquiera con un token válido de Supabase, y la API impide cuatro cosas que
+dejarían a alguien sin forma de entrar —tocarse la propia cuenta, sacar al último
+administrador activo, ascender a administrador a alguien con ficha de alumno o
+instructor, y darle a alguien el rol de un lado teniendo la ficha del otro—.
+
+**El desplegable de rol corrige un rol mal puesto; no convierte a una persona en
+otra cosa.** Marcar como «Instructor» a alguien con ficha de alumno no lo hace
+instructor: lo deja en una cuenta que no entra a ningún lado. Un instructor se da
+de alta en **Instructores** y se le manda el acceso desde su ficha.

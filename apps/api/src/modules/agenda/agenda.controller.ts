@@ -23,7 +23,13 @@ export class AgendaController {
     private readonly reservas: ReservasService,
   ) {}
 
+  /**
+   * La piden el panel, para agendar, y la app del alumno, para reservar. Un
+   * instructor no agenda clases: su app no ofrece reservar, y sin este `@Roles`
+   * el endpoint quedaba abierto a un rol que no tiene nada que hacer acá.
+   */
   @Get('disponibilidad')
+  @Roles(RolUsuario.ADMIN, RolUsuario.CLIENTE)
   @ApiOperation({ summary: 'Horarios en los que hay instructor y vehículo libres' })
   consultarDisponibilidad(@Query() dto: ConsultarDisponibilidadDto) {
     return this.disponibilidad.calcular(dto);
@@ -44,13 +50,34 @@ export class AgendaController {
     return this.reservas.obtener(id, usuario);
   }
 
+  /**
+   * Agendar es de la academia y del alumno, no del instructor.
+   *
+   * Sin este `@Roles` un instructor podía crear una clase **para cualquier
+   * alumno**, con cualquier instructor, ya confirmada y salteándose la
+   * antelación mínima —que solo se le aplica al alumno—, además de escribirle
+   * una observación que el alumno sí ve. Nada de eso es parte de su trabajo, y
+   * desde la Etapa 2.D ni siquiera puede abrir el padrón de alumnos: le quedaba
+   * el permiso sin la pantalla.
+   */
   @Post('reservas')
+  @Roles(RolUsuario.ADMIN, RolUsuario.CLIENTE)
   @ApiOperation({ summary: 'Agenda una clase' })
   crearReserva(@Body() dto: CrearReservaDto, @UsuarioActual() usuario: UsuarioAutenticado) {
     return this.reservas.crear(dto, usuario);
   }
 
+  /**
+   * Mover una clase es una decisión de la academia: cambia a quién y con qué
+   * auto se le da, o sea que toca la agenda de otros.
+   *
+   * Solo lo usa el panel. Sin este `@Roles`, el servicio dejaba pasar a
+   * cualquiera cuya clase fuera —un alumno moviendo su propia clase al
+   * instructor que prefiera, un instructor pasándole la suya a otro—, porque
+   * `verificarAcceso` comprueba de quién es la clase, no quién puede moverla.
+   */
   @Patch('reservas/:id/reprogramar')
+  @Roles(RolUsuario.ADMIN)
   @ApiOperation({ summary: 'Mueve la clase de horario, instructor o vehículo' })
   reprogramarReserva(
     @Param('id', ParseUUIDPipe) id: string,
@@ -60,6 +87,12 @@ export class AgendaController {
     return this.reservas.reprogramar(id, dto, usuario);
   }
 
+  /**
+   * El único que a propósito **no** lleva `@Roles`: los tres roles cancelan
+   * legítimamente. El alumno la suya con la antelación mínima, el instructor la
+   * suya cuando no la puede dar, la academia cualquiera. El servicio acota cada
+   * caso a lo que le corresponde.
+   */
   @Patch('reservas/:id/cancelar')
   @ApiOperation({ summary: 'Cancela la clase y libera el horario' })
   cancelarReserva(

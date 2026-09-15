@@ -132,16 +132,74 @@ describe('Un administrador no tiene ficha', () => {
   });
 });
 
+describe('El rol y la ficha tienen que ser del mismo lado', () => {
+  /**
+   * Es el caso que apareció en producción: en Cuentas se cambió el desplegable
+   * de un alumno a «Instructor». La cuenta quedó sin poder entrar a ningún
+   * lado —su app le decía que no está asociada a ningún instructor, y la del
+   * alumno la rechazaba por el rol— y nada avisó qué había pasado.
+   */
+  it('no se puede marcar como INSTRUCTOR a alguien con ficha de alumno', async () => {
+    await expect(
+      usuarios.actualizar(ID.alumno, { rol: RolUsuario.INSTRUCTOR }, ID.admin),
+    ).rejects.toThrow(/dalo de alta en Instructores/);
+  });
+
+  it('ni como CLIENTE a alguien con ficha de instructor', async () => {
+    await prisma.instructor.create({
+      data: { usuarioId: ID.instructor, nombre: 'Ins', apellido: 'Tructor' },
+    });
+    await expect(
+      usuarios.actualizar(ID.instructor, { rol: RolUsuario.CLIENTE }, ID.admin),
+    ).rejects.toThrow(/registralo en Alumnos/);
+  });
+
+  it('el mensaje dice qué hacer, no solo que no se puede', async () => {
+    // Un «no se puede» a secas deja a quien administra sin saber cuál es el
+    // camino bueno, y el camino bueno existe.
+    await expect(
+      usuarios.actualizar(ID.alumno, { rol: RolUsuario.INSTRUCTOR }, ID.admin),
+    ).rejects.toThrow(/mandale el acceso desde ahí/);
+  });
+
+  it('una cuenta SIN ficha sí puede cambiar de rol', async () => {
+    // No se bloquea este caso: una cuenta todavía sin vincular es justo la que
+    // puede necesitar que le corrijan el rol.
+    const sinFicha = await prisma.usuario.create({
+      data: {
+        id: '00000000-0000-4000-f000-00000000000f',
+        email: `sinficha${SUFIJO}`,
+        nombre: 'Sin',
+        apellido: 'Ficha',
+        rol: RolUsuario.CLIENTE,
+      },
+    });
+
+    const actualizado = await usuarios.actualizar(
+      sinFicha.id,
+      { rol: RolUsuario.INSTRUCTOR },
+      ID.admin,
+    );
+    expect(actualizado.rol).toBe(RolUsuario.INSTRUCTOR);
+
+    await prisma.registroAuditoria.deleteMany({ where: { entidadId: sinFicha.id } });
+    await prisma.usuario.delete({ where: { id: sinFicha.id } });
+  });
+});
+
 describe('Los cambios quedan registrados', () => {
   it('cambiar el rol deja auditoría con el antes y el después', async () => {
-    await usuarios.actualizar(ID.alumno, { rol: RolUsuario.INSTRUCTOR }, ID.admin);
+    // Se usa la cuenta sin ficha y no la del alumno: desde que el rol tiene que
+    // coincidir con la ficha, un alumno con ficha ya no puede cambiar de rol, y
+    // esta prueba es sobre la auditoría, no sobre esa regla.
+    await usuarios.actualizar(ID.instructor, { rol: RolUsuario.CLIENTE }, ID.admin);
 
     const registro = await prisma.registroAuditoria.findFirstOrThrow({
-      where: { accion: 'USUARIO_ROL_CAMBIADO', entidadId: ID.alumno },
+      where: { accion: 'USUARIO_ROL_CAMBIADO', entidadId: ID.instructor },
       orderBy: { createdAt: 'desc' },
     });
     expect(registro.usuarioId).toBe(ID.admin);
-    expect(registro.detalle).toMatchObject({ de: 'CLIENTE', a: 'INSTRUCTOR' });
+    expect(registro.detalle).toMatchObject({ de: 'INSTRUCTOR', a: 'CLIENTE' });
   });
 
   it('dar de baja y reactivar quedan como acciones distintas', async () => {

@@ -131,9 +131,27 @@ respetar la antelación lo dejaría sin forma de avisar.
 
 El endpoint es otro (`PATCH /agenda/reservas/:id/cancelar`, no `/estado`) y ya
 existía sin `@Roles`: lo acota el servicio a las clases propias del instructor.
-Esta etapa no cambió ese permiso, solo lo expuso en la app — y agregó las pruebas
+Esa etapa no cambió ese permiso, solo lo expuso en la app — y agregó las pruebas
 que faltaban, incluida la que comprueba que **no puede cancelar la clase de otro
 instructor**.
+
+### Lo que un instructor NO puede hacer con la agenda
+
+Cancelar sí, pero **agendar y reprogramar no**, y eso se cerró en la Etapa 2.J al
+revisar la matriz completa:
+
+| | Puede | Por qué |
+|---|---|---|
+| Ver su agenda | Sí | Es su trabajo |
+| Cerrar la clase (dictada / faltó) | Sí | Es quien sabe qué pasó |
+| Cancelar su clase | Sí | Si se enferma, la clase no se da igual |
+| Anotar cómo fue | Sí | Para la academia, no para el alumno |
+| **Agendar una clase** | **No** | Podía crear una para cualquier alumno, confirmada, salteándose la antelación mínima y escribiéndole una observación que el alumno sí ve |
+| **Reprogramar** | **No** | Mover una clase cambia instructor y vehículo: toca la agenda de otros |
+| **Consultar disponibilidad** | **No** | Sirve para agendar, y ya no agenda |
+
+Los tres últimos no llevaban `@Roles` y por eso estaban abiertos a los tres roles.
+No era una decisión: era de cuando el instructor trabajaba en el panel.
 
 ### Anotar cómo fue la clase
 
@@ -246,14 +264,22 @@ rechaza contraseñas filtradas.
 
 ## 4. Quién puede entrar
 
-La app comprueba el **rol**, no solo que haya sesión. Es distinto de lo que hace
-la app del alumno, que solo pide sesión, y hace falta por un motivo concreto: las
-tres aplicaciones usan las mismas cuentas de Supabase. Un alumno que llegue a
-esta dirección tiene sesión válida y pasaría el control, para encontrarse con una
-agenda vacía y sin ninguna explicación.
+La app comprueba el **rol**, no solo que haya sesión: las tres aplicaciones usan
+las mismas cuentas de Supabase, así que tener sesión válida no dice **en cuál de
+las tres** se está. Un alumno que llegue a esta dirección pasaría un control que
+solo mirara la sesión, para encontrarse con una agenda vacía y sin ninguna
+explicación.
 
-En su lugar se le dice **qué cuenta tiene y a dónde tiene que ir**, con un botón
-para salir. Sin callejones sin salida.
+**Desde la Etapa 2.J las tres lo comprueban.** Esta app y el panel ya lo hacían;
+la del alumno no, y se notó: un instructor entró ahí con su enlace de invitación
+y la app lo saludó por su nombre y le mostró «Tus clases de manejo». Ver
+[18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md).
+
+A quien se equivoca de puerta se le dice **qué cuenta tiene, cuál es su app y se
+le da el enlace**, más un botón para salir. Sin callejones sin salida. Los
+enlaces salen de variables opcionales (`VITE_APP_ALUMNO_URL`,
+`VITE_APP_PANEL_URL` y sus equivalentes en las otras dos): si falta alguna, el
+texto explica igual dónde está el trabajo, solo que sin botón.
 
 Como siempre: **el rol se le pregunta a la API**, que lo lee de la base. Nunca se
 confía en lo que diga el token del navegador. Y esto es comodidad de interfaz,
@@ -409,12 +435,22 @@ navegador** en una sola corrida:
 | Ningún rango pedido supera el tope de 62 días de la API | OK |
 | Sin errores de consola ni peticiones fallidas | OK |
 
-Más 243 pruebas de la API: 4 sobre el destino de cada rol —incluida la que
+Más 261 pruebas de la API: 4 sobre el destino de cada rol —incluida la que
 comprueba que un instructor **no** caiga en el panel—, 5 sobre el cierre de la
-clase, **4 sobre cancelar** —entre ellas que no puede cancelar la clase de otro
-instructor—, **4 sobre el tope del rango**, 6 sobre la observación —entre ellas
-**que el alumno no la reciba**— y 8 sobre la matriz de permisos. `typecheck` 6/6
-y `build` 6/6.
+clase, 4 sobre cancelar —entre ellas que no puede cancelar la clase de otro
+instructor—, **7 sobre el tope del rango**, 6 sobre la observación —entre ellas
+**que el alumno no la reciba**—, **19 sobre la matriz de permisos** y 4 sobre la
+coherencia entre rol y ficha. `typecheck` 6/6 y `build` 6/6.
+
+En la Etapa 2.J se sumaron dos verificaciones más, contra la API y la base
+reales:
+
+- **12 comprobaciones sobre HTTP** con un token firmado por cada rol: que un
+  instructor no pueda agendar, reprogramar ni consultar disponibilidad; que un
+  alumno no pueda reprogramar; y que cada uno conserve lo suyo.
+- **16 comprobaciones de navegador** cubriendo las nueve combinaciones de rol y
+  aplicación: cada rol entra en la suya, los otros dos reciben el cartel y el
+  enlace correcto.
 
 **Lo que no se pudo comprobar desde el entorno de desarrollo:** el ingreso real
 con Supabase, porque el proxy de ese entorno lo bloquea. Las pantallas que
