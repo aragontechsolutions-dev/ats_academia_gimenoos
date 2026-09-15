@@ -103,6 +103,30 @@ Los tres últimos no llevan `@Roles` **a propósito**, y eso también está escr
 el código: los tres roles los usan legítimamente y lo que cambia es qué reciben o
 sobre qué pueden operar, que lo decide el servicio.
 
+### Un fallo silencioso es peor que uno ruidoso
+
+Las tres apps pedían el perfil a `/usuarios/me` y se tragaban el error con un
+`catch` vacío. Como las pantallas protegidas muestran «Cargando…» mientras no hay
+perfil, **cualquier** fallo dejaba la app colgada en esa palabra para siempre.
+
+No es un problema teórico: destapó dos veces seguidas el mismo patrón —una
+configuración mal cargada que falla sin decir nada—. La segunda fue una
+`VITE_API_URL` sin el prefijo `/api/v1`: la API devolvía 404 y la persona veía
+«Cargando…» indefinidamente.
+
+Ahora el motivo se guarda y se muestra, **con el código HTTP**, que es lo que
+separa los dos casos posibles:
+
+| Código | Qué significa | Quién lo resuelve |
+|---|---|---|
+| **403** | La cuenta no está habilitada, o el rol no corresponde a esa app | La academia, invitando o corrigiendo el rol |
+| **Cualquier otro** | La app no está llegando a la API | Quien administra el despliegue |
+
+El detalle técnico se muestra en pantalla a propósito, no se esconde: es lo único
+que permite resolverlo sin adivinar, y quien lo lee se lo pasa a alguien que sepa
+qué hacer con él. No expone nada sensible —es el mensaje de error de la API, que
+ya está escrito para que lo lea una persona—.
+
 ### Tener sesión no dice en cuál de las tres apps se está
 
 Las tres aplicaciones usan las mismas cuentas de Supabase. Una sesión válida sirve

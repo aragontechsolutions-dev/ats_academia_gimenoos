@@ -26,7 +26,7 @@ const APP_ALUMNO = import.meta.env.VITE_APP_ALUMNO_URL;
  * navegador igual recibe 401/403 en cada peticion.
  */
 export function RutaProtegida({ children }: { children: ReactNode }) {
-  const { sesion, perfil, cargando, cerrarSesion } = useSesion();
+  const { sesion, perfil, cargando, errorPerfil, reintentarPerfil, cerrarSesion } = useSesion();
 
   if (cargando) {
     return <p className="p-8 text-slate-500">Cargando…</p>;
@@ -34,6 +34,47 @@ export function RutaProtegida({ children }: { children: ReactNode }) {
 
   if (!sesion) {
     return <Navigate to="/ingresar" replace />;
+  }
+
+  /**
+   * Se pidió el perfil y falló.
+   *
+   * Antes esto caía en el «Verificando permisos…» de abajo y el panel se quedaba
+   * ahí para siempre. El mensaje trae el código HTTP porque es lo que separa los
+   * dos casos: **403** es una cuenta que no está habilitada, y cualquier otro es
+   * que el panel no está llegando a la API —típicamente `VITE_API_URL` mal
+   * cargada—.
+   */
+  if (errorPerfil) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 text-center">
+          <h1 className="text-xl font-bold text-slate-900">No pudimos abrir tu cuenta</h1>
+          <p className="mt-2 text-slate-600">
+            Entraste bien, pero no se pudo cargar tu perfil.
+          </p>
+          {/* El detalle técnico se muestra, no se esconde: es lo único que
+              permite resolverlo sin adivinar. */}
+          <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+            {errorPerfil}
+          </p>
+          <button
+            type="button"
+            onClick={reintentarPerfil}
+            className="mt-5 rounded-lg bg-marca-600 px-4 py-2 font-semibold text-white transition hover:bg-marca-700"
+          >
+            Probar de nuevo
+          </button>
+          <button
+            type="button"
+            onClick={() => void cerrarSesion()}
+            className="mt-3 block w-full rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 transition hover:border-slate-400"
+          >
+            Salir
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (!perfil) {

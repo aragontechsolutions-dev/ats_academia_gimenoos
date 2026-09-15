@@ -424,6 +424,9 @@ correo puede crearse un administrador.
 | «Supabase no devolvió un enlace utilizable» | Ya no debería pasar: era un error de lectura de la respuesta, corregido | Si vuelve, revisar `supabase-admin.service.ts` |
 | «Falta configurar APP_ALUMNO_URL…» | La variable no está cargada en el servidor | Cargarla en Render, ver más arriba |
 | El enlace lleva a `localhost:3000` | El destino no está en las URLs permitidas de Supabase, y cayó en el Site URL | Ver «La configuración de Supabase» |
+| El enlace lleva a la app de OTRO rol | Lo mismo: Supabase descartó el destino porque no está en sus *Redirect URLs*. Ojo con la **barra final**: la entrada tiene que ser idéntica al valor de `APP_*_URL` de Render | Ver «La configuración de Supabase» |
+| La app queda en «No pudimos abrir tu cuenta» con un **404** | `VITE_API_URL` de esa app no termina en `/api/v1` | Ver [09-despliegue.md](09-despliegue.md) |
+| Lo mismo pero con **403** | La cuenta no está habilitada, o el rol no corresponde a esa app | Ver «Quién puede entrar» |
 | «Este enlace ya no sirve» al abrirlo | El código venció, ya se usó, o se generó otro después —cada enlace nuevo invalida el anterior— | Mandar uno nuevo desde la ficha |
 | El correo llega en inglés | Las plantillas no se pueden editar sin SMTP propio | Ver «El correo: hace falta un servidor propio» |
 | «Supabase no tiene permitido escribirle a esa dirección» | El remitente de fábrica solo le entrega al equipo del proyecto | Configurar SMTP propio |
