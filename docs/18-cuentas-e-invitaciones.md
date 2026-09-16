@@ -309,6 +309,15 @@ En **Authentication → URL Configuration** (buscar *Site URL* y *Redirect URLs*
 | **Site URL** | La dirección de la app del alumno |
 | **Redirect URLs** | Las tres: la app del alumno, la del instructor y el panel |
 
+**La barra final importa, y es la mitad que no podemos arreglar por vos.** Desde
+la API, las tres `APP_*_URL` se guardan **sin** barra final: la validación de
+entorno se la saca al arrancar, así que da igual cómo se carguen en Render. Pero
+la lista de *Redirect URLs* de Supabase se compara contra ese valor ya
+normalizado, y esa lista la lee Supabase, no nosotros: si ahí quedó
+`https://app.com/` con barra, no coincide y el destino se descarta en silencio.
+
+La regla, entonces: **cada entrada de Redirect URLs, sin barra final.**
+
 Y en el servidor (Render), las variables que arman el `redirect_to`:
 
 ```
