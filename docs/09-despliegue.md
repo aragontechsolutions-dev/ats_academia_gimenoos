@@ -256,6 +256,25 @@ falla aunque el campo muestre el texto correcto.
 > «Cargando…» sin decir por qué. Hoy esa misma falla muestra una pantalla con el
 > detalle —«Cannot GET /usuarios/me (404)»—, que nombra el problema solo.
 
+### Las barras finales, del lado de la API
+
+`APP_ALUMNO_URL`, `APP_INSTRUCTOR_URL`, `APP_PANEL_URL` y cada origen de
+`CORS_ORIGINS` se guardan **sin barra final**: se la saca `envSchema` al
+arrancar. O sea que en Render da igual cómo se carguen.
+
+No es una comodidad: una barra de más ya costó dos rondas de diagnóstico, de las
+dos formas que puede fallar.
+
+| Dónde | Qué pasa con la barra de más |
+|---|---|
+| `APP_*_URL` vs. las *Redirect URLs* de Supabase | No coinciden. Supabase descarta el destino **sin avisar** y manda a la persona al Site URL, o sea a la app de otro rol |
+| `APP_*_URL` en las plantillas de correo | El enlace queda como `https://app.com//entrar` |
+| `CORS_ORIGINS` | El origen **nunca** coincide: el navegador manda `Origin` sin barra y la comparación es exacta. La app carga y todas sus llamadas quedan bloqueadas, sin rastro en los registros del servidor |
+
+Lo que **no** se puede normalizar desde acá es la lista de *Redirect URLs* de
+Supabase, que la lee Supabase. Esa hay que cargarla sin barra a mano. Ver
+[18-cuentas-e-invitaciones.md](18-cuentas-e-invitaciones.md).
+
 Las tres `VITE_APP_*_URL` son **opcionales**: sirven para que, cuando alguien
 entra a la app equivocada, el cartel traiga el botón a la suya. Sin ellas el
 cartel aparece igual, solo que sin enlace. Cada app necesita las de las **otras

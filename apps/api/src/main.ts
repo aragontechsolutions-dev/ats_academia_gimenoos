@@ -22,11 +22,12 @@ async function bootstrap(): Promise<void> {
   app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'same-site' } }));
 
   // CORS con lista blanca explicita: nunca origin '*' junto a credenciales.
-  const origenes = config
-    .getOrThrow<string>('CORS_ORIGINS')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
+  //
+  // Solo se parte por coma: los espacios, las entradas vacias y las barras
+  // finales ya los limpia `envSchema`. Un origen con barra final nunca coincide
+  // con el encabezado `Origin` del navegador, y esa limpieza vive en un solo
+  // lugar para que no haya dos reglas distintas segun quien lea la variable.
+  const origenes = config.getOrThrow<string>('CORS_ORIGINS').split(',');
   app.enableCors({
     origin: origenes,
     credentials: true,
