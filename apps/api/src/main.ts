@@ -7,6 +7,7 @@ import helmet from 'helmet';
 
 import { AppModule } from './app.module';
 import { PrismaService } from './common/prisma/prisma.service';
+import { erroresDeValidacionEnEspanol } from './common/validacion/mensajes-de-validacion';
 
 const API_PREFIX = 'api/v1';
 
@@ -43,6 +44,9 @@ async function bootstrap(): Promise<void> {
       forbidNonWhitelisted: true,
       transform: true,
       transformOptions: { enableImplicitConversion: false },
+      // Los mensajes de class-validator salen en ingles. Los lee quien
+      // administra la academia, asi que se traducen en un solo lugar.
+      exceptionFactory: erroresDeValidacionEnEspanol,
     }),
   );
 

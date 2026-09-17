@@ -6,6 +6,7 @@ import { miFicha } from '../lib/recursos';
 import { PAISES } from '../lib/paises';
 import { fechaCorta } from '../lib/fecha';
 import { useSesion } from '../lib/sesion';
+import { useAvisos } from '../lib/avisos';
 import type { MiFicha } from '../lib/tipos';
 
 const CLASES_CAMPO =
@@ -13,13 +14,13 @@ const CLASES_CAMPO =
 
 export function MiPerfil() {
   const { cerrarSesion } = useSesion();
+  const avisos = useAvisos();
   const [ficha, setFicha] = useState<MiFicha | null>(null);
   const [datos, setDatos] = useState({
     nombre: '', apellido: '', telefono: '', tipoDocumento: 'CEDULA' as 'CEDULA' | 'PASAPORTE',
     paisDocumento: 'UY', documento: '', fechaNacimiento: '', direccion: '',
   });
   const [error, setError] = useState<string | null>(null);
-  const [guardado, setGuardado] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
@@ -44,8 +45,6 @@ export function MiPerfil() {
   async function guardar(evento: FormEvent) {
     evento.preventDefault();
     setGuardando(true);
-    setError(null);
-    setGuardado(false);
     try {
       const actualizada = await miFicha.actualizar({
         nombre: datos.nombre,
@@ -58,9 +57,9 @@ export function MiPerfil() {
         direccion: datos.direccion || undefined,
       });
       setFicha((actual) => (actual ? { ...actual, ...actualizada } : actual));
-      setGuardado(true);
+      avisos.exito('Datos guardados');
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
     } finally {
       setGuardando(false);
     }
@@ -71,6 +70,12 @@ export function MiPerfil() {
   return (
     <>
       <h1 className="text-2xl font-bold text-slate-900">Mi perfil</h1>
+
+      {error && (
+        <div className="mt-4">
+          <Aviso tipo="error">{error}</Aviso>
+        </div>
+      )}
 
       {packsConSaldo.length > 0 && (
         <section className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
@@ -204,9 +209,6 @@ export function MiPerfil() {
             className={CLASES_CAMPO}
           />
         </label>
-
-        {error && <Aviso tipo="error">{error}</Aviso>}
-        {guardado && <Aviso tipo="exito">Listo, guardamos tus datos.</Aviso>}
 
         <Boton type="submit" className="w-full" disabled={guardando}>
           {guardando ? 'Guardando…' : 'Guardar cambios'}

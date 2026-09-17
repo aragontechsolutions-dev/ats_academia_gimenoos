@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { Modal } from '../ui/Modal';
 import { Boton } from '../ui/Boton';
-import { Aviso } from '../ui/Aviso';
 import { agenda } from '../../lib/recursos';
 import { fechaLarga, hora } from '../../lib/fecha';
+import { useAvisos } from '../../lib/avisos';
 import { ETIQUETA_ESTADO, type Reserva } from '../../lib/tipos';
 
 /** Estados a los que se puede llevar una clase que sigue vigente. */
 const ACCIONES = [
-  { estado: 'CONFIRMADA', texto: 'Confirmar' },
-  { estado: 'COMPLETADA', texto: 'Marcar dictada' },
-  { estado: 'AUSENTE', texto: 'No asistió' },
+  // `hecho` es lo que se avisa cuando la acción sale bien. Va en la misma tabla
+  // que el botón para que no se despeguen: si mañana se agrega un estado, el
+  // aviso se agrega en el mismo renglón o no compila.
+  { estado: 'CONFIRMADA', texto: 'Confirmar', hecho: 'Clase confirmada' },
+  { estado: 'COMPLETADA', texto: 'Marcar dictada', hecho: 'Clase marcada como dictada' },
+  { estado: 'AUSENTE', texto: 'No asistió', hecho: 'Clase marcada: el alumno no asistió' },
 ] as const;
 
 export function DetalleReserva({
@@ -22,22 +25,22 @@ export function DetalleReserva({
   onCerrar: () => void;
   onCambio: () => void;
 }) {
-  const [error, setError] = useState<string | null>(null);
+  const avisos = useAvisos();
   const [trabajando, setTrabajando] = useState(false);
   const [motivo, setMotivo] = useState('');
   const [confirmandoCancelacion, setConfirmandoCancelacion] = useState(false);
 
   const vigente = reserva.estado === 'PENDIENTE' || reserva.estado === 'CONFIRMADA';
 
-  async function ejecutar(accion: () => Promise<unknown>) {
+  async function ejecutar(accion: () => Promise<unknown>, hecho: string) {
     setTrabajando(true);
-    setError(null);
     try {
       await accion();
+      avisos.exito(hecho);
       onCambio();
       onCerrar();
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
       setTrabajando(false);
     }
   }
@@ -106,12 +109,6 @@ export function DetalleReserva({
         )}
       </dl>
 
-      {error && (
-        <div className="mt-4">
-          <Aviso tipo="error">{error}</Aviso>
-        </div>
-      )}
-
       {vigente && !confirmandoCancelacion && (
         <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
           {ACCIONES.filter((a) => a.estado !== reserva.estado).map((accion) => (
@@ -119,7 +116,7 @@ export function DetalleReserva({
               key={accion.estado}
               variante="secundario"
               disabled={trabajando}
-              onClick={() => void ejecutar(() => agenda.cambiarEstado(reserva.id, accion.estado))}
+              onClick={() => void ejecutar(() => agenda.cambiarEstado(reserva.id, accion.estado), accion.hecho)}
             >
               {accion.texto}
             </Boton>
@@ -151,7 +148,7 @@ export function DetalleReserva({
             <Boton
               variante="peligro"
               disabled={trabajando}
-              onClick={() => void ejecutar(() => agenda.cancelar(reserva.id, motivo || undefined))}
+              onClick={() => void ejecutar(() => agenda.cancelar(reserva.id, motivo || undefined), 'Clase cancelada')}
             >
               {trabajando ? 'Cancelando…' : 'Sí, cancelar'}
             </Boton>

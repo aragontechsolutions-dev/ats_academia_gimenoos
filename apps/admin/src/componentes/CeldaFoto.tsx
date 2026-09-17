@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 
+import { useAvisos } from '../lib/avisos';
 import { borrarFoto, subirFoto, urlFoto, type BucketFoto } from '../lib/fotos';
 import { ACEPTA_INPUT, enKb } from '../lib/imagen';
 
@@ -19,7 +20,6 @@ interface Props {
    */
   guardar: (ruta: string) => Promise<unknown>;
   onCambio: () => void;
-  onError: (mensaje: string) => void;
 }
 
 /**
@@ -39,7 +39,11 @@ interface Props {
  * metadatos EXIF están en `lib/imagen.ts`, antes de que el archivo salga del
  * navegador.
  */
-export function CeldaFoto({ bucket, duenoId, ruta, descripcion, guardar, onCambio, onError }: Props) {
+export function CeldaFoto({ bucket, duenoId, ruta, descripcion, guardar, onCambio }: Props) {
+  // Los avisos los pone el componente y no quien lo usa: subir y quitar son dos
+  // operaciones distintas, y desde afuera —con un solo `onCambio`— no hay forma
+  // de saber cuál de las dos terminó.
+  const avisos = useAvisos();
   const [trabajando, setTrabajando] = useState(false);
   const entrada = useRef<HTMLInputElement>(null);
 
@@ -57,9 +61,10 @@ export function CeldaFoto({ bucket, duenoId, ruta, descripcion, guardar, onCambi
       console.info(
         `Foto de ${descripcion}: ${enKb(subida.imagen.bytesOriginal)} -> ${enKb(subida.imagen.bytes)}`,
       );
+      avisos.exito(ruta ? 'Foto cambiada' : 'Foto subida');
       onCambio();
     } catch (problema) {
-      onError((problema as Error).message);
+      avisos.error(problema);
     } finally {
       setTrabajando(false);
       if (entrada.current) entrada.current.value = '';
@@ -74,9 +79,10 @@ export function CeldaFoto({ bucket, duenoId, ruta, descripcion, guardar, onCambi
     try {
       await guardar('');
       await borrarFoto(bucket, ruta);
+      avisos.exito('Foto quitada');
       onCambio();
     } catch (problema) {
-      onError((problema as Error).message);
+      avisos.error(problema);
     } finally {
       setTrabajando(false);
     }

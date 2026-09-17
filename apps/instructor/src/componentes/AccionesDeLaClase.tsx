@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
 import { Boton } from './ui/Boton';
-import { Aviso } from './ui/Aviso';
 import { miAgenda } from '../lib/recursos';
+import { useAvisos } from '../lib/avisos';
 import type { EstadoReserva, Reserva } from '../lib/tipos';
 
 /** Lo que el motivo de cancelación admite en la API (`CancelarReservaDto`). */
@@ -14,17 +14,26 @@ const CIERRES = {
     boton: 'Dictada',
     pregunta: '¿La clase se dio?',
     confirmar: 'Sí, se dio',
+    hecho: 'Clase marcada como dictada',
     variante: 'primario',
   },
   AUSENTE: {
     boton: 'Faltó',
     pregunta: '¿El alumno no vino?',
     confirmar: 'Sí, faltó',
+    hecho: 'Clase marcada: el alumno no vino',
     variante: 'peligro',
   },
 } as const satisfies Record<
   string,
-  { boton: string; pregunta: string; confirmar: string; variante: 'primario' | 'peligro' }
+  {
+    boton: string;
+    pregunta: string;
+    confirmar: string;
+    /** Lo que se avisa cuando la acción sale bien. */
+    hecho: string;
+    variante: 'primario' | 'peligro';
+  }
 >;
 
 type Cierre = keyof typeof CIERRES;
@@ -60,29 +69,36 @@ export function AccionesDeLaClase({
   yaEmpezo: boolean;
   onCambiada: () => void;
 }) {
+  const avisos = useAvisos();
   const [confirmando, setConfirmando] = useState<Cierre | 'CANCELAR' | null>(null);
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   function limpiar() {
     setConfirmando(null);
     setMotivo('');
-    setError(null);
   }
 
   async function ejecutar(accion: Cierre | 'CANCELAR') {
     setEnviando(true);
-    setError(null);
+    const alumno = `${reserva.cliente.nombre} ${reserva.cliente.apellido}`;
     try {
       if (accion === 'CANCELAR') await miAgenda.cancelar(reserva.id, motivo.trim());
       else await miAgenda.cambiarEstado(reserva.id, accion as EstadoReserva);
+      // Con el nombre adentro: la tarjeta desaparece o cambia de lugar apenas se
+      // recarga la agenda, y sin el nombre no queda forma de verificar que se
+      // tocó la clase que se quería tocar.
+      avisos.exito(
+        accion === 'CANCELAR'
+          ? `Clase de ${alumno} cancelada`
+          : `${CIERRES[accion].hecho} · ${alumno}`,
+      );
       limpiar();
       onCambiada();
     } catch (problema) {
-      // El mensaje viene de la API y dice algo útil: por ejemplo, que el pack
-      // del alumno ya no tiene clases disponibles.
-      setError((problema as Error).message);
+      // El motivo viene de la API y dice algo útil: por ejemplo, que el pack del
+      // alumno ya no tiene clases disponibles.
+      avisos.error(problema);
     } finally {
       setEnviando(false);
     }
@@ -127,11 +143,6 @@ export function AccionesDeLaClase({
         </div>
 
         {sinMotivo && <p className="mt-2 text-xs text-slate-500">Escribí el motivo para poder cancelar.</p>}
-        {error && (
-          <div className="mt-2">
-            <Aviso tipo="error">{error}</Aviso>
-          </div>
-        )}
       </div>
     );
   }
@@ -154,11 +165,6 @@ export function AccionesDeLaClase({
             No
           </Boton>
         </div>
-        {error && (
-          <div className="mt-2">
-            <Aviso tipo="error">{error}</Aviso>
-          </div>
-        )}
       </div>
     );
   }

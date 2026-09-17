@@ -9,6 +9,7 @@ import { DiplomaImprimible } from '../componentes/DiplomaImprimible';
 import { CeldaFoto } from '../componentes/CeldaFoto';
 import { graduados as api, clientes as apiClientes } from '../lib/recursos';
 import { hoyEnMontevideo } from '../lib/fecha';
+import { useAvisos } from '../lib/avisos';
 import type { Cliente, Graduado } from '../lib/tipos';
 
 const SITIO_URL = import.meta.env.VITE_SITIO_URL ?? 'academiagimenoos.com.uy';
@@ -25,6 +26,7 @@ const fecha = (iso: string) =>
   );
 
 export function Graduados() {
+  const avisos = useAvisos();
   const [pagina, setPagina] = useState<Pagina<Graduado>>(PAGINA_VACIA as Pagina<Graduado>);
   const [consulta, setConsulta] = useState({ pagina: 1, porPagina: 10 });
   const [resumen, setResumen] = useState<{ sinAutorizacion: number; anios: number[] }>({
@@ -56,8 +58,16 @@ export function Graduados() {
 
   const { anios, sinAutorizacion } = resumen;
 
-  const accion = (promesa: Promise<unknown>) => {
-    void promesa.then(cargar).catch((problema: Error) => setError(problema.message));
+  // `hecho` viaja junto al botón: cada acción avisa lo que hizo, no un «listo»
+  // que obliga a recordar qué se tocó. Si mañana se agrega una acción sin texto,
+  // no compila.
+  const accion = (promesa: Promise<unknown>, hecho: string) => {
+    void promesa
+      .then(() => {
+        avisos.exito(hecho);
+        cargar();
+      })
+      .catch((problema: unknown) => avisos.error(problema));
   };
 
   return (
@@ -144,7 +154,6 @@ export function Graduados() {
                       descripcion={`${graduado.cliente.nombre} ${graduado.cliente.apellido}`}
                       guardar={(fotoRuta) => api.actualizar(graduado.id, { fotoRuta })}
                       onCambio={cargar}
-                      onError={setError}
                     />
                   </td>
                   <td className="px-4 py-3 font-medium text-slate-900">
@@ -186,6 +195,9 @@ export function Graduados() {
                           onClick={() =>
                             accion(
                               api.actualizar(graduado.id, { publicado: !graduado.publicado }),
+                              graduado.publicado
+                                ? 'Egresado quitado de la galería'
+                                : 'Egresado publicado en la galería',
                             )
                           }
                           className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:border-marca-500 hover:text-marca-700"
@@ -203,7 +215,7 @@ export function Graduados() {
                                 `¿Retirar la autorización de ${graduado.cliente.nombre}? Sale de la galería del sitio.`,
                               )
                             ) {
-                              accion(api.retirarAutorizacion(graduado.id));
+                              accion(api.retirarAutorizacion(graduado.id), 'Autorización retirada');
                             }
                           }}
                           className="rounded border border-amber-300 px-2 py-1 text-xs text-amber-800 hover:bg-amber-50"
@@ -220,7 +232,7 @@ export function Graduados() {
                               `¿Borrar definitivamente el egreso de ${graduado.cliente.nombre}? No se puede deshacer.`,
                             )
                           ) {
-                            accion(api.eliminar(graduado.id));
+                            accion(api.eliminar(graduado.id), 'Egreso borrado');
                           }
                         }}
                         className="rounded border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
@@ -283,7 +295,7 @@ function FormularioEgresado({
   const [esTutor, setEsTutor] = useState(false);
   const [firmante, setFirmante] = useState('');
   const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const avisos = useAvisos();
 
   useEffect(() => {
     // Desplegable: necesita la lista completa, no una página.
@@ -295,7 +307,6 @@ function FormularioEgresado({
 
   const guardar = () => {
     setGuardando(true);
-    setError(null);
     void api
       .crear({
         clienteId,
@@ -309,19 +320,16 @@ function FormularioEgresado({
             }
           : {}),
       })
-      .then(onGuardado)
-      .catch((problema: Error) => setError(problema.message))
+      .then(() => {
+        avisos.exito('Egresado registrado');
+        onGuardado();
+      })
+      .catch((problema: unknown) => avisos.error(problema))
       .finally(() => setGuardando(false));
   };
 
   return (
     <Modal titulo="Registrar egresado" onCerrar={onCerrar}>
-      {error && (
-        <div className="mb-4">
-          <Aviso tipo="error">{error}</Aviso>
-        </div>
-      )}
-
       <div className="space-y-4">
         <Campo etiqueta="Alumno" requerido>
           <select

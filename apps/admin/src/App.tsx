@@ -1,5 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { ProveedorSesion } from './lib/sesion';
+import { ProveedorAvisos } from './lib/avisos';
+import { Avisos } from './componentes/ui/Avisos';
 import { RutaProtegida } from './componentes/RutaProtegida';
 import { Disposicion } from './componentes/Disposicion';
 import { Ingreso } from './paginas/Ingreso';
@@ -32,45 +34,50 @@ function Pagina({ children }: { children: React.ReactNode }) {
 export function App() {
   return (
     <ProveedorSesion>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/ingresar" element={<Ingreso />} />
-          {/* Fuera del guard de rol: es donde se consigue la sesión. */}
-          <Route path="/entrar" element={<Entrar />} />
+      {/* Los avisos envuelven todo y se dibujan una sola vez, fuera de las
+          rutas: así uno disparado al guardar sobrevive al cambio de pantalla. */}
+      <ProveedorAvisos>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/ingresar" element={<Ingreso />} />
+            {/* Fuera del guard de rol: es donde se consigue la sesión. */}
+            <Route path="/entrar" element={<Entrar />} />
 
-          <Route path="/" element={<Pagina><Agenda /></Pagina>} />
-          <Route path="/alumnos" element={<Pagina><Alumnos /></Pagina>} />
-          <Route path="/alumnos/:id" element={<Pagina><AlumnoFicha /></Pagina>} />
+            <Route path="/" element={<Pagina><Agenda /></Pagina>} />
+            <Route path="/alumnos" element={<Pagina><Alumnos /></Pagina>} />
+            <Route path="/alumnos/:id" element={<Pagina><AlumnoFicha /></Pagina>} />
 
-          {/* La configuración de la academia es solo del administrador. */}
-          <Route
-            path="/instructores"
-            element={<Pagina><Instructores /></Pagina>}
-          />
-          <Route
-            path="/vehiculos"
-            element={<Pagina><Vehiculos /></Pagina>}
-          />
-          <Route
-            path="/servicios"
-            element={<Pagina><Servicios /></Pagina>}
-          />
-          <Route
-            path="/graduados"
-            element={<Pagina><Graduados /></Pagina>}
-          />
-          <Route
-            path="/sitio"
-            element={<Pagina><Sitio /></Pagina>}
-          />
-          <Route
-            path="/cuentas"
-            element={<Pagina><Cuentas /></Pagina>}
-          />
+            {/* La configuración de la academia es solo del administrador. */}
+            <Route
+              path="/instructores"
+              element={<Pagina><Instructores /></Pagina>}
+            />
+            <Route
+              path="/vehiculos"
+              element={<Pagina><Vehiculos /></Pagina>}
+            />
+            <Route
+              path="/servicios"
+              element={<Pagina><Servicios /></Pagina>}
+            />
+            <Route
+              path="/graduados"
+              element={<Pagina><Graduados /></Pagina>}
+            />
+            <Route
+              path="/sitio"
+              element={<Pagina><Sitio /></Pagina>}
+            />
+            <Route
+              path="/cuentas"
+              element={<Pagina><Cuentas /></Pagina>}
+            />
 
-          <Route path="*" element={<Pagina><Agenda /></Pagina>} />
-        </Routes>
-      </BrowserRouter>
+            <Route path="*" element={<Pagina><Agenda /></Pagina>} />
+          </Routes>
+        </BrowserRouter>
+        <Avisos />
+      </ProveedorAvisos>
     </ProveedorSesion>
   );
 }

@@ -7,6 +7,7 @@ import { Aviso } from '../ui/Aviso';
 import { Campo, clasesControl } from '../ui/Campo';
 import { agenda, clientes as apiClientes } from '../../lib/recursos';
 import { fechaLarga, hora } from '../../lib/fecha';
+import { useAvisos } from '../../lib/avisos';
 import type { Cliente, Hueco, Instructor, TipoVehiculo } from '../../lib/tipos';
 
 /**
@@ -28,6 +29,8 @@ export function NuevaClase({
   onCerrar: () => void;
   onCreada: () => void;
 }) {
+  const avisos = useAvisos();
+
   const [tipo, setTipo] = useState<TipoVehiculo>('AUTO');
   const [duracionMin, setDuracionMin] = useState(45);
   const [dia, setDia] = useState(diaInicial.toISODate() ?? '');
@@ -69,6 +72,7 @@ export function NuevaClase({
 
     setCargandoHuecos(true);
     setHuecoElegido(null);
+    setError(null);
     void agenda
       .disponibilidad({
         tipo,
@@ -85,7 +89,6 @@ export function NuevaClase({
   async function guardar() {
     if (!alumno || !huecoElegido) return;
     setGuardando(true);
-    setError(null);
     try {
       await agenda.crearReserva({
         clienteId: alumno.id,
@@ -96,10 +99,11 @@ export function NuevaClase({
         duracionMin,
         observaciones: observaciones || undefined,
       });
+      avisos.exito(`Clase agendada para ${alumno.nombre} ${alumno.apellido}`);
       onCreada();
       onCerrar();
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
       setGuardando(false);
     }
   }

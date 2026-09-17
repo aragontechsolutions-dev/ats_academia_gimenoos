@@ -24,6 +24,7 @@
 | [19-correo.md](19-correo.md) | **Configuración del correo (Brevo + Supabase), paso a paso** |
 | [20-mapa.md](20-mapa.md) | El mapa del sitio, el botón de ruta y cómo marcar la ubicación |
 | [21-pwa-instructor.md](21-pwa-instructor.md) | La app del instructor: su agenda por día, semana o mes, y por qué no entra al panel |
+| [22-avisos.md](22-avisos.md) | Qué se le dice al usuario al guardar o al fallar, y por qué el motivo llega entero |
 
 **Por dónde empezar:** `07-roadmap.md` si sos quien decide,
 `06-guia-desarrollo.md` para levantar el entorno,

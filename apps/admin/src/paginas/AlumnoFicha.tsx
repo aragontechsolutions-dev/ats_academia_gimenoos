@@ -8,6 +8,7 @@ import { clientes as api, invitaciones as apiInvitaciones } from '../lib/recurso
 import { documentoLegible } from '../lib/paises';
 import { fechaCorta, fechaYHora } from '../lib/fecha';
 import { useSesion } from '../lib/sesion';
+import { useAvisos } from '../lib/avisos';
 import { abrirWhatsApp, mensajeDeAcceso, numeroParaWhatsApp } from '../lib/whatsapp';
 import { ETIQUETA_ESTADO, type FichaCliente, type Invitacion } from '../lib/tipos';
 
@@ -200,9 +201,8 @@ function Dato({ etiqueta, valor }: { etiqueta: string; valor: string | null | un
  *     WhatsApp es por dónde viaja el enlace, no quién es la persona.
  */
 function AccesoALaApp({ ficha, onCambio }: { ficha: FichaCliente; onCambio: () => void }) {
+  const avisos = useAvisos();
   const [lista, setLista] = useState<Invitacion[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [aviso, setAviso] = useState<string | null>(null);
   const [trabajando, setTrabajando] = useState(false);
 
   const cargar = useCallback(() => {
@@ -219,15 +219,13 @@ function AccesoALaApp({ ficha, onCambio }: { ficha: FichaCliente; onCambio: () =
 
   const accion = async (promesa: Promise<unknown>, exito: string) => {
     setTrabajando(true);
-    setError(null);
-    setAviso(null);
     try {
       await promesa;
-      setAviso(exito);
+      avisos.exito(exito);
       cargar();
       onCambio();
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
     } finally {
       setTrabajando(false);
     }
@@ -255,8 +253,6 @@ function AccesoALaApp({ ficha, onCambio }: { ficha: FichaCliente; onCambio: () =
     }
 
     setTrabajando(true);
-    setError(null);
-    setAviso(null);
     try {
       const invitacion = invitacionId
         ? await apiInvitaciones.reenviar(invitacionId, 'ENLACE')
@@ -265,11 +261,11 @@ function AccesoALaApp({ ficha, onCambio }: { ficha: FichaCliente; onCambio: () =
       if (!invitacion.enlace) throw new Error('El servidor no devolvió el enlace.');
 
       abrirWhatsApp(ficha.telefono ?? '', mensajeDeAcceso(ficha.nombre, invitacion.enlace));
-      setAviso('Se abrió WhatsApp con el mensaje listo. Falta que lo envíes desde ahí.');
+      avisos.exito('Se abrió WhatsApp con el mensaje listo. Falta que lo envíes desde ahí');
       cargar();
       onCambio();
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
     } finally {
       setTrabajando(false);
     }
@@ -336,7 +332,7 @@ function AccesoALaApp({ ficha, onCambio }: { ficha: FichaCliente; onCambio: () =
                   pendiente
                     ? apiInvitaciones.reenviar(pendiente.id, 'CORREO')
                     : apiInvitaciones.crear({ rol: 'CLIENTE', clienteId: ficha.id, canal: 'CORREO' }),
-                  'Listo, le mandamos el enlace por correo.',
+                  'Enlace de acceso enviado por correo',
                 )
               }
             >
@@ -348,7 +344,7 @@ function AccesoALaApp({ ficha, onCambio }: { ficha: FichaCliente; onCambio: () =
                 disabled={trabajando}
                 onClick={() => {
                   if (window.confirm('¿Dar de baja el acceso? El enlace que mandaste deja de servir.')) {
-                    void accion(apiInvitaciones.revocar(pendiente.id), 'Acceso dado de baja.');
+                    void accion(apiInvitaciones.revocar(pendiente.id), 'Acceso dado de baja');
                   }
                 }}
               >
@@ -369,8 +365,6 @@ function AccesoALaApp({ ficha, onCambio }: { ficha: FichaCliente; onCambio: () =
         </>
       )}
 
-      {error && <div className="mt-3"><Aviso tipo="error">{error}</Aviso></div>}
-      {aviso && <div className="mt-3"><Aviso tipo="exito">{aviso}</Aviso></div>}
     </section>
   );
 }
