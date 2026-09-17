@@ -16,6 +16,17 @@ export const aLocal = (fecha: string | Date): DateTime =>
 
 export const hora = (fecha: string | Date): string => aLocal(fecha).toFormat('HH:mm');
 
+/**
+ * Hoy, en la zona de la academia, como `aaaa-mm-dd`.
+ *
+ * Es lo que espera un `<input type="date">`, y existe para que nadie vuelva a
+ * escribir `new Date().toISOString().slice(0, 10)`, que parece lo mismo y no lo
+ * es: ese recorte da la fecha **en UTC**. Uruguay está tres horas atrás, así que
+ * de las nueve de la noche en adelante devuelve el día siguiente, y un
+ * formulario abierto a las diez y media de la noche del 16 se llena con el 17.
+ */
+export const hoyEnMontevideo = (): string => DateTime.now().setZone(ZONA).toISODate() ?? '';
+
 export const fechaCorta = (fecha: string | Date): string => aLocal(fecha).toFormat('dd/LL/yyyy');
 
 /**
