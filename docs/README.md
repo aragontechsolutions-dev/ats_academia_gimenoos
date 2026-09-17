@@ -26,6 +26,7 @@
 | [21-pwa-instructor.md](21-pwa-instructor.md) | La app del instructor: su agenda por día, semana o mes, y por qué no entra al panel |
 | [22-avisos.md](22-avisos.md) | Qué se le dice al usuario al guardar o al fallar, y por qué el motivo llega entero |
 | [23-avisos-telegram.md](23-avisos-telegram.md) | **Avisos al teléfono: los cuatro pasos para ponerlo, y qué sale del sistema** |
+| [24-recordatorios.md](24-recordatorios.md) | Recordatorios de clase: por qué los dispara algo de afuera y cómo se configura |
 
 **Por dónde empezar:** `07-roadmap.md` si sos quien decide,
 `06-guia-desarrollo.md` para levantar el entorno,

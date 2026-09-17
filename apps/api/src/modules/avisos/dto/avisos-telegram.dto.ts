@@ -50,4 +50,9 @@ export class ActualizarAvisosTelegramDto {
   @IsOptional()
   @IsBoolean()
   avisaClicWhatsapp?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  avisaRecordatorios?: boolean;
 }

@@ -74,3 +74,13 @@ services:
       # Se completa DESPUES de desplegar los frontends.
       - key: CORS_ORIGINS
         sync: false
+
+      # --- Avisos y recordatorios ------------------------------------------
+      # Token del bot de Telegram (@BotFather). Vacio = no se mandan avisos.
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      # Secreto del disparador de recordatorios. El MISMO valor va en
+      # GitHub > Settings > Secrets and variables > Actions.
+      # Vacio = el endpoint contesta 503 y no queda abierto.
+      - key: RECORDATORIOS_TOKEN
+        sync: false

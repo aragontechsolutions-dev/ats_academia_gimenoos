@@ -17,7 +17,8 @@ export type ClaseDeAviso =
   | 'reservaNueva'
   | 'claseCerrada'
   | 'claseCancelada'
-  | 'clicWhatsapp';
+  | 'clicWhatsapp'
+  | 'recordatorio';
 
 /** Qué columna manda sobre cada aviso. */
 const INTERRUPTOR = {
@@ -25,7 +26,21 @@ const INTERRUPTOR = {
   claseCerrada: 'avisaClaseCerrada',
   claseCancelada: 'avisaClaseCancelada',
   clicWhatsapp: 'avisaClicWhatsapp',
+  recordatorio: 'avisaRecordatorios',
 } as const satisfies Record<ClaseDeAviso, string>;
+
+/**
+ * Cómo terminó un aviso.
+ *
+ * `avisar()` no lanza nunca, pero quien manda recordatorios necesita distinguir
+ * tres finales distintos: salió, no correspondía mandarlo, o se intentó y
+ * falló. Los que solo avisan y siguen pueden ignorar esto.
+ */
+export type ResultadoDeAviso =
+  | { estado: 'enviado' }
+  /** No hay bot, no hay conversación elegida, o ese aviso está apagado. */
+  | { estado: 'omitido' }
+  | { estado: 'fallo'; motivo: string };
 
 /** Una conversación que le habló al bot, como la muestra el panel. */
 export interface ChatDisponible {
@@ -88,21 +103,23 @@ export class TelegramService {
    * Manda un aviso. No falla nunca hacia afuera.
    *
    * Se llama sin `await` desde donde ocurre el hecho: la reserva ya se guardó y
-   * el aviso es posterior. Devuelve una promesa igual para que las pruebas
-   * puedan esperarla.
+   * el aviso es posterior. Devuelve cómo terminó para quien lo necesite —los
+   * recordatorios—, y quien solo avisa y sigue puede ignorarlo.
    */
-  async avisar(clase: ClaseDeAviso, texto: string): Promise<void> {
+  async avisar(clase: ClaseDeAviso, texto: string): Promise<ResultadoDeAviso> {
     try {
       const destino = await this.destinoPara(clase);
-      if (!destino) return;
+      if (!destino) return { estado: 'omitido' };
       await this.mandar(destino, texto);
       await this.anotarEnvio();
+      return { estado: 'enviado' };
     } catch (problema) {
       const motivo = problema instanceof Error ? problema.message : String(problema);
       // A nivel warn y no error: que Telegram falle no es una falla del sistema,
       // y ensuciar el registro de errores con esto esconde los que sí importan.
       this.log.warn(`No se pudo avisar por Telegram (${clase}): ${motivo}`);
       await this.anotarError(motivo).catch(() => undefined);
+      return { estado: 'fallo', motivo };
     }
   }
 

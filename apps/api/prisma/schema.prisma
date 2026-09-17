@@ -475,11 +475,12 @@ model Reserva {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  cliente    Cliente         @relation(fields: [clienteId], references: [id], onDelete: Restrict)
-  instructor Instructor      @relation(fields: [instructorId], references: [id], onDelete: Restrict)
-  vehiculo   Vehiculo?       @relation(fields: [vehiculoId], references: [id], onDelete: Restrict)
-  compra     CompraServicio? @relation(fields: [compraId], references: [id], onDelete: SetNull)
-  pagos      Pago[]
+  cliente       Cliente               @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  instructor    Instructor            @relation(fields: [instructorId], references: [id], onDelete: Restrict)
+  vehiculo      Vehiculo?             @relation(fields: [vehiculoId], references: [id], onDelete: Restrict)
+  compra        CompraServicio?       @relation(fields: [compraId], references: [id], onDelete: SetNull)
+  pagos         Pago[]
+  recordatorios RecordatorioEnviado[]
 
   @@index([inicio, estado])
   @@index([instructorId, inicio])
@@ -636,6 +637,54 @@ model ConfiguracionAcademia {
   @@map("configuracion_academia")
 }
 
+/// Cuanta antelacion tiene cada recordatorio de clase.
+enum TipoRecordatorio {
+  /// El dia antes. Sirve para reorganizarse si no va a poder ir.
+  VEINTICUATRO_HORAS
+  /// Un rato antes, para que no se le pase. Es el que evita el ausente.
+  DOS_HORAS
+}
+
+/// Por donde salio un recordatorio.
+enum CanalRecordatorio {
+  /// Aviso a la academia, para que pueda llamar al alumno.
+  TELEGRAM
+  /// Notificacion en el telefono del alumno, desde su PWA.
+  PUSH
+  CORREO
+}
+
+/// Un recordatorio que YA se mando. Es lo que impide mandarlo dos veces.
+///
+/// La garantia es la clave unica de la base y no una comprobacion en el codigo:
+/// el disparador es externo y puede llamar dos veces (un reintento, dos
+/// ejecuciones que se pisan). Con esto, la segunda insercion falla y no hay
+/// forma de que al alumno le lleguen dos avisos de la misma clase.
+///
+/// Se guarda tambien lo que fallo: un recordatorio que no salio y no deja
+/// rastro es indistinguible de uno que nunca correspondio mandar.
+model RecordatorioEnviado {
+  id        String            @id @default(uuid()) @db.Uuid
+  reservaId String            @map("reserva_id") @db.Uuid
+  tipo      TipoRecordatorio
+  canal     CanalRecordatorio
+
+  /// Si llego a destino. Falso deja anotado el intento para no repetirlo en
+  /// bucle cada quince minutos.
+  entregado Boolean @default(true)
+  /// El motivo del fallo, tal como lo explico el canal.
+  error     String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  reserva Reserva @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+
+  /// La regla entera, en una linea: un recordatorio por clase, tipo y canal.
+  @@unique([reservaId, tipo, canal])
+  @@index([createdAt])
+  @@map("recordatorios_enviados")
+}
+
 /// A quien y que se le avisa por Telegram. Una sola fila, como la configuracion.
 ///
 /// Vive aparte de `ConfiguracionAcademia` a proposito: esa tabla la lee el
@@ -661,6 +710,8 @@ model AvisosTelegram {
   avisaClaseCerrada   Boolean @default(true) @map("avisa_clase_cerrada")
   avisaClaseCancelada Boolean @default(true) @map("avisa_clase_cancelada")
   avisaClicWhatsapp   Boolean @default(true) @map("avisa_clic_whatsapp")
+  /// Los recordatorios de clase, 24 horas y 2 horas antes.
+  avisaRecordatorios  Boolean @default(true) @map("avisa_recordatorios")
 
   /// Cuando salio bien el ultimo aviso. Sirve para contestar "esto anda?" sin
   /// tener que mandar uno de prueba.
