@@ -18,6 +18,7 @@ import { UsuariosModule } from './modules/usuarios/usuarios.module';
 import { CatalogoModule } from './modules/catalogo/catalogo.module';
 import { ConfiguracionModule } from './modules/configuracion/configuracion.module';
 import { AvisosModule } from './modules/avisos/avisos.module';
+import { RecordatoriosModule } from './modules/recordatorios/recordatorios.module';
 import { AgendaModule } from './modules/agenda/agenda.module';
 import { InstructoresModule } from './modules/instructores/instructores.module';
 import { VehiculosModule } from './modules/vehiculos/vehiculos.module';
@@ -52,6 +53,7 @@ import { InvitacionesModule } from './modules/invitaciones/invitaciones.module';
     CatalogoModule,
     ConfiguracionModule,
     AvisosModule,
+    RecordatoriosModule,
     AgendaModule,
     InstructoresModule,
     VehiculosModule,

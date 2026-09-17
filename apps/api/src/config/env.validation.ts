@@ -119,6 +119,23 @@ export const envSchema = z.object({
     )
     .optional()
     .or(z.literal('')),
+
+  // --- Recordatorios de clase ----------------------------------------------
+  /**
+   * Secreto que tiene que presentar quien dispara los recordatorios.
+   *
+   * Los recordatorios no los lanza un temporizador interno sino una llamada de
+   * afuera —hoy, un workflow de GitHub Actions—, porque en el plan gratuito de
+   * Render el servicio se duerme y un temporizador dormido no dispara nada.
+   *
+   * Es opcional: sin esto el endpoint contesta 503 y nunca queda abierto. Tiene
+   * que ser largo, porque es lo único que lo protege.
+   */
+  RECORDATORIOS_TOKEN: z
+    .string()
+    .min(32, 'tiene que tener al menos 32 caracteres: es lo único que protege el endpoint')
+    .optional()
+    .or(z.literal('')),
 });
 
 export type Env = z.infer<typeof envSchema>;

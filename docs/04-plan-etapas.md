@@ -369,7 +369,83 @@ Lo que se aprendió, que vale más que la lista:
 - **Tener sesión no dice en cuál de las tres apps se está**, porque las tres usan
   las mismas cuentas de Supabase.
 
-## Etapa 2 — Pagos
+### Etapa 2.K — El sistema dice qué pasó ✅ COMPLETADA
+
+Salió de dos cosas que reportó la academia: una fecha que se adelantaba un día, y
+avisos que no decían nada. Ver [`22-avisos.md`](22-avisos.md).
+
+| Qué | Estado |
+|---|---|
+| La fecha de «hoy» deja de adelantarse de noche (se calculaba en UTC) | ✅ |
+| Los errores de validación de la API se leen en español, traducidos en **un solo lugar** | ✅ |
+| Los mensajes propios de cada DTO se respetan | ✅ |
+| Avisos flotantes en las tres aplicaciones, con lo que de verdad pasó | ✅ |
+| El motivo real del error llega a la pantalla, con una línea por campo mal | ✅ |
+| Lo que el alumno escribe en su perfil deja de perderse si la ficha tarda | ✅ |
+| Pruebas | ✅ 279 + 20 comprobaciones en navegador |
+
+La regla que quedó: **aviso flotante para lo que la persona acaba de hacer,
+cartel fijo para el estado de la pantalla.**
+
+### Etapa 2.L — Avisos por Telegram y clic de WhatsApp ✅ COMPLETADA
+
+Ver [`23-avisos-telegram.md`](23-avisos-telegram.md).
+
+| Qué | Estado |
+|---|---|
+| Avisos al teléfono: clase agendada, cerrada, cancelada | ✅ |
+| El token del bot vive en el servidor y **nunca** en la base ni en el panel | ✅ |
+| Descubrimiento de conversaciones desde el panel, **por nombre** | ✅ |
+| Botón de prueba, un interruptor por aviso, último envío y último fallo | ✅ |
+| Los doce botones de WhatsApp del sitio avisan **desde qué sección** salieron | ✅ |
+| El endpoint público, acotado por límite propio, lista cerrada e interruptor | ✅ |
+| Pruebas | ✅ 315 + 26 comprobaciones en navegador |
+
+**Queda del lado de la academia:** crear el bot con @BotFather y cargar
+`TELEGRAM_BOT_TOKEN` en Render. Sin eso la API arranca igual y no manda avisos.
+
+---
+
+## Etapa 3 — Recordatorios de clase
+
+### Etapa 3.A — El motor y el aviso a la academia ✅ COMPLETADA
+
+Ver [`24-recordatorios.md`](24-recordatorios.md).
+
+| Qué | Estado |
+|---|---|
+| Recordatorio 24 horas y 2 horas antes de cada clase | ✅ |
+| Disparo **desde afuera** (GitHub Actions cada 15 min), no un temporizador interno | ✅ |
+| Que nunca salga dos veces, garantizado por una clave única de la base | ✅ probado con dos pasadas en paralelo |
+| Endpoint con secreto compartido y comparación en tiempo constante | ✅ probado sobre HTTP real |
+| Primer canal: aviso a la academia por Telegram, con el teléfono del alumno | ✅ |
+| Interruptor propio en el panel | ✅ |
+| Pruebas | ✅ 342 |
+
+**Por qué el disparo va por fuera:** en el plan gratuito de Render el servicio se
+suspende por inactividad, y un temporizador suspendido no dispara nada —sin un
+solo error en ningún registro—. Una llamada externa despierta al servicio **y**
+hace el trabajo.
+
+### Etapa 3.B — Aviso al alumno en su teléfono ⏳ PENDIENTE
+
+Notificación push de la PWA, 24 h y 2 h antes. Usa el mismo motor de la 3.A: solo
+se agrega un canal.
+
+| Qué | Estado |
+|---|---|
+| Claves VAPID y suscripciones guardadas por alumno | ⏳ |
+| Pedido de permiso en la app, en el momento correcto y no al entrar | ⏳ |
+| Listeners `push` y `notificationclick` en `apps/cliente/src/sw.ts` | ⏳ |
+| Que tocar la notificación abra la clase | ⏳ |
+
+### Etapa 3.C — Recordatorio por correo ⏳ BLOQUEADA
+
+Espera el servidor SMTP propio de la academia (ver la Etapa 2.G).
+
+---
+
+## Etapa 4 — Pagos
 
 **Objetivo:** cobrar por los tres canales y conciliar.
 
@@ -394,7 +470,7 @@ Lo que se aprendió, que vale más que la lista:
 
 ---
 
-## Etapa 3 — Expedientes, PWA completa y notificaciones
+## Etapa 5 — Expedientes y cumplimiento
 
 ### Expedientes de libreta
 > **Antes de escribir código**, confirmar en la fuente oficial (gub.uy y portal
@@ -410,14 +486,8 @@ Lo que se aprendió, que vale más que la lista:
 - Vista completa de clases, pagos y expediente del alumno.
 - Funcionamiento sin conexión del shell de la aplicación.
 
-### Notificaciones
-Orden sugerido por relación esfuerzo/beneficio:
-1. **Correo** (recordatorio 24 h y 2 h antes).
-2. **Push de la PWA** (Web Push + VAPID; los listeners van en `apps/cliente/src/sw.ts`).
-3. **WhatsApp** (canal dominante en Uruguay, pero requiere WhatsApp Business API
-   o un proveedor, con costo por conversación).
-
-Un job programado recorre las reservas próximas y dispara los avisos.
+> Los recordatorios de clase se movieron a la **Etapa 3**, que ya tiene el motor
+> construido. Lo que queda acá es el expediente de la libreta y el cumplimiento.
 
 ### Cumplimiento
 - Inscripción de las bases de datos ante la URCDP.

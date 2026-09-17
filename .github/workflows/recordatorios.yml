@@ -1,0 +1,99 @@
+# ============================================================================
+# Dispara los recordatorios de clase.
+#
+# POR QUE ESTO EXISTE
+#
+# Los recordatorios no los lanza un temporizador dentro de la API. En el plan
+# gratuito de Render el servicio se SUSPENDE por inactividad, y un temporizador
+# suspendido no dispara nada: los recordatorios dejarian de salir sin un solo
+# error en ningun registro, que para un recordatorio es la peor forma de fallar.
+#
+# Una llamada desde afuera resuelve las dos cosas con un solo mecanismo:
+# DESPIERTA al servicio y HACE el trabajo.
+#
+# Se usa GitHub Actions porque ya esta en este repositorio, es gratis y no suma
+# ninguna cuenta nueva. Sirve igual cualquier otra cosa que sepa hacer un POST
+# (cron-job.org, UptimeRobot, un cron de Render en el plan pago).
+#
+# LO QUE HAY QUE SABER ANTES DE CONFIAR EN ESTO
+#
+#   - GitHub NO garantiza la puntualidad de `schedule`. Una corrida puede
+#     demorarse, y con mucha carga en la plataforma puede saltearse. Para un
+#     recordatorio de 2 horas una demora de 15 minutos no cambia nada, y si una
+#     corrida se saltea, la siguiente manda igual lo que quedo pendiente: la
+#     ventana no se cierra hasta que la clase empieza.
+#   - GitHub DESACTIVA los workflows programados tras 60 dias sin actividad en
+#     el repositorio, avisando por correo. Si la academia queda sin cambios dos
+#     meses, hay que volver a activarlo desde la pestania Actions.
+#
+# Los dos riesgos estan aceptados a conciencia y documentados en
+# docs/24-recordatorios.md, con las alternativas por si alguna vez molestan.
+#
+# CONFIGURACION (una sola vez)
+#
+#   Settings > Secrets and variables > Actions:
+#     - Secret   RECORDATORIOS_TOKEN  el mismo valor que en Render
+#     - Variable API_URL              https://gimenoos-api.onrender.com/api/v1
+# ============================================================================
+name: Recordatorios de clase
+
+on:
+  schedule:
+    # Cada 15 minutos. Es el paso mas fino que tiene sentido: el recordatorio
+    # mas ajustado es el de 2 horas, y 15 minutos de margen sobre 2 horas no
+    # cambian nada para quien lo recibe.
+    - cron: '*/15 * * * *'
+  # Para poder probarlo a mano desde la pestania Actions.
+  workflow_dispatch:
+
+# Dos corridas simultaneas no harian dano —lo ya mandado no se manda de nuevo,
+# y eso lo garantiza una clave unica de la base—, pero no tiene sentido pagar
+# por ellas.
+concurrency:
+  group: recordatorios
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  disparar:
+    name: Mandar los recordatorios pendientes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Llamar a la API
+        env:
+          API_URL: ${{ vars.API_URL }}
+          TOKEN: ${{ secrets.RECORDATORIOS_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${API_URL:-}" ] || [ -z "${TOKEN:-}" ]; then
+            echo "Falta configurar la variable API_URL o el secreto RECORDATORIOS_TOKEN."
+            echo "Ver el encabezado de este archivo."
+            exit 1
+          fi
+
+          # --max-time 120: el servicio puede estar dormido y tardar cerca de un
+          # minuto en volver. Cortar antes seria cortar justo el caso que este
+          # workflow viene a resolver.
+          #
+          # --retry 2 sobre errores de conexion, que son los unicos que vale la
+          # pena reintentar: un 401 no mejora reintentando.
+          respuesta=$(curl --silent --show-error \
+            --max-time 120 --retry 2 --retry-connrefused \
+            --write-out '\n%{http_code}' \
+            --request POST "${API_URL}/recordatorios/procesar" \
+            --header "x-recordatorios-token: ${TOKEN}")
+
+          codigo=$(echo "$respuesta" | tail -n 1)
+          cuerpo=$(echo "$respuesta" | sed '$d')
+
+          echo "HTTP $codigo"
+          echo "$cuerpo"
+
+          if [ "$codigo" != "200" ] && [ "$codigo" != "201" ]; then
+            echo "::error::La API contesto $codigo al procesar los recordatorios."
+            exit 1
+          fi

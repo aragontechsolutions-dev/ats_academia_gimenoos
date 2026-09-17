@@ -48,7 +48,7 @@ describe('TelegramService', () => {
   describe('cuándo NO se manda nada', () => {
     it('sin token: la academia funcionaba antes de que esto existiera', async () => {
       const { telegram } = servicio(null, AJUSTES_LISTOS);
-      await telegram.avisar('reservaNueva', 'hola');
+      expect(await telegram.avisar('reservaNueva', 'hola')).toEqual({ estado: 'omitido' });
       expect(fetchFalso).not.toHaveBeenCalled();
       expect(telegram.configurado).toBe(false);
     });
@@ -67,7 +67,9 @@ describe('TelegramService', () => {
 
     it('con ESE aviso apagado, aunque los otros estén prendidos', async () => {
       const { telegram } = servicio(TOKEN, { ...AJUSTES_LISTOS, avisaClicWhatsapp: false });
-      await telegram.avisar('clicWhatsapp', 'alguien tocó el botón');
+      expect(await telegram.avisar('clicWhatsapp', 'alguien tocó el botón')).toEqual({
+        estado: 'omitido',
+      });
       expect(fetchFalso).not.toHaveBeenCalled();
 
       // El interruptor apaga uno solo, no todos.
@@ -79,7 +81,9 @@ describe('TelegramService', () => {
   describe('cuando sí se manda', () => {
     it('le pega al bot correcto y manda el texto', async () => {
       const { telegram } = servicio(TOKEN, AJUSTES_LISTOS);
-      await telegram.avisar('reservaNueva', '<b>Nueva clase</b>');
+      expect(await telegram.avisar('reservaNueva', '<b>Nueva clase</b>')).toEqual({
+        estado: 'enviado',
+      });
 
       const [url, opciones] = fetchFalso.mock.calls[0];
       expect(url).toBe(`https://api.telegram.org/bot${TOKEN}/sendMessage`);
@@ -107,7 +111,12 @@ describe('TelegramService', () => {
         json: async () => ({ ok: false, description: 'chat not found' }),
       });
       const { telegram } = servicio(TOKEN, AJUSTES_LISTOS);
-      await expect(telegram.avisar('reservaNueva', 'hola')).resolves.toBeUndefined();
+      // No lanza, y además dice qué pasó: eso es lo que usan los recordatorios
+      // para decidir si anotarlo como fallido o reintentarlo más adelante.
+      await expect(telegram.avisar('reservaNueva', 'hola')).resolves.toEqual({
+        estado: 'fallo',
+        motivo: 'chat not found',
+      });
     });
 
     it('guarda el motivo que dio Telegram, no uno inventado', async () => {
@@ -124,7 +133,8 @@ describe('TelegramService', () => {
     it('tampoco propaga si la red se cae', async () => {
       fetchFalso.mockRejectedValue(new Error('ECONNREFUSED'));
       const { telegram } = servicio(TOKEN, AJUSTES_LISTOS);
-      await expect(telegram.avisar('claseCerrada', 'hola')).resolves.toBeUndefined();
+      const resultado = await telegram.avisar('claseCerrada', 'hola');
+      expect(resultado.estado).toBe('fallo');
     });
 
     it('el botón «probar» SÍ falla: quien lo apretó está esperando el motivo', async () => {

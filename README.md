@@ -63,6 +63,7 @@ Guía completa: [`docs/06-guia-desarrollo.md`](docs/06-guia-desarrollo.md).
 | [App del instructor](docs/21-pwa-instructor.md) | Su agenda por día, semana o mes; cerrar y cancelar clases; por qué no entra al panel |
 | [Avisos](docs/22-avisos.md) | Confirmaciones y errores: el motivo real, en español, en las tres aplicaciones |
 | [Avisos por Telegram](docs/23-avisos-telegram.md) | Enterarse al instante de clases y consultas, sin entrar al panel |
+| [Recordatorios](docs/24-recordatorios.md) | El aviso 24 h y 2 h antes de cada clase, y cómo se dispara |
 
 ## Antes de publicar
 

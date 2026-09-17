@@ -29,6 +29,12 @@ const INTERRUPTORES = [
     detalle: 'La cancele quien la cancele: el alumno, el instructor o la academia.',
   },
   {
+    clave: 'avisaRecordatorios',
+    titulo: 'Recordatorio de clase',
+    detalle:
+      'El día antes y dos horas antes de cada clase, con el teléfono del alumno a mano por si hay que llamarlo.',
+  },
+  {
     clave: 'avisaClicWhatsapp',
     titulo: 'Alguien va a escribir por WhatsApp',
     detalle:
