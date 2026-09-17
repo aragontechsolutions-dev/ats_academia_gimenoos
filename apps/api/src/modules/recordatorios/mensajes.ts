@@ -13,6 +13,13 @@ export interface ClaseParaRecordar {
   instructor: { nombre: string; apellido: string };
 }
 
+/** Lo que ve el alumno en la notificación de su teléfono. */
+export interface AvisoParaElAlumno {
+  titulo: string;
+  cuerpo: string;
+  url: string;
+}
+
 /** «mañana a las 14:30» o «hoy a las 14:30», según el día de Uruguay. */
 function cuando(inicio: Date, ahora: Date): string {
   const clase = DateTime.fromJSDate(inicio).setZone(ZONA);
@@ -50,4 +57,36 @@ export function recordatorioParaLaAcademia(
     `Instructor: ${escaparHtml(instructor)}` +
     (clase.cliente.telefono ? `\nTeléfono: ${escaparHtml(clase.cliente.telefono)}` : '')
   );
+}
+
+/**
+ * El recordatorio que le llega al ALUMNO a su teléfono.
+ *
+ * Es deliberadamente distinto del que recibe la academia, y más corto. Dos
+ * motivos:
+ *
+ * - Una notificación se ve en la **pantalla bloqueada**, donde la puede leer
+ *   cualquiera que tenga el teléfono en la mano. Por eso no lleva el teléfono
+ *   del alumno ni nada que no sea la clase.
+ * - El aviso de la academia contesta «¿a quién llamo?»; este contesta «¿cuándo
+ *   tengo que estar?». Son dos preguntas distintas.
+ *
+ * Se tutea porque es la voz de toda la app del alumno.
+ */
+export function recordatorioParaElAlumno(
+  clase: ClaseParaRecordar,
+  tipo: TipoRecordatorio,
+  ahora: Date,
+): AvisoParaElAlumno {
+  const instructor = `${clase.instructor.nombre} ${clase.instructor.apellido}`;
+  const esManiana = tipo === TipoRecordatorio.VEINTICUATRO_HORAS;
+
+  return {
+    titulo: esManiana ? 'Tenés clase mañana' : 'Tu clase es en un rato',
+    // Sin escapar: esto no es HTML, es texto que el navegador muestra tal cual.
+    cuerpo:
+      `Clase de ${clase.tipo.toLowerCase()} ${cuando(clase.inicio, ahora)}` +
+      ` con ${instructor}.`,
+    url: '/',
+  };
 }

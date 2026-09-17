@@ -159,9 +159,10 @@ model Usuario {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  cliente    Cliente?
-  instructor Instructor?
-  auditorias RegistroAuditoria[]
+  cliente           Cliente?
+  instructor        Instructor?
+  suscripcionesPush SuscripcionPush[]
+  auditorias        RegistroAuditoria[]
 
   @@index([rol])
   @@map("usuarios")
@@ -635,6 +636,44 @@ model ConfiguracionAcademia {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("configuracion_academia")
+}
+
+/// Un navegador que acepto recibir avisos de la academia.
+///
+/// Una persona puede tener varias: el telefono, la computadora, y otra si
+/// reinstalo la app. Cada una es una suscripcion distinta y todas reciben.
+///
+/// QUE ES `endpoint` Y POR QUE NO SE MUESTRA NUNCA
+///
+/// Es una direccion del servicio de notificaciones del navegador (Google,
+/// Mozilla, Apple) que apunta a ESE navegador. Quien la tenga, junto con las
+/// claves VAPID de la academia, puede mandarle notificaciones a esa persona.
+/// Es una credencial: no se devuelve en ningun endpoint ni se muestra en el
+/// panel. Es unica porque el navegador la reusa si ya estaba suscripto.
+model SuscripcionPush {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// De quien es el navegador. Se borra con la cuenta.
+  usuarioId String @map("usuario_id") @db.Uuid
+
+  endpoint String @unique
+  /// Clave publica del navegador, para cifrar el contenido del aviso.
+  p256dh   String
+  /// Secreto de autenticacion del navegador, tambien para el cifrado.
+  auth     String
+
+  /// Para poder decirle a la persona cual de sus dispositivos es cual.
+  /// Se guarda recortado: no hace falta la cadena entera.
+  dispositivo String? @db.VarChar(120)
+
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  /// Cuando se le mando algo por ultima vez con exito.
+  ultimoEnvioAt DateTime? @map("ultimo_envio_at") @db.Timestamptz(3)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("suscripciones_push")
 }
 
 /// Cuanta antelacion tiene cada recordatorio de clase.

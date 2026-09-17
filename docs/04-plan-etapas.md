@@ -427,17 +427,26 @@ suspende por inactividad, y un temporizador suspendido no dispara nada —sin un
 solo error en ningún registro—. Una llamada externa despierta al servicio **y**
 hace el trabajo.
 
-### Etapa 3.B — Aviso al alumno en su teléfono ⏳ PENDIENTE
+### Etapa 3.B — Aviso al alumno en su teléfono ✅ COMPLETADA
 
-Notificación push de la PWA, 24 h y 2 h antes. Usa el mismo motor de la 3.A: solo
-se agrega un canal.
+Ver [`25-avisos-en-el-telefono.md`](25-avisos-en-el-telefono.md).
 
 | Qué | Estado |
 |---|---|
-| Claves VAPID y suscripciones guardadas por alumno | ⏳ |
-| Pedido de permiso en la app, en el momento correcto y no al entrar | ⏳ |
-| Listeners `push` y `notificationclick` en `apps/cliente/src/sw.ts` | ⏳ |
-| Que tocar la notificación abra la clase | ⏳ |
+| Claves VAPID y suscripciones guardadas por alumno | ✅ |
+| Permiso pedido desde un clic, nunca al entrar | ✅ |
+| Listeners `push` y `notificationclick` en `apps/cliente/src/sw.ts` | ✅ |
+| El segundo aviso reemplaza al primero en vez de apilarse | ✅ |
+| Tocar la notificación trae al frente la app abierta, sin duplicar pestañas | ✅ |
+| Se ofrece en «Mis clases» y se controla desde el perfil | ✅ |
+| Las suscripciones muertas se borran solas (404/410) | ✅ |
+| Pruebas | ✅ 357 + 18 comprobaciones en navegador |
+
+**Queda del lado de la academia:** cargar las tres variables VAPID en Render.
+Sin ellas la app dice que los avisos no están disponibles, en vez de fallar.
+
+**Limitación conocida:** en iPhone sólo funciona con la app agregada a la
+pantalla de inicio. Es de Safari, no del sistema.
 
 ### Etapa 3.C — Recordatorio por correo ⏳ BLOQUEADA
 

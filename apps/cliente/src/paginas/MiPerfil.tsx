@@ -7,6 +7,7 @@ import { PAISES } from '../lib/paises';
 import { fechaCorta } from '../lib/fecha';
 import { useSesion } from '../lib/sesion';
 import { useAvisos } from '../lib/avisos';
+import { AvisosDelTelefono } from '../componentes/AvisosDelTelefono';
 import type { MiFicha } from '../lib/tipos';
 
 const CLASES_CAMPO =
@@ -250,6 +251,13 @@ export function MiPerfil() {
           {guardando ? 'Guardando…' : 'Guardar cambios'}
         </Boton>
       </form>
+
+      <section className="mt-8 rounded-xl border border-slate-200 bg-white p-4">
+        <h2 className="font-semibold text-slate-900">Avisos de tus clases</h2>
+        <div className="mt-3">
+          <AvisosDelTelefono variante="control" />
+        </div>
+      </section>
 
       {ficha?.email && (
         <p className="mt-6 text-center text-xs text-slate-500">

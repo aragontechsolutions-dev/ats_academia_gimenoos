@@ -82,5 +82,14 @@ export async function llamarApi<T>(ruta: string, opciones: RequestInit = {}): Pr
     throw new ErrorApi(respuesta.status, mensaje, detalles);
   }
 
+  // Una respuesta sin cuerpo NO es un error. Los endpoints que no tienen nada
+  // que devolver contestan 204, y `json()` sobre un cuerpo vacio lanza
+  // «Unexpected end of JSON input». Antes eso convertia una operacion que habia
+  // salido bien en un error en pantalla: el dato se guardaba y al usuario se le
+  // decia que no.
+  if (respuesta.status === 204 || respuesta.headers.get('content-length') === '0') {
+    return undefined as T;
+  }
+
   return (await respuesta.json()) as T;
 }

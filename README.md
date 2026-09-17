@@ -64,6 +64,7 @@ Guía completa: [`docs/06-guia-desarrollo.md`](docs/06-guia-desarrollo.md).
 | [Avisos](docs/22-avisos.md) | Confirmaciones y errores: el motivo real, en español, en las tres aplicaciones |
 | [Avisos por Telegram](docs/23-avisos-telegram.md) | Enterarse al instante de clases y consultas, sin entrar al panel |
 | [Recordatorios](docs/24-recordatorios.md) | El aviso 24 h y 2 h antes de cada clase, y cómo se dispara |
+| [Avisos en el teléfono](docs/25-avisos-en-el-telefono.md) | La notificación que recibe el alumno, sin costo ni servicios externos |
 
 ## Antes de publicar
 
