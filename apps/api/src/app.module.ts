@@ -12,6 +12,7 @@ import { RolesGuard } from './common/auth/roles.guard';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { SupabaseModule } from './common/supabase/supabase.module';
 import { TelegramModule } from './common/telegram/telegram.module';
+import { PushModule } from './common/push/push.module';
 
 import { HealthModule } from './modules/health/health.module';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
@@ -19,6 +20,7 @@ import { CatalogoModule } from './modules/catalogo/catalogo.module';
 import { ConfiguracionModule } from './modules/configuracion/configuracion.module';
 import { AvisosModule } from './modules/avisos/avisos.module';
 import { RecordatoriosModule } from './modules/recordatorios/recordatorios.module';
+import { PushApiModule } from './modules/push/push-api.module';
 import { AgendaModule } from './modules/agenda/agenda.module';
 import { InstructoresModule } from './modules/instructores/instructores.module';
 import { VehiculosModule } from './modules/vehiculos/vehiculos.module';
@@ -47,6 +49,7 @@ import { InvitacionesModule } from './modules/invitaciones/invitaciones.module';
     AuditoriaModule,
     SupabaseModule,
     TelegramModule,
+    PushModule,
     AuthModule,
     HealthModule,
     UsuariosModule,
@@ -54,6 +57,7 @@ import { InvitacionesModule } from './modules/invitaciones/invitaciones.module';
     ConfiguracionModule,
     AvisosModule,
     RecordatoriosModule,
+    PushApiModule,
     AgendaModule,
     InstructoresModule,
     VehiculosModule,

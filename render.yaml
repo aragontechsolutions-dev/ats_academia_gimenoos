@@ -84,3 +84,12 @@ services:
       # Vacio = el endpoint contesta 503 y no queda abierto.
       - key: RECORDATORIOS_TOKEN
         sync: false
+      # Claves VAPID para los avisos en el telefono del alumno. Se generan una
+      # vez y NO se cambian: rotarlas invalida todas las suscripciones.
+      # Ver docs/25-avisos-en-el-telefono.md.
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false

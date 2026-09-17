@@ -136,6 +136,32 @@ export const envSchema = z.object({
     .min(32, 'tiene que tener al menos 32 caracteres: es lo único que protege el endpoint')
     .optional()
     .or(z.literal('')),
+
+  // --- Avisos en el teléfono del alumno (Web Push) --------------------------
+  /**
+   * Claves VAPID: el par con el que la API firma cada aviso.
+   *
+   * La **pública** viaja al navegador y es pública de verdad: se sirve desde
+   * `GET /push/clave-publica` en vez de copiarse a una variable del frontend,
+   * para que no haya dos copias que puedan quedar desincronizadas.
+   *
+   * La **privada** es una credencial: quien la tenga puede mandarle
+   * notificaciones a cualquiera que esté suscripto. Vive solo acá.
+   *
+   * Se generan una vez y no se cambian: **rotarlas invalida todas las
+   * suscripciones**, y cada alumno tendría que volver a dar permiso.
+   * Ver docs/25-avisos-en-el-telefono.md.
+   */
+  VAPID_PUBLIC_KEY: z.string().optional().or(z.literal('')),
+  VAPID_PRIVATE_KEY: z.string().optional().or(z.literal('')),
+  /**
+   * Un contacto de quien manda los avisos, como pide el estándar. Sirve para que
+   * el servicio del navegador sepa a quién escribirle si algo anda mal.
+   */
+  VAPID_SUBJECT: z
+    .string()
+    .regex(/^mailto:.+@.+\..+$/, 'tiene que ser un mailto: con una dirección de correo')
+    .default('mailto:contacto@academiagimenoos.com.uy'),
 });
 
 export type Env = z.infer<typeof envSchema>;

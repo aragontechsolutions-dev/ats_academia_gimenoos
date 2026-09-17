@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { DateTime } from 'luxon';
 
 import { TarjetaClase } from '../componentes/TarjetaClase';
+import { AvisosDelTelefono } from '../componentes/AvisosDelTelefono';
 import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { academia, misClases } from '../lib/recursos';
@@ -114,6 +115,11 @@ export function MisClases() {
             comunicate con la academia.
           </p>
         )}
+
+        {/* Solo con una clase por delante: ofrecer recordatorios a quien no tiene
+            nada agendado es ofrecer algo que no le sirve todavía. El componente
+            además se esconde solo si ya se preguntó. */}
+        {proximas.length > 0 && <AvisosDelTelefono variante="tarjeta" />}
       </section>
 
       {anteriores.length > 0 && (

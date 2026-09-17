@@ -9,6 +9,7 @@ import { CanalRecordatorio, EstadoReserva, TipoRecordatorio, TipoVehiculo } from
 
 import { PrismaService } from '../src/common/prisma/prisma.service';
 import type { TelegramService, ResultadoDeAviso } from '../src/common/telegram/telegram.service';
+import type { AvisoPush, PushService, ResultadoPush } from '../src/common/push/push.service';
 import { RecordatoriosService } from '../src/modules/recordatorios/recordatorios.service';
 
 const prisma = new PrismaService();
@@ -36,6 +37,29 @@ function telegramFalso(resultado: ResultadoDeAviso = { estado: 'enviado' }) {
     },
   } as unknown as TelegramService;
   return { servicio, mandados };
+}
+
+/**
+ * Un push de mentira. Por defecto NO manda nada.
+ *
+ * El defecto es `omitido` a propósito: la mayoría de estas pruebas miran el
+ * canal de Telegram, y un push que ademas "sale" ensuciaría los números del
+ * resumen en todas ellas. Las que miran el push lo dicen.
+ */
+function pushFalso(resultado: ResultadoPush = { estado: 'omitido' }) {
+  const mandados: AvisoPush[] = [];
+  const servicio = {
+    avisar: async (_usuarioId: string, aviso: AvisoPush) => {
+      mandados.push(aviso);
+      return resultado;
+    },
+  } as unknown as PushService;
+  return { servicio, mandados };
+}
+
+/** El servicio con los dos canales, para no repetir el armado en cada prueba. */
+function conCanales(telegram: TelegramService, push?: PushService) {
+  return new RecordatoriosService(prisma, telegram, push ?? pushFalso().servicio);
 }
 
 async function crearReserva(id: string, createdAt: Date) {
@@ -89,6 +113,10 @@ beforeEach(async () => {
   await prisma.recordatorioEnviado.deleteMany({
     where: { reservaId: { in: [ID.reserva, ID.reservaTardia] } },
   });
+  // Las DOS, y antes de crear: la restricción anti-doble-reserva no admite dos
+  // clases del mismo instructor en el mismo horario, así que una prueba que dejó
+  // la suya en pie haría fallar el armado de la siguiente.
+  await prisma.reserva.deleteMany({ where: { id: { in: [ID.reserva, ID.reservaTardia] } } });
   // Reservada con una semana de antelación: le corresponden los dos avisos.
   await crearReserva(ID.reserva, new Date(INICIO.getTime() - hs(24 * 7)));
 });
@@ -108,7 +136,7 @@ afterAll(async () => {
 describe('una pasada de recordatorios', () => {
   it('manda el de 24 horas cuando toca', async () => {
     const { servicio, mandados } = telegramFalso();
-    const recordatorios = new RecordatoriosService(prisma, servicio);
+    const recordatorios = conCanales(servicio);
 
     const resumen = await recordatorios.procesar(new Date(INICIO.getTime() - hs(23)));
 
@@ -121,7 +149,7 @@ describe('una pasada de recordatorios', () => {
     // Es la razón de ser de la clave única: el disparador es externo y puede
     // llamar dos veces —un reintento, dos ejecuciones que se pisan—.
     const { servicio, mandados } = telegramFalso();
-    const recordatorios = new RecordatoriosService(prisma, servicio);
+    const recordatorios = conCanales(servicio);
     const ahora = new Date(INICIO.getTime() - hs(23));
 
     await recordatorios.procesar(ahora);
@@ -134,7 +162,7 @@ describe('una pasada de recordatorios', () => {
 
   it('ni siquiera si las dos pasadas corren a la vez', async () => {
     const { servicio, mandados } = telegramFalso();
-    const recordatorios = new RecordatoriosService(prisma, servicio);
+    const recordatorios = conCanales(servicio);
     const ahora = new Date(INICIO.getTime() - hs(23));
 
     await Promise.all([recordatorios.procesar(ahora), recordatorios.procesar(ahora)]);
@@ -144,7 +172,7 @@ describe('una pasada de recordatorios', () => {
 
   it('el de 2 horas es otro recordatorio: sale aunque ya haya salido el de 24', async () => {
     const { servicio, mandados } = telegramFalso();
-    const recordatorios = new RecordatoriosService(prisma, servicio);
+    const recordatorios = conCanales(servicio);
 
     await recordatorios.procesar(new Date(INICIO.getTime() - hs(23)));
     const segunda = await recordatorios.procesar(new Date(INICIO.getTime() - hs(1.5)));
@@ -160,7 +188,7 @@ describe('una pasada de recordatorios', () => {
       data: { estado: EstadoReserva.CANCELADA },
     });
     const { servicio, mandados } = telegramFalso();
-    const recordatorios = new RecordatoriosService(prisma, servicio);
+    const recordatorios = conCanales(servicio);
 
     const resumen = await recordatorios.procesar(new Date(INICIO.getTime() - hs(23)));
 
@@ -170,7 +198,7 @@ describe('una pasada de recordatorios', () => {
 
   it('una clase que ya empezó tampoco', async () => {
     const { servicio, mandados } = telegramFalso();
-    const recordatorios = new RecordatoriosService(prisma, servicio);
+    const recordatorios = conCanales(servicio);
 
     await recordatorios.procesar(new Date(INICIO.getTime() + hs(1)));
 
@@ -181,7 +209,7 @@ describe('una pasada de recordatorios', () => {
 describe('cuando el aviso no sale', () => {
   it('si falla, queda anotado con el motivo y NO se reintenta en bucle', async () => {
     const { servicio } = telegramFalso({ estado: 'fallo', motivo: 'chat not found' });
-    const recordatorios = new RecordatoriosService(prisma, servicio);
+    const recordatorios = conCanales(servicio);
     const ahora = new Date(INICIO.getTime() - hs(23));
 
     const primera = await recordatorios.procesar(ahora);
@@ -209,16 +237,17 @@ describe('cuando el aviso no sale', () => {
     // Sin bot configurado, o con el aviso apagado, anotar el recordatorio dejaría
     // las clases de mañana marcadas como avisadas sin que nadie recibiera nada.
     const { servicio } = telegramFalso({ estado: 'omitido' });
-    const recordatorios = new RecordatoriosService(prisma, servicio);
+    const recordatorios = conCanales(servicio);
     const ahora = new Date(INICIO.getTime() - hs(23));
 
+    // Dos: ni Telegram ni el push tienen a dónde mandar en esta prueba.
     const resumen = await recordatorios.procesar(ahora);
-    expect(resumen.omitidos).toBe(1);
+    expect(resumen.omitidos).toBe(2);
     expect(await prisma.recordatorioEnviado.count({ where: { reservaId: ID.reserva } })).toBe(0);
 
     // Y con el bot ya configurado, el mismo recordatorio sale.
     const { servicio: conBot, mandados } = telegramFalso();
-    await new RecordatoriosService(prisma, conBot).procesar(ahora);
+    await conCanales(conBot).procesar(ahora);
     expect(mandados).toHaveLength(1);
   });
 });
@@ -232,7 +261,7 @@ describe('quien reserva sobre la hora', () => {
     await crearReserva(ID.reservaTardia, new Date(INICIO.getTime() - hs(3)));
 
     const { servicio, mandados } = telegramFalso();
-    const recordatorios = new RecordatoriosService(prisma, servicio);
+    const recordatorios = conCanales(servicio);
 
     await recordatorios.procesar(new Date(INICIO.getTime() - hs(2.5)));
     expect(mandados).toHaveLength(0);
@@ -241,5 +270,79 @@ describe('quien reserva sobre la hora', () => {
     await recordatorios.procesar(new Date(INICIO.getTime() - hs(1.5)));
     expect(mandados).toHaveLength(1);
     expect(mandados[0]).toContain('Clase en un rato');
+  });
+});
+
+describe('el aviso al alumno en su teléfono', () => {
+  it('sale además del de la academia, y con otro texto', async () => {
+    const { servicio: telegram, mandados: aTelegram } = telegramFalso();
+    const { servicio: push, mandados: alTelefono } = pushFalso({ estado: 'enviado', dispositivos: 1 });
+    const recordatorios = conCanales(telegram, push);
+
+    await recordatorios.procesar(new Date(INICIO.getTime() - hs(23)));
+
+    expect(aTelegram).toHaveLength(1);
+    expect(alTelefono).toHaveLength(1);
+
+    // El de la academia contesta "¿a quién llamo?"; el del alumno, "¿cuándo
+    // tengo que estar?". Por eso el teléfono NO viaja al teléfono del alumno.
+    expect(aTelegram[0]).toContain('+598 92331784');
+    expect(JSON.stringify(alTelefono[0])).not.toContain('92331784');
+    expect(alTelefono[0]!.titulo).toBe('Tenés clase mañana');
+    expect(alTelefono[0]!.cuerpo).toContain('mañana a las 14:00');
+  });
+
+  it('cada canal se anota por separado: que uno falle no tapa al otro', async () => {
+    const { servicio: telegram } = telegramFalso({ estado: 'fallo', motivo: 'chat not found' });
+    const { servicio: push } = pushFalso({ estado: 'enviado', dispositivos: 2 });
+    const recordatorios = conCanales(telegram, push);
+
+    const resumen = await recordatorios.procesar(new Date(INICIO.getTime() - hs(23)));
+
+    expect(resumen.enviados).toBe(1);
+    expect(resumen.fallidos).toBe(1);
+
+    const anotados = await prisma.recordatorioEnviado.findMany({
+      where: { reservaId: ID.reserva },
+      orderBy: { canal: 'asc' },
+    });
+    expect(anotados).toHaveLength(2);
+    expect(anotados.find((a) => a.canal === CanalRecordatorio.PUSH)?.entregado).toBe(true);
+    expect(anotados.find((a) => a.canal === CanalRecordatorio.TELEGRAM)?.entregado).toBe(false);
+  });
+
+  it('tampoco al alumno le llega dos veces', async () => {
+    const { servicio: telegram } = telegramFalso();
+    const { servicio: push, mandados } = pushFalso({ estado: 'enviado', dispositivos: 1 });
+    const recordatorios = conCanales(telegram, push);
+    const ahora = new Date(INICIO.getTime() - hs(23));
+
+    await recordatorios.procesar(ahora);
+    await recordatorios.procesar(ahora);
+
+    expect(mandados).toHaveLength(1);
+  });
+
+  it('un alumno SIN cuenta no recibe push, y eso no es un fallo', async () => {
+    // La ficha existe pero nunca se la invitó a usar la app: no hay a dónde
+    // mandarle nada. No se anota ni se cuenta como error.
+    await prisma.cliente.update({ where: { id: ID.cliente }, data: { usuarioId: null } });
+    try {
+      const { servicio: telegram } = telegramFalso();
+      const { servicio: push, mandados } = pushFalso({ estado: 'enviado', dispositivos: 1 });
+      const recordatorios = conCanales(telegram, push);
+
+      const resumen = await recordatorios.procesar(new Date(INICIO.getTime() - hs(23)));
+
+      expect(mandados).toHaveLength(0);
+      expect(resumen.fallidos).toBe(0);
+      expect(
+        await prisma.recordatorioEnviado.count({
+          where: { reservaId: ID.reserva, canal: CanalRecordatorio.PUSH },
+        }),
+      ).toBe(0);
+    } finally {
+      await prisma.cliente.update({ where: { id: ID.cliente }, data: { usuarioId: ID.usuario } });
+    }
   });
 });

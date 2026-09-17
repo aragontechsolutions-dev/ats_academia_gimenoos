@@ -8,8 +8,9 @@ import {
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { TelegramService } from '../../common/telegram/telegram.service';
+import { PushService } from '../../common/push/push.service';
 import { ANTELACION_HORAS, correspondeMandar } from './reglas';
-import { recordatorioParaLaAcademia } from './mensajes';
+import { recordatorioParaElAlumno, recordatorioParaLaAcademia } from './mensajes';
 
 /** Qué pasó en una pasada. Es lo que devuelve el endpoint y lo que se registra. */
 export interface ResumenDeLaPasada {
@@ -31,7 +32,10 @@ const SELECCION = {
   inicio: true,
   tipo: true,
   createdAt: true,
-  cliente: { select: { nombre: true, apellido: true, telefono: true } },
+  // `usuarioId` para saber a qué teléfono mandarle el aviso. Un alumno sin
+  // cuenta —la ficha existe pero nunca fue invitado— lo tiene en null, y
+  // simplemente no recibe push.
+  cliente: { select: { nombre: true, apellido: true, telefono: true, usuarioId: true } },
   instructor: { select: { nombre: true, apellido: true } },
 } satisfies Prisma.ReservaSelect;
 
@@ -54,6 +58,7 @@ export class RecordatoriosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly telegram: TelegramService,
+    private readonly push: PushService,
   ) {}
 
   /**
@@ -93,7 +98,10 @@ export class RecordatoriosService {
     for (const clase of clases) {
       for (const tipo of Object.values(TipoRecordatorio)) {
         if (!correspondeMandar(clase, tipo, ahora)) continue;
+        // Los dos canales son independientes: que el alumno no tenga la app
+        // instalada no puede dejar a la academia sin su aviso, ni al revés.
         await this.mandarALaAcademia(clase, tipo, ahora, resumen);
+        await this.mandarAlAlumno(clase, tipo, ahora, resumen);
       }
     }
 
@@ -125,15 +133,56 @@ export class RecordatoriosService {
    * configurar el bot hoy dejaría sin recordatorio a las clases de mañana, que
    * ya habrían quedado marcadas como avisadas sin que nadie recibiera nada.
    */
-  private async mandarALaAcademia(
-    clase: Prisma.ReservaGetPayload<{ select: typeof SELECCION }>,
+  private mandarALaAcademia(
+    clase: Clase,
     tipo: TipoRecordatorio,
     ahora: Date,
     resumen: ResumenDeLaPasada,
   ): Promise<void> {
+    return this.porUnCanal(clase, tipo, CanalRecordatorio.TELEGRAM, resumen, () =>
+      this.telegram.avisar('recordatorio', recordatorioParaLaAcademia(clase, tipo, ahora)),
+    );
+  }
+
+  private async mandarAlAlumno(
+    clase: Clase,
+    tipo: TipoRecordatorio,
+    ahora: Date,
+    resumen: ResumenDeLaPasada,
+  ): Promise<void> {
+    // Una ficha sin cuenta no tiene a dónde recibir. No es un fallo ni algo que
+    // anotar: es un alumno al que todavía nadie invitó a usar la app.
+    const usuarioId = clase.cliente.usuarioId;
+    if (!usuarioId) return;
+
+    await this.porUnCanal(clase, tipo, CanalRecordatorio.PUSH, resumen, async () => {
+      const resultado = await this.push.avisar(
+        usuarioId,
+        recordatorioParaElAlumno(clase, tipo, ahora),
+      );
+      // `enviado` trae además a cuántos dispositivos llegó; acá sólo importa si
+      // llegó o no.
+      return resultado.estado === 'enviado' ? { estado: 'enviado' as const } : resultado;
+    });
+  }
+
+  /**
+   * El ciclo que comparten todos los canales: reservar el lugar, mandar, anotar.
+   *
+   * Está factorizado porque la parte delicada —el orden de las escrituras— tiene
+   * que ser idéntica en los tres canales. Duplicarla sería tener tres lugares
+   * donde equivocarse con lo mismo.
+   */
+  private async porUnCanal(
+    clase: Clase,
+    tipo: TipoRecordatorio,
+    canal: CanalRecordatorio,
+    resumen: ResumenDeLaPasada,
+    mandar: () => Promise<ResultadoDeEnvio>,
+  ): Promise<void> {
     try {
       await this.prisma.recordatorioEnviado.create({
-        data: { reservaId: clase.id, tipo, canal: CanalRecordatorio.TELEGRAM },
+        data: { reservaId: clase.id, tipo, canal },
       });
     } catch (problema) {
       // P2002 es la clave única: este recordatorio ya se mandó. No es un error.
@@ -144,13 +193,8 @@ export class RecordatoriosService {
       throw problema;
     }
 
-    const donde = {
-      reservaId_tipo_canal: { reservaId: clase.id, tipo, canal: CanalRecordatorio.TELEGRAM },
-    };
-    const resultado = await this.telegram.avisar(
-      'recordatorio',
-      recordatorioParaLaAcademia(clase, tipo, ahora),
-    );
+    const donde = { reservaId_tipo_canal: { reservaId: clase.id, tipo, canal } };
+    const resultado = await mandar();
 
     if (resultado.estado === 'enviado') {
       resumen.enviados++;
@@ -170,3 +214,12 @@ export class RecordatoriosService {
     });
   }
 }
+
+/** La clase, con los campos que trae `SELECCION`. */
+type Clase = Prisma.ReservaGetPayload<{ select: typeof SELECCION }>;
+
+/** Lo que cualquier canal tiene que contestar. */
+type ResultadoDeEnvio =
+  | { estado: 'enviado' }
+  | { estado: 'omitido' }
+  | { estado: 'fallo'; motivo: string };
