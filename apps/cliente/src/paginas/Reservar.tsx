@@ -5,7 +5,7 @@ import { DateTime } from 'luxon';
 import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { academia, reservar } from '../lib/recursos';
-import { fechaLarga, hora } from '../lib/fecha';
+import { fechaCorta, fechaLarga, hora } from '../lib/fecha';
 import type { ConfiguracionPublica, Hueco, TipoVehiculo } from '../lib/tipos';
 
 const DURACIONES = [30, 45, 60] as const;
@@ -15,7 +15,20 @@ export function Reservar() {
 
   const [tipo, setTipo] = useState<TipoVehiculo>('AUTO');
   const [duracionMin, setDuracionMin] = useState<number>(45);
-  const [dia, setDia] = useState(() => DateTime.now().plus({ days: 1 }).toISODate() ?? '');
+  // Arranca vacío a propósito: el primer día que se puede reservar depende de la
+  // antelación mínima, que viene de la configuración y todavía no llegó. Se
+  // completa abajo, en cuanto se sabe.
+  const [dia, setDia] = useState('');
+  /**
+   * Si el alumno ya tocó el campo.
+   *
+   * La configuración llega después del primer dibujado, así que el día por
+   * defecto se calcula dos veces: una sin saber la antelación y otra sabiéndola.
+   * Sin esta marca hay que elegir entre dos errores: no corregir nunca —y dejar
+   * el campo por debajo de su propio mínimo— o corregir siempre, y pisarle al
+   * alumno el día que acaba de elegir.
+   */
+  const [eligioDia, setEligioDia] = useState(false);
 
   const [huecos, setHuecos] = useState<Hueco[]>([]);
   const [elegido, setElegido] = useState<Hueco | null>(null);
@@ -65,14 +78,41 @@ export function Reservar() {
     return [...porHora.values()];
   }, [huecos]);
 
+  /**
+   * El primer día que de verdad se puede reservar.
+   *
+   * No es «hoy» ni es «mañana»: es el día en el que cae `ahora + antelación
+   * mínima`. Las dos versiones anteriores estaban mal de maneras distintas.
+   *
+   * Poner «hoy» como mínimo dejaba elegir un día sin un solo horario libre: a
+   * las once de la noche, con doce horas de antelación, hoy ya no entra nada.
+   * Y poner «mañana» fijo se pasaba de largo para el otro lado: a las ocho de
+   * la mañana todavía quedan horarios de la tarde, y el formulario los
+   * escondía.
+   *
+   * Encima ese «mañana» fijo se leía como un error del sistema, y con razón:
+   * el alumno abre la pantalla a las diez y media de la noche del 16 y ve un
+   * 17 sin ninguna explicación.
+   */
+  const primerDia = useMemo(
+    () => DateTime.now().plus({ hours: config?.antelacionMinimaHoras ?? 0 }).toISODate() ?? '',
+    [config],
+  );
+
+  // Mientras el alumno no haya elegido, el campo sigue al primer día válido.
+  // Cuando eligió, manda él.
+  useEffect(() => {
+    if (!eligioDia && primerDia) setDia(primerDia);
+  }, [eligioDia, primerDia]);
+
   /** Los días que el alumno puede elegir, acotados por la ventana de reserva. */
-  const limites = useMemo(() => {
-    const ahora = DateTime.now();
-    return {
-      min: ahora.toISODate() ?? '',
-      max: ahora.plus({ days: 60 }).toISODate() ?? '',
-    };
-  }, []);
+  const limites = useMemo(
+    () => ({
+      min: primerDia,
+      max: DateTime.now().plus({ days: 60 }).toISODate() ?? '',
+    }),
+    [primerDia],
+  );
 
   async function confirmar() {
     if (!elegido) return;
@@ -151,9 +191,20 @@ export function Reservar() {
           value={dia}
           min={limites.min}
           max={limites.max}
-          onChange={(evento) => setDia(evento.target.value)}
+          onChange={(evento) => {
+            setEligioDia(true);
+            setDia(evento.target.value);
+          }}
           className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3 text-sm focus:border-marca-600 focus:outline-none"
         />
+        {/* La regla ya está arriba del formulario; acá va lo que se deduce de
+            ella. Sin esta línea, el día que aparece solo se lee como un error:
+            nada en pantalla explica por qué no es hoy. */}
+        {config && config.antelacionMinimaHoras > 0 && limites.min && (
+          <span className="mt-1 block text-xs text-slate-500">
+            Por esa antelación, el primer día que podés elegir es el {fechaCorta(limites.min)}.
+          </span>
+        )}
       </label>
 
       <section className="mt-6">

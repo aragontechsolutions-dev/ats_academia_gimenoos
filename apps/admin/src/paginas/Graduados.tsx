@@ -8,6 +8,7 @@ import { Campo, clasesControl } from '../componentes/ui/Campo';
 import { DiplomaImprimible } from '../componentes/DiplomaImprimible';
 import { CeldaFoto } from '../componentes/CeldaFoto';
 import { graduados as api, clientes as apiClientes } from '../lib/recursos';
+import { hoyEnMontevideo } from '../lib/fecha';
 import type { Cliente, Graduado } from '../lib/tipos';
 
 const SITIO_URL = import.meta.env.VITE_SITIO_URL ?? 'academiagimenoos.com.uy';
@@ -272,11 +273,13 @@ function FormularioEgresado({
   const [alumnos, setAlumnos] = useState<Cliente[]>([]);
   const [clienteId, setClienteId] = useState('');
   const [categoria, setCategoria] = useState<string>('A');
-  const [fechaEgreso, setFechaEgreso] = useState(() => new Date().toISOString().slice(0, 10));
+  // `hoyEnMontevideo()` y no `new Date().toISOString().slice(0, 10)`: ese recorte
+  // da la fecha en UTC, y de las nueve de la noche en adelante Uruguay ya está en
+  // el día anterior al de UTC. El formulario se abría con la fecha de MAÑANA, que
+  // es justo el error que reportó la academia una noche a las diez y media.
+  const [fechaEgreso, setFechaEgreso] = useState(hoyEnMontevideo);
   const [tieneAutorizacion, setTieneAutorizacion] = useState(false);
-  const [autorizacionAt, setAutorizacionAt] = useState(() =>
-    new Date().toISOString().slice(0, 10),
-  );
+  const [autorizacionAt, setAutorizacionAt] = useState(hoyEnMontevideo);
   const [esTutor, setEsTutor] = useState(false);
   const [firmante, setFirmante] = useState('');
   const [guardando, setGuardando] = useState(false);
