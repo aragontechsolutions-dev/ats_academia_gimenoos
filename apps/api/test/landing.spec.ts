@@ -23,10 +23,11 @@ import {
   ordenPorDefecto,
 } from '../src/modules/landing/claves';
 import type { UsuarioAutenticado } from '../src/common/auth/jwt-payload.interface';
+import { telegramCallado } from './ayuda/telegram-callado';
 
 const prisma = new PrismaService();
 const servicio = new LandingService(prisma, new AuditoriaService(prisma));
-const controlador = new LandingController(servicio);
+const controlador = new LandingController(servicio, telegramCallado());
 
 const ADMIN: UsuarioAutenticado = {
   id: '00000000-0000-4000-e000-000000000001',

@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useMemo, type ReactNode } from 
 import { coordenadasDe, digitosParaWhatsApp, type Coordenadas } from '@gimenoos/shared';
 
 import { negocio as negocioPorDefecto, MENSAJE_WHATSAPP } from '../contenido';
+import { avisarContactoWhatsApp, type SeccionDeContacto } from '../lib/api';
 import {
   useContenidoRemoto,
   dato,
@@ -175,8 +176,42 @@ export function construirEnlaceWhatsApp(
   return `https://wa.me/${digitos}?text=${encodeURIComponent(mensaje)}`;
 }
 
-/** Destino del CTA principal: WhatsApp si está configurado, si no el formulario. */
-export function useDestinoPrincipal(): { href: string; externo: boolean } {
-  const wa = useEnlaceWhatsApp();
-  return wa ? { href: wa, externo: true } : { href: '#contacto', externo: false };
+/** Todo lo que necesita un enlace de contacto para dibujarse y para avisar. */
+export interface EnlaceDeContacto {
+  href: string;
+  externo: boolean;
+  /** Va en el `onClick` del enlace. Avisa a la academia; nunca frena el clic. */
+  onClick: () => void;
+}
+
+/**
+ * Un enlace a WhatsApp que además avisa desde qué sección salió.
+ *
+ * La sección es obligatoria y no tiene valor por defecto. Es a propósito: el
+ * aviso sirve para saber **qué parte del sitio trae consultas**, y un valor por
+ * defecto convertiría cada botón nuevo en un aviso que miente sin que nadie se
+ * entere. Sin sección, no compila.
+ *
+ * Devuelve null si todavía no hay número cargado, igual que antes: un botón de
+ * WhatsApp que no lleva a WhatsApp es peor que no tener botón.
+ */
+export function useContactoWhatsApp(
+  seccion: SeccionDeContacto,
+  mensaje: string = MENSAJE_WHATSAPP,
+): EnlaceDeContacto | null {
+  const href = useEnlaceWhatsApp(mensaje);
+  if (!href) return null;
+  return { href, externo: true, onClick: () => avisarContactoWhatsApp(seccion) };
+}
+
+/**
+ * Destino del CTA principal: WhatsApp si está configurado, si no el formulario.
+ *
+ * Cuando cae en el formulario NO avisa: no hubo contacto todavía, sólo alguien
+ * bajando a un formulario que quizá no complete. El aviso de ese camino lo manda
+ * el formulario cuando se envía.
+ */
+export function useDestinoPrincipal(seccion: SeccionDeContacto): EnlaceDeContacto {
+  const contacto = useContactoWhatsApp(seccion);
+  return contacto ?? { href: '#contacto', externo: false, onClick: () => undefined };
 }

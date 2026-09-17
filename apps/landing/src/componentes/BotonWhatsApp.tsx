@@ -1,4 +1,4 @@
-import { useEnlaceWhatsApp } from '../contexto/ContenidoContexto';
+import { useContactoWhatsApp } from '../contexto/ContenidoContexto';
 
 /**
  * Botón flotante de WhatsApp.
@@ -7,12 +7,13 @@ import { useEnlaceWhatsApp } from '../contexto/ContenidoContexto';
  * no lleva a ninguna parte es peor que no tenerlo.
  */
 export function BotonWhatsApp() {
-  const enlace = useEnlaceWhatsApp();
+  const enlace = useContactoWhatsApp('boton-flotante');
   if (!enlace) return null;
 
   return (
     <a
-      href={enlace}
+      href={enlace.href}
+      onClick={enlace.onClick}
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25d366] text-white shadow-xl shadow-carbon-950/25 transition hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-carbon-950 focus-visible:ring-offset-2"

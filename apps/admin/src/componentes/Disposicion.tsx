@@ -16,6 +16,7 @@ const SECCIONES = [
   { ruta: '/graduados', texto: 'Egresados', exacto: false },
   { ruta: '/sitio', texto: 'Sitio web', exacto: false },
   { ruta: '/cuentas', texto: 'Cuentas', exacto: false },
+  { ruta: '/avisos', texto: 'Avisos', exacto: false },
 ];
 
 export function Disposicion({ children }: { children: ReactNode }) {

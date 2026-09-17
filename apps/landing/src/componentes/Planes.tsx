@@ -45,7 +45,7 @@ function indiceDestacado(servicios: ServicioPublico[]): number {
 export function Planes() {
   const [servicios, setServicios] = useState<ServicioPublico[]>([]);
   const [cargando, setCargando] = useState(true);
-  const principal = useDestinoPrincipal();
+  const principal = useDestinoPrincipal('planes');
   const config = useSeccion('planes');
 
   useEffect(() => {
@@ -81,6 +81,7 @@ export function Planes() {
           <a
             href={principal.href}
             {...(principal.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            onClick={principal.onClick}
             className="font-bold text-marca-600 underline"
           >
             Consultanos y te lo pasamos.
@@ -194,6 +195,7 @@ export function Planes() {
                 <a
                   href={principal.href}
                   {...(principal.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  onClick={principal.onClick}
                   className={`${clasesBoton(esDestacado ? 'acento' : 'contornoOscuro')} mt-6 w-full`}
                 >
                   Consultar

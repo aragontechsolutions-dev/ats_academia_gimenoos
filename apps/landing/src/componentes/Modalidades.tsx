@@ -7,7 +7,7 @@ import { items as resolverItems, texto } from '../lib/contenidoRemoto';
 const ICONOS_MODALIDAD = { auto: Car, moto: Bike } as const;
 
 export function Modalidades() {
-  const principal = useDestinoPrincipal();
+  const principal = useDestinoPrincipal('modalidades');
   const config = useSeccion('modalidades');
   const configOpciones = useSeccion('opciones');
   if (!config.visible) return null;
@@ -75,6 +75,7 @@ export function Modalidades() {
               <a
                 href={principal.href}
                 {...(principal.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                onClick={principal.onClick}
                 className="mt-4 text-sm font-bold text-marca-600 hover:text-marca-700"
               >
                 Consultar →

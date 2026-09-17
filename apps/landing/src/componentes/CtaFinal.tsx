@@ -1,12 +1,12 @@
 import { ArrowRight, MessageCircle } from 'lucide-react';
 import { BotonEnlace } from './ui/Boton';
-import { useDestinoPrincipal, useEnlaceWhatsApp, useSeccion } from '../contexto/ContenidoContexto';
+import { useDestinoPrincipal, useContactoWhatsApp, useSeccion } from '../contexto/ContenidoContexto';
 import { texto } from '../lib/contenidoRemoto';
 
 /** Último empujón antes del pie: una sola idea y dos formas de actuar. */
 export function CtaFinal() {
-  const principal = useDestinoPrincipal();
-  const whatsapp = useEnlaceWhatsApp();
+  const principal = useDestinoPrincipal('cta-final');
+  const whatsapp = useContactoWhatsApp('cta-final');
   const config = useSeccion('ctaFinal');
   if (!config.visible) return null;
 
@@ -29,12 +29,17 @@ export function CtaFinal() {
           {texto(config.bajada, 'Escribinos y coordinamos. Después, manejar es cuestión de práctica.')}
         </p>
         <div className="aparece mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-          <BotonEnlace href={principal.href} externo={principal.externo} variante="claro">
+          <BotonEnlace
+            href={principal.href}
+            externo={principal.externo}
+            onClick={principal.onClick}
+            variante="claro"
+          >
             {texto(config.accion, 'Quiero empezar')}
             <ArrowRight size={18} aria-hidden="true" />
           </BotonEnlace>
           {whatsapp && (
-            <BotonEnlace href={whatsapp} externo variante="contorno">
+            <BotonEnlace href={whatsapp.href} externo onClick={whatsapp.onClick} variante="contorno">
               <MessageCircle size={18} aria-hidden="true" />
               Escribinos por WhatsApp
             </BotonEnlace>

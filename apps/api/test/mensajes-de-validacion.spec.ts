@@ -6,7 +6,7 @@
  * equal to 2 characters» no es algo que se le pueda mostrar a nadie.
  */
 import { plainToInstance } from 'class-transformer';
-import { validateSync } from 'class-validator';
+import { IsEnum, IsString, validateSync } from 'class-validator';
 
 import { erroresDeValidacionEnEspanol } from '../src/common/validacion/mensajes-de-validacion';
 import { CrearClienteDto } from '../src/modules/clientes/dto/cliente.dto';
@@ -105,5 +105,32 @@ describe('La forma de la respuesta no cambia', () => {
   it('si no hay nada que decir, igual dice algo', () => {
     const respuesta = erroresDeValidacionEnEspanol([]).getResponse() as { message: string[] };
     expect(respuesta.message).toEqual(['Los datos enviados no son válidos']);
+  });
+});
+
+describe('mensajes propios que empiezan con el nombre del campo', () => {
+  /**
+   * La regresión que encontró esto: el DTO del clic de WhatsApp dice «seccion no
+   * es una de las secciones del sitio», que empieza con el nombre del campo. Con
+   * el discriminador viejo se tomaba por un mensaje de fábrica y salía traducido
+   * a «seccion tiene que ser uno de: uno de los valores permitidos».
+   */
+  class ConMensajePropio {
+    @IsEnum(['a', 'b'], { message: 'seccion no es una de las secciones del sitio' })
+    seccion!: string;
+
+    @IsString({ message: 'nombre no puede quedar vacío' })
+    nombre!: string;
+  }
+
+  it('sobreviven intactos', () => {
+    const mensajes = mensajesDe(ConMensajePropio, { seccion: 'z', nombre: 42 });
+    expect(mensajes).toContain('seccion no es una de las secciones del sitio');
+    expect(mensajes).toContain('nombre no puede quedar vacío');
+  });
+
+  it('y no se cuelan traducciones a medias', () => {
+    const mensajes = mensajesDe(ConMensajePropio, { seccion: 'z', nombre: 42 });
+    expect(mensajes.join(' ')).not.toContain('uno de los valores permitidos');
   });
 });
