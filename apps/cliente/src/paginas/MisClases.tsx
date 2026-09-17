@@ -7,10 +7,12 @@ import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { academia, misClases } from '../lib/recursos';
 import { useSesion } from '../lib/sesion';
+import { useAvisos } from '../lib/avisos';
 import { ESTADOS_VIGENTES, type ConfiguracionPublica, type Reserva } from '../lib/tipos';
 
 export function MisClases() {
   const { perfil } = useSesion();
+  const avisos = useAvisos();
   const [reservas, setReservas] = useState<Reserva[]>([]);
   const [config, setConfig] = useState<ConfiguracionPublica | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -38,12 +40,14 @@ export function MisClases() {
 
   async function cancelar(id: string) {
     setCancelando(id);
-    setError(null);
     try {
       await misClases.cancelar(id);
+      avisos.exito('Clase cancelada');
       cargar();
     } catch (problema) {
-      setError((problema as Error).message);
+      // El motivo importa y es concreto: «faltan menos de 24 horas» se resuelve
+      // llamando a la academia; «no se pudo cancelar» no dice qué hacer.
+      avisos.error(problema);
     } finally {
       setCancelando(null);
     }

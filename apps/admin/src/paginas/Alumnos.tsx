@@ -7,6 +7,7 @@ import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
 import { clientes as api } from '../lib/recursos';
+import { useAvisos } from '../lib/avisos';
 import { PAISES, documentoLegible } from '../lib/paises';
 import { useSesion } from '../lib/sesion';
 import type { Cliente } from '../lib/tipos';
@@ -179,12 +180,11 @@ export function FormularioAlumno({
     notasInternas: alumno?.notasInternas ?? '',
     activo: alumno?.activo ?? true,
   });
-  const [error, setError] = useState<string | null>(null);
+  const avisos = useAvisos();
   const [guardando, setGuardando] = useState(false);
 
   async function guardar() {
     setGuardando(true);
-    setError(null);
     const cuerpo = {
       nombre: datos.nombre,
       apellido: datos.apellido,
@@ -204,10 +204,11 @@ export function FormularioAlumno({
     try {
       if (alumno) await api.actualizar(alumno.id, cuerpo);
       else await api.crear(cuerpo);
+      avisos.exito(alumno ? 'Alumno actualizado' : 'Alumno creado');
       onGuardado();
       onCerrar();
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
       setGuardando(false);
     }
   }
@@ -365,7 +366,6 @@ export function FormularioAlumno({
           </Campo>
         )}
 
-        {error && <Aviso tipo="error">{error}</Aviso>}
 
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
           <Boton variante="secundario" onClick={onCerrar}>

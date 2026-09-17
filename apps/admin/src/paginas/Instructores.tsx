@@ -7,6 +7,7 @@ import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
 import { instructores as api } from '../lib/recursos';
+import { useAvisos } from '../lib/avisos';
 import { DIAS_SEMANA, hhmmAMinutos, minutosAHHMM, fechaYHora } from '../lib/fecha';
 import type { Franja, Instructor, TipoExcepcion } from '../lib/tipos';
 
@@ -175,12 +176,11 @@ function FormularioInstructor({
         }
       : FORMULARIO_VACIO,
   );
-  const [error, setError] = useState<string | null>(null);
+  const avisos = useAvisos();
   const [guardando, setGuardando] = useState(false);
 
   async function guardar() {
     setGuardando(true);
-    setError(null);
     // `activo` se manda SOLO al editar. Al crear, la API no lo acepta —y hace
     // bien: el formulario ni siquiera ofrece el campo cuando se da de alta, y un
     // instructor nuevo nace activo por definición. Mandar el estado entero del
@@ -194,10 +194,11 @@ function FormularioInstructor({
     try {
       if (instructor) await api.actualizar(instructor.id, cuerpo);
       else await api.crear(cuerpo);
+      avisos.exito(instructor ? 'Instructor actualizado' : 'Instructor creado');
       onGuardado();
       onCerrar();
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
       setGuardando(false);
     }
   }
@@ -270,7 +271,6 @@ function FormularioInstructor({
           )}
         </div>
 
-        {error && <Aviso tipo="error">{error}</Aviso>}
 
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
           <Boton variante="secundario" onClick={onCerrar}>
@@ -302,7 +302,7 @@ function EditorHorarios({
 }) {
   const [franjas, setFranjas] = useState<Franja[]>(instructor.disponibilidades ?? []);
   const [excepciones, setExcepciones] = useState(instructor.excepciones ?? []);
-  const [error, setError] = useState<string | null>(null);
+  const avisos = useAvisos();
   const [guardando, setGuardando] = useState(false);
 
   const [nuevaExcepcion, setNuevaExcepcion] = useState({
@@ -323,19 +323,18 @@ function EditorHorarios({
 
   async function guardarPlantilla() {
     setGuardando(true);
-    setError(null);
     try {
       await api.guardarDisponibilidad(instructor.id, franjas);
+      avisos.exito('Horarios guardados');
       onGuardado();
       onCerrar();
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
       setGuardando(false);
     }
   }
 
   async function agregarExcepcion() {
-    setError(null);
     try {
       const creada = await api.crearExcepcion(instructor.id, {
         tipo: nuevaExcepcion.tipo,
@@ -345,18 +344,21 @@ function EditorHorarios({
       });
       setExcepciones([...excepciones, creada]);
       setNuevaExcepcion({ tipo: 'BLOQUEO', inicio: '', fin: '', motivo: '' });
+      avisos.exito(
+        creada.tipo === 'BLOQUEO' ? 'Bloqueo agregado' : 'Disponibilidad extra agregada',
+      );
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
     }
   }
 
   async function quitarExcepcion(id: string) {
-    setError(null);
     try {
       await api.eliminarExcepcion(instructor.id, id);
       setExcepciones(excepciones.filter((e) => e.id !== id));
+      avisos.exito('Excepción quitada');
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
     }
   }
 
@@ -501,11 +503,6 @@ function EditorHorarios({
         </div>
       </section>
 
-      {error && (
-        <div className="mt-4">
-          <Aviso tipo="error">{error}</Aviso>
-        </div>
-      )}
     </Modal>
   );
 }

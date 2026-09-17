@@ -12,12 +12,14 @@ import {
 } from '../lib/recursos';
 import { fechaCorta } from '../lib/fecha';
 import { useSesion } from '../lib/sesion';
+import { useAvisos } from '../lib/avisos';
 import { ETIQUETA_ROL, type CuentaUsuario, type Instructor, type Invitacion, type Rol } from '../lib/tipos';
 
 const ROLES: Rol[] = ['ADMIN', 'INSTRUCTOR', 'CLIENTE'];
 
 export function Cuentas() {
   const { perfil } = useSesion();
+  const avisos = useAvisos();
   const [pagina, setPagina] = useState<Pagina<CuentaUsuario>>(PAGINA_VACIA as Pagina<CuentaUsuario>);
   const [consulta, setConsulta] = useState({ pagina: 1, porPagina: 10 });
   const [rol, setRol] = useState<Rol | ''>('');
@@ -26,7 +28,6 @@ export function Cuentas() {
   const [pendientes, setPendientes] = useState<Invitacion[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [aviso, setAviso] = useState<string | null>(null);
   const [invitando, setInvitando] = useState(false);
 
   const cargar = useCallback(() => {
@@ -51,14 +52,12 @@ export function Cuentas() {
   useEffect(cargar, [cargar]);
 
   const accion = async (promesa: Promise<unknown>, exito: string) => {
-    setError(null);
-    setAviso(null);
     try {
       await promesa;
-      setAviso(exito);
+      avisos.exito(exito);
       cargar();
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
     }
   };
 
@@ -75,7 +74,6 @@ export function Cuentas() {
       </div>
 
       {error && <div className="mt-4"><Aviso tipo="error">{error}</Aviso></div>}
-      {aviso && <div className="mt-4"><Aviso tipo="exito">{aviso}</Aviso></div>}
 
       {pendientes.length > 0 && (
         <section className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
@@ -101,7 +99,7 @@ export function Cuentas() {
                     <button
                       type="button"
                       onClick={() =>
-                        void accion(apiInvitaciones.reenviar(invitacion.id), 'Se reenvió el correo.')
+                        void accion(apiInvitaciones.reenviar(invitacion.id), 'Invitación reenviada por correo')
                       }
                       className="rounded border border-amber-300 px-2 py-1 text-xs text-amber-900 hover:bg-amber-100"
                     >
@@ -111,7 +109,7 @@ export function Cuentas() {
                       type="button"
                       onClick={() => {
                         if (window.confirm(`¿Dar de baja la invitación de ${invitacion.email}?`)) {
-                          void accion(apiInvitaciones.revocar(invitacion.id), 'Invitación dada de baja.');
+                          void accion(apiInvitaciones.revocar(invitacion.id), 'Invitación dada de baja');
                         }
                       }}
                       className="rounded border border-amber-300 px-2 py-1 text-xs text-amber-900 hover:bg-amber-100"
@@ -203,7 +201,7 @@ export function Cuentas() {
                         onChange={(e) =>
                           void accion(
                             api.actualizar(cuenta.id, { rol: e.target.value as Rol }),
-                            'Rol actualizado.',
+                            'Rol actualizado',
                           )
                         }
                         className="rounded border border-slate-300 px-2 py-1 text-sm"
@@ -237,7 +235,7 @@ export function Cuentas() {
                           if (window.confirm(texto)) {
                             void accion(
                               api.actualizar(cuenta.id, { activo: !cuenta.activo }),
-                              cuenta.activo ? 'Cuenta dada de baja.' : 'Cuenta reactivada.',
+                              cuenta.activo ? 'Cuenta dada de baja' : 'Cuenta reactivada',
                             );
                           }
                         }}
@@ -270,10 +268,7 @@ export function Cuentas() {
       {invitando && (
         <FormularioInvitacion
           onCerrar={() => setInvitando(false)}
-          onInvitado={(mensaje) => {
-            setAviso(mensaje);
-            cargar();
-          }}
+          onInvitado={cargar}
         />
       )}
     </>
@@ -291,13 +286,13 @@ function FormularioInvitacion({
   onInvitado,
 }: {
   onCerrar: () => void;
-  onInvitado: (mensaje: string) => void;
+  onInvitado: () => void;
 }) {
+  const avisos = useAvisos();
   const [rol, setRol] = useState<'INSTRUCTOR' | 'ADMIN'>('INSTRUCTOR');
   const [email, setEmail] = useState('');
   const [instructorId, setInstructorId] = useState('');
   const [sinCuenta, setSinCuenta] = useState<Instructor[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
@@ -311,17 +306,17 @@ function FormularioInvitacion({
 
   async function enviar() {
     setEnviando(true);
-    setError(null);
     try {
       await apiInvitaciones.crear({
         rol,
         email,
         ...(rol === 'INSTRUCTOR' ? { instructorId } : {}),
       });
-      onInvitado(`Listo, le mandamos la invitación a ${email}.`);
+      avisos.exito(`Invitación enviada a ${email}`);
+      onInvitado();
       onCerrar();
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
       setEnviando(false);
     }
   }
@@ -386,8 +381,6 @@ function FormularioInvitacion({
             className={clasesControl}
           />
         </Campo>
-
-        {error && <Aviso tipo="error">{error}</Aviso>}
 
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
           <Boton variante="secundario" onClick={onCerrar}>Cancelar</Boton>

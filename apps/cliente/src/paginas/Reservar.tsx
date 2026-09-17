@@ -6,12 +6,14 @@ import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { academia, reservar } from '../lib/recursos';
 import { fechaCorta, fechaLarga, hora } from '../lib/fecha';
+import { useAvisos } from '../lib/avisos';
 import type { ConfiguracionPublica, Hueco, TipoVehiculo } from '../lib/tipos';
 
 const DURACIONES = [30, 45, 60] as const;
 
 export function Reservar() {
   const navegar = useNavigate();
+  const avisos = useAvisos();
 
   const [tipo, setTipo] = useState<TipoVehiculo>('AUTO');
   const [duracionMin, setDuracionMin] = useState<number>(45);
@@ -117,7 +119,6 @@ export function Reservar() {
   async function confirmar() {
     if (!elegido) return;
     setReservando(true);
-    setError(null);
     try {
       await reservar.crear({
         instructorId: elegido.instructorId,
@@ -126,9 +127,12 @@ export function Reservar() {
         inicio: elegido.inicio,
         duracionMin,
       });
+      // El aviso viaja con el alumno hasta «Mis clases»: la pantalla cambia al
+      // instante y sin él la reserva se hace sin ninguna confirmación visible.
+      avisos.exito(`Clase reservada para el ${fechaCorta(elegido.inicio)} a las ${hora(elegido.inicio)}`);
       navegar('/');
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
       setReservando(false);
     }
   }

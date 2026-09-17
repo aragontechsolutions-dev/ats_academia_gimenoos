@@ -6,6 +6,7 @@ import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
 import { CeldaFoto } from '../componentes/CeldaFoto';
 import { vehiculos as api } from '../lib/recursos';
+import { useAvisos } from '../lib/avisos';
 import { fechaCorta } from '../lib/fecha';
 import type { EstadoVehiculo, TipoVehiculo, Vehiculo } from '../lib/tipos';
 
@@ -76,7 +77,6 @@ export function Vehiculos() {
                       descripcion={`${vehiculo.tipo === 'MOTO' ? 'la moto' : 'el auto'} ${vehiculo.patente}`}
                       guardar={(fotoRuta) => api.guardarFoto(vehiculo.id, fotoRuta)}
                       onCambio={cargar}
-                      onError={setError}
                     />
                   </td>
                   <td className="px-4 py-3 font-medium text-slate-900">{vehiculo.patente}</td>
@@ -163,12 +163,11 @@ function FormularioVehiculo({
     soaVence: vehiculo?.soaVence?.slice(0, 10) ?? '',
     estado: (vehiculo?.estado ?? 'ACTIVO') as EstadoVehiculo,
   });
-  const [error, setError] = useState<string | null>(null);
+  const avisos = useAvisos();
   const [guardando, setGuardando] = useState(false);
 
   async function guardar() {
     setGuardando(true);
-    setError(null);
     const cuerpo = {
       patente: datos.patente.toUpperCase().replace(/[\s-]/g, ''),
       tipo: datos.tipo,
@@ -182,10 +181,11 @@ function FormularioVehiculo({
     try {
       if (vehiculo) await api.actualizar(vehiculo.id, cuerpo);
       else await api.crear(cuerpo);
+      avisos.exito(vehiculo ? 'Vehículo actualizado' : 'Vehículo creado');
       onGuardado();
       onCerrar();
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
       setGuardando(false);
     }
   }
@@ -274,7 +274,6 @@ function FormularioVehiculo({
           </Campo>
         )}
 
-        {error && <Aviso tipo="error">{error}</Aviso>}
 
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
           <Boton variante="secundario" onClick={onCerrar}>

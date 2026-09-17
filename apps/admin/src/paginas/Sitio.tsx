@@ -8,6 +8,7 @@ import {
   coordenadasDelNegocio,
 } from '../componentes/SelectorDeUbicacion';
 import { sitio as api } from '../lib/recursos';
+import { useAvisos } from '../lib/avisos';
 import type { Coordenadas } from '@gimenoos/shared';
 import type { ItemSeccion, NegocioLanding, SeccionLanding } from '../lib/tipos';
 
@@ -59,7 +60,6 @@ export function Sitio() {
   const [secciones, setSecciones] = useState<SeccionLanding[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [guardado, setGuardado] = useState<string | null>(null);
 
   const cargar = useCallback(() => {
     setCargando(true);
@@ -74,12 +74,6 @@ export function Sitio() {
   }, []);
 
   useEffect(cargar, [cargar]);
-
-  /** Muestra el aviso de guardado y lo retira solo. */
-  const avisar = (mensaje: string) => {
-    setGuardado(mensaje);
-    setTimeout(() => setGuardado(null), 4000);
-  };
 
   if (cargando) return <p className="text-slate-500">Cargando…</p>;
 
@@ -99,20 +93,11 @@ export function Sitio() {
           <Aviso tipo="error">{error}</Aviso>
         </div>
       )}
-      {guardado && (
-        <div className="mt-4">
-          <Aviso tipo="exito">{guardado}</Aviso>
-        </div>
-      )}
 
       {negocio && (
         <FormularioNegocio
           negocio={negocio}
-          onGuardado={(actualizado) => {
-            setNegocio(actualizado);
-            avisar('Datos de contacto guardados.');
-          }}
-          onError={setError}
+          onGuardado={setNegocio}
         />
       )}
 
@@ -135,9 +120,7 @@ export function Sitio() {
                     .map((s) => (s.clave === actualizada.clave ? actualizada : s))
                     .sort((a, b) => a.orden - b.orden),
                 );
-                avisar(`Sección «${actualizada.nombre}» guardada.`);
               }}
-              onError={setError}
             />
           ))}
         </div>
@@ -149,12 +132,11 @@ export function Sitio() {
 function FormularioNegocio({
   negocio,
   onGuardado,
-  onError,
 }: {
   negocio: NegocioLanding;
   onGuardado: (negocio: NegocioLanding) => void;
-  onError: (mensaje: string) => void;
 }) {
+  const avisos = useAvisos();
   const [valores, setValores] = useState<Record<string, string>>(() =>
     Object.fromEntries(CAMPOS_NEGOCIO.map((c) => [c.clave, negocio[c.clave] ?? ''])),
   );
@@ -172,8 +154,11 @@ function FormularioNegocio({
         latitud: punto?.latitud ?? null,
         longitud: punto?.longitud ?? null,
       })
-      .then((actualizado) => onGuardado(actualizado))
-      .catch((problema: Error) => onError(problema.message))
+      .then((actualizado) => {
+        avisos.exito('Datos de contacto guardados');
+        onGuardado(actualizado);
+      })
+      .catch((problema: unknown) => avisos.error(problema))
       .finally(() => setGuardando(false));
   };
 
@@ -231,12 +216,11 @@ function FormularioNegocio({
 function TarjetaSeccion({
   seccion,
   onGuardado,
-  onError,
 }: {
   seccion: SeccionLanding;
   onGuardado: (seccion: SeccionLanding) => void;
-  onError: (mensaje: string) => void;
 }) {
+  const avisos = useAvisos();
   const [abierta, setAbierta] = useState(false);
   const [borrador, setBorrador] = useState(seccion);
   const [guardando, setGuardando] = useState(false);
@@ -264,8 +248,11 @@ function TarjetaSeccion({
         // es contenido, es una fila que alguien agregó y no llegó a completar.
         items: borrador.items.filter((item) => item.titulo.trim() !== ''),
       })
-      .then(() => onGuardado({ ...borrador, personalizada: true }))
-      .catch((problema: Error) => onError(problema.message))
+      .then(() => {
+        avisos.exito(`Sección «${seccion.nombre}» guardada`);
+        onGuardado({ ...borrador, personalizada: true });
+      })
+      .catch((problema: unknown) => avisos.error(problema))
       .finally(() => setGuardando(false));
   };
 

@@ -6,20 +6,43 @@ import { miFicha } from '../lib/recursos';
 import { PAISES } from '../lib/paises';
 import { fechaCorta } from '../lib/fecha';
 import { useSesion } from '../lib/sesion';
+import { useAvisos } from '../lib/avisos';
 import type { MiFicha } from '../lib/tipos';
 
 const CLASES_CAMPO =
   'mt-1 w-full rounded-lg border border-slate-300 px-3 py-3 text-sm focus:border-marca-600 focus:outline-none';
 
+/** Lo que el formulario muestra, sacado de la ficha que devolvió la API. */
+type Borrador = {
+  nombre: string;
+  apellido: string;
+  telefono: string;
+  tipoDocumento: 'CEDULA' | 'PASAPORTE';
+  paisDocumento: string;
+  documento: string;
+  fechaNacimiento: string;
+  direccion: string;
+};
+
+const borradorDe = (ficha: MiFicha): Borrador => ({
+  nombre: ficha.nombre,
+  apellido: ficha.apellido,
+  telefono: ficha.telefono ?? '',
+  tipoDocumento: ficha.tipoDocumento ?? 'CEDULA',
+  paisDocumento: ficha.paisDocumento ?? 'UY',
+  documento: ficha.documento ?? '',
+  fechaNacimiento: ficha.fechaNacimiento?.slice(0, 10) ?? '',
+  direccion: ficha.direccion ?? '',
+});
+
 export function MiPerfil() {
   const { cerrarSesion } = useSesion();
+  const avisos = useAvisos();
   const [ficha, setFicha] = useState<MiFicha | null>(null);
-  const [datos, setDatos] = useState({
-    nombre: '', apellido: '', telefono: '', tipoDocumento: 'CEDULA' as 'CEDULA' | 'PASAPORTE',
-    paisDocumento: 'UY', documento: '', fechaNacimiento: '', direccion: '',
-  });
+  // Arranca en null, igual que la ficha: el formulario no se dibuja hasta que
+  // los datos están. Ver el porqué abajo, en el `if (!ficha)`.
+  const [datos, setDatos] = useState<Borrador | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [guardado, setGuardado] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
@@ -27,25 +50,15 @@ export function MiPerfil() {
       .obtener()
       .then((resultado) => {
         setFicha(resultado);
-        setDatos({
-          nombre: resultado.nombre,
-          apellido: resultado.apellido,
-          telefono: resultado.telefono ?? '',
-          tipoDocumento: resultado.tipoDocumento ?? 'CEDULA',
-          paisDocumento: resultado.paisDocumento ?? 'UY',
-          documento: resultado.documento ?? '',
-          fechaNacimiento: resultado.fechaNacimiento?.slice(0, 10) ?? '',
-          direccion: resultado.direccion ?? '',
-        });
+        setDatos(borradorDe(resultado));
       })
       .catch((problema: Error) => setError(problema.message));
   }, []);
 
   async function guardar(evento: FormEvent) {
     evento.preventDefault();
+    if (!datos) return;
     setGuardando(true);
-    setError(null);
-    setGuardado(false);
     try {
       const actualizada = await miFicha.actualizar({
         nombre: datos.nombre,
@@ -57,16 +70,44 @@ export function MiPerfil() {
         fechaNacimiento: datos.fechaNacimiento || undefined,
         direccion: datos.direccion || undefined,
       });
-      setFicha((actual) => (actual ? { ...actual, ...actualizada } : actual));
-      setGuardado(true);
+      // El formulario vuelve a leerse de lo que quedó guardado, no de lo que se
+      // tipeó: la API normaliza algunos datos —el teléfono 092331784 se guarda
+      // como +598 92331784— y dejar en pantalla la versión sin normalizar hace
+      // creer que el cambio no se aplicó.
+      const fresca = { ...(ficha as MiFicha), ...actualizada };
+      setFicha(fresca);
+      setDatos(borradorDe(fresca));
+      avisos.exito('Datos guardados');
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
     } finally {
       setGuardando(false);
     }
   }
 
-  const packsConSaldo = (ficha?.compras ?? []).filter((c) => c.clasesUsadas < c.clasesTotales);
+  if (error) {
+    return (
+      <>
+        <h1 className="text-2xl font-bold text-slate-900">Mi perfil</h1>
+        <div className="mt-4">
+          <Aviso tipo="error">{error}</Aviso>
+        </div>
+      </>
+    );
+  }
+
+  /**
+   * Hasta que la ficha no llega, no hay formulario.
+   *
+   * Antes se dibujaba vacío y se completaba solo al llegar los datos. Eso hacía
+   * dos cosas malas a la vez: mostraba «sin nombre» a alguien que sí tiene
+   * nombre, y —peor— si el alumno empezaba a escribir en ese rato, la respuesta
+   * le pisaba lo tipeado sin decir nada. Guardaba, avisaba «Datos guardados» y
+   * el dato no estaba.
+   */
+  if (!ficha || !datos) return <p className="mt-6 text-slate-500">Cargando…</p>;
+
+  const packsConSaldo = ficha.compras.filter((c) => c.clasesUsadas < c.clasesTotales);
 
   return (
     <>
@@ -204,9 +245,6 @@ export function MiPerfil() {
             className={CLASES_CAMPO}
           />
         </label>
-
-        {error && <Aviso tipo="error">{error}</Aviso>}
-        {guardado && <Aviso tipo="exito">Listo, guardamos tus datos.</Aviso>}
 
         <Boton type="submit" className="w-full" disabled={guardando}>
           {guardando ? 'Guardando…' : 'Guardar cambios'}

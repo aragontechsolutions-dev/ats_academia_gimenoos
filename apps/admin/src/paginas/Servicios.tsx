@@ -4,6 +4,7 @@ import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
 import { servicios as api } from '../lib/recursos';
+import { useAvisos } from '../lib/avisos';
 import type { Servicio, TipoServicio, TipoVehiculo } from '../lib/tipos';
 
 const formateador = new Intl.NumberFormat('es-UY', {
@@ -154,7 +155,7 @@ function FormularioServicio({
     activo: servicio?.activo ?? true,
     publico: servicio?.publico ?? true,
   });
-  const [error, setError] = useState<string | null>(null);
+  const avisos = useAvisos();
   const [guardando, setGuardando] = useState(false);
 
   /** El slug se sugiere a partir del nombre, pero no se toca si ya existe. */
@@ -174,7 +175,6 @@ function FormularioServicio({
 
   async function guardar() {
     setGuardando(true);
-    setError(null);
     const cuerpo = {
       slug: datos.slug,
       nombre: datos.nombre,
@@ -192,10 +192,11 @@ function FormularioServicio({
     try {
       if (servicio) await api.actualizar(servicio.id, cuerpo);
       else await api.crear(cuerpo);
+      avisos.exito(servicio ? 'Servicio actualizado' : 'Servicio creado');
       onGuardado();
       onCerrar();
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
       setGuardando(false);
     }
   }
@@ -322,7 +323,6 @@ function FormularioServicio({
           </label>
         </div>
 
-        {error && <Aviso tipo="error">{error}</Aviso>}
 
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
           <Boton variante="secundario" onClick={onCerrar}>

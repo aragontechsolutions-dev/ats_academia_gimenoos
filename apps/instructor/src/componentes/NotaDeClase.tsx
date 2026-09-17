@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
 import { Boton } from './ui/Boton';
-import { Aviso } from './ui/Aviso';
 import { miAgenda } from '../lib/recursos';
+import { useAvisos } from '../lib/avisos';
 import type { Reserva } from '../lib/tipos';
 
 const LARGO_MAXIMO = 2000;
@@ -24,20 +24,22 @@ export function NotaDeClase({
   reserva: Reserva;
   onGuardada: () => void;
 }) {
+  const avisos = useAvisos();
   const [editando, setEditando] = useState(false);
   const [texto, setTexto] = useState(reserva.notaInstructor ?? '');
   const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function guardar() {
     setGuardando(true);
-    setError(null);
     try {
       await miAgenda.guardarNota(reserva.id, texto);
+      // Vaciar el campo borra la observación, así que el aviso dice cuál de las
+      // dos cosas pasó: «guardada» sobre un texto vacío sería mentira.
+      avisos.exito(texto.trim() ? 'Observación guardada' : 'Observación borrada');
       setEditando(false);
       onGuardada();
     } catch (problema) {
-      setError((problema as Error).message);
+      avisos.error(problema);
     } finally {
       setGuardando(false);
     }
@@ -100,20 +102,11 @@ export function NotaDeClase({
           variante="secundario"
           className="flex-1"
           disabled={guardando}
-          onClick={() => {
-            setEditando(false);
-            setError(null);
-          }}
+          onClick={() => setEditando(false)}
         >
           Cancelar
         </Boton>
       </div>
-
-      {error && (
-        <div className="mt-2">
-          <Aviso tipo="error">{error}</Aviso>
-        </div>
-      )}
     </div>
   );
 }
