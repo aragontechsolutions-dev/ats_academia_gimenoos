@@ -36,3 +36,7 @@ Thumbs.db
 
 # Docker volumes locales
 infra/postgres/data/
+
+# Tokens de sesion que genera el barrido de seguridad (apps/api/scripts/qa-seguridad.mjs).
+# Son sesiones validas: no van al repositorio.
+t-qa-*.txt

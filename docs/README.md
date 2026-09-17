@@ -28,6 +28,8 @@
 | [23-avisos-telegram.md](23-avisos-telegram.md) | **Avisos al teléfono: los cuatro pasos para ponerlo, y qué sale del sistema** |
 | [24-recordatorios.md](24-recordatorios.md) | Recordatorios de clase: por qué los dispara algo de afuera y cómo se configura |
 | [25-avisos-en-el-telefono.md](25-avisos-en-el-telefono.md) | La notificación que le llega al alumno antes de su clase, y la condición del iPhone |
+| [26-cierre-de-la-base.md](26-cierre-de-la-base.md) | **Por qué las tablas no se pueden leer desde el navegador, y cómo comprobarlo** |
+| [27-auditoria-de-seguridad.md](27-auditoria-de-seguridad.md) | **La revisión completa: qué se encontró, qué se corrigió y qué falta** |
 
 **Por dónde empezar:** `07-roadmap.md` si sos quien decide,
 `06-guia-desarrollo.md` para levantar el entorno,

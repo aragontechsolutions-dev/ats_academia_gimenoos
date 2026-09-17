@@ -7,20 +7,21 @@ Lo que corresponde al código está en [`04-plan-etapas.md`](04-plan-etapas.md).
 
 ---
 
-## Bloque 1 — Seguridad inmediata 🔴
+## Bloque 1 — Seguridad inmediata ✅ HECHO
 
-Los secretos que se expusieron en una conversación de chat pertenecían al
-proyecto Supabase de São Paulo. Al crear el proyecto nuevo en East US quedaron
-reemplazados, **pero siguen siendo válidos mientras el proyecto viejo exista**.
+- [x] **Borrar el proyecto Supabase anterior.** Los secretos que se expusieron en
+      una conversación de chat pertenecían al proyecto de São Paulo. Borrado el
+      proyecto, quedaron anulados de raíz.
 
-- [ ] **Borrar el proyecto Supabase anterior**
-      Project Settings → General → *Delete project*. Esto anula de raíz la
-      contraseña y la clave `service_role` que se filtraron; es más seguro que
-      rotarlas.
+- [ ] **No pegar las credenciales nuevas en ningún chat.** Sigue valiendo
+      siempre. Van del panel de Supabase directamente a los campos de Render y
+      Vercel. Cada credencial que pasa por un mensaje hay que rotarla después.
 
-- [ ] **No pegar las credenciales nuevas en ningún chat.**
-      Van del panel de Supabase directamente a los campos de Render y Vercel.
-      Cada credencial que pasa por un mensaje hay que rotarla después.
+- [ ] **Comprobar el cierre de la base contra el proyecto real.** Son dos
+      minutos y está explicado en
+      [`26-cierre-de-la-base.md`](26-cierre-de-la-base.md#4-cómo-comprobarlo-en-el-proyecto-real).
+      Hasta hacerlo, no hay confirmación de que las tablas quedaron cerradas en
+      producción.
 
 ---
 
