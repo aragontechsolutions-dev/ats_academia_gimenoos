@@ -3,7 +3,7 @@ import { MapPin, MessageCircle } from 'lucide-react';
 import { hero } from '../contenido';
 import {
   useDestinoPrincipal,
-  useEnlaceWhatsApp,
+  useContactoWhatsApp,
   useNegocio,
   useSeccion,
 } from '../contexto/ContenidoContexto';
@@ -12,8 +12,8 @@ import { BotonEnlace } from './ui/Boton';
 
 export function Hero() {
   const negocio = useNegocio();
-  const wa = useEnlaceWhatsApp();
-  const principal = useDestinoPrincipal();
+  const wa = useContactoWhatsApp('hero');
+  const principal = useDestinoPrincipal('hero');
 
   // Lo que la academia cargó desde el panel gana; si no cargó nada, el texto
   // del código.
@@ -59,12 +59,17 @@ export function Hero() {
           <p className="mt-6 max-w-xl text-lg text-slate-300">{subtitulo}</p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <BotonEnlace href={principal.href} externo={principal.externo} variante="primario">
+            <BotonEnlace
+              href={principal.href}
+              externo={principal.externo}
+              onClick={principal.onClick}
+              variante="primario"
+            >
               {ctaPrincipal}
             </BotonEnlace>
 
             {wa ? (
-              <BotonEnlace href={wa} externo variante="contorno">
+              <BotonEnlace href={wa.href} externo onClick={wa.onClick} variante="contorno">
                 <MessageCircle size={20} aria-hidden="true" />
                 {hero.ctaSecundario}
               </BotonEnlace>

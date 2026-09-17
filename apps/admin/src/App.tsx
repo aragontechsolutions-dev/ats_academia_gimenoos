@@ -15,6 +15,7 @@ import { Servicios } from './paginas/Servicios';
 import { Sitio } from './paginas/Sitio';
 import { Graduados } from './paginas/Graduados';
 import { Cuentas } from './paginas/Cuentas';
+import { AvisosTelegram } from './paginas/AvisosTelegram';
 
 /**
  * Envuelve una página con el guard y la disposición del panel.
@@ -71,6 +72,10 @@ export function App() {
             <Route
               path="/cuentas"
               element={<Pagina><Cuentas /></Pagina>}
+            />
+            <Route
+              path="/avisos"
+              element={<Pagina><AvisosTelegram /></Pagina>}
             />
 
             <Route path="*" element={<Pagina><Agenda /></Pagina>} />

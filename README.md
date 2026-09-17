@@ -62,6 +62,7 @@ Guía completa: [`docs/06-guia-desarrollo.md`](docs/06-guia-desarrollo.md).
 | [El mapa](docs/20-mapa.md) | Ubicación en el sitio y cómo marcarla desde el panel |
 | [App del instructor](docs/21-pwa-instructor.md) | Su agenda por día, semana o mes; cerrar y cancelar clases; por qué no entra al panel |
 | [Avisos](docs/22-avisos.md) | Confirmaciones y errores: el motivo real, en español, en las tres aplicaciones |
+| [Avisos por Telegram](docs/23-avisos-telegram.md) | Enterarse al instante de clases y consultas, sin entrar al panel |
 
 ## Antes de publicar
 

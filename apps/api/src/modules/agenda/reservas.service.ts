@@ -20,6 +20,12 @@ import type { CrearReservaDto } from './dto/crear-reserva.dto';
 import type { ListarReservasDto } from './dto/listar-reservas.dto';
 import type { ReprogramarReservaDto } from './dto/reprogramar-reserva.dto';
 import type { EstadoAsignable } from './dto/cambiar-estado-reserva.dto';
+import { TelegramService } from '../../common/telegram/telegram.service';
+import {
+  avisoDeCancelacion,
+  avisoDeCierre,
+  avisoDeReservaNueva,
+} from './avisos-de-agenda';
 
 /**
  * Cuánto puede abarcar una consulta de agenda, en días, según quién consulta.
@@ -99,6 +105,7 @@ export class ReservasService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditoria: AuditoriaService,
+    private readonly telegram: TelegramService,
   ) {}
 
   // --------------------------------------------------------------------------
@@ -205,6 +212,13 @@ export class ReservasService {
       entidadId: reserva.id,
       detalle: { inicio: dto.inicio.toISOString(), instructorId: dto.instructorId },
     });
+
+    // Sin `await`: la clase ya está guardada y devolverla no puede quedar
+    // esperando a Telegram. `avisar` no falla hacia afuera.
+    void this.telegram.avisar(
+      'reservaNueva',
+      avisoDeReservaNueva(reserva, usuario.rol === RolUsuario.CLIENTE),
+    );
 
     return reserva;
   }
@@ -318,6 +332,8 @@ export class ReservasService {
       detalle: { inicio: reserva.inicio.toISOString() },
     });
 
+    void this.telegram.avisar('claseCancelada', avisoDeCancelacion(cancelada, motivo ?? null));
+
     return cancelada;
   }
 
@@ -362,6 +378,11 @@ export class ReservasService {
       entidadId: id,
       detalle: { de: reserva.estado, a: estado, consumioClase: seConsumeClase },
     });
+
+    // Sólo los cierres avisan: pasar a CONFIRMADA es movimiento interno y quien
+    // recibiría el aviso es justamente quien acaba de confirmarla.
+    const cierre = avisoDeCierre(actualizada, estado);
+    if (cierre) void this.telegram.avisar('claseCerrada', cierre);
 
     return actualizada;
   }

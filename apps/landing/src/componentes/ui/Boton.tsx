@@ -23,17 +23,27 @@ export function BotonEnlace({
   externo = false,
   children,
   className = '',
+  onClick,
 }: {
   href: string;
   variante?: keyof typeof VARIANTES;
   externo?: boolean;
   children: ReactNode;
   className?: string;
+  /**
+   * Se dispara antes de seguir el enlace, y no lo detiene.
+   *
+   * Lo usa el aviso de contacto por WhatsApp. No devuelve nada ni recibe el
+   * evento a propósito: desde acá no se puede cancelar la navegación, que es
+   * justo la garantía que hace falta.
+   */
+  onClick?: () => void;
 }) {
   return (
     <a
       href={href}
       {...(externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      onClick={onClick}
       className={`${BASE} ${VARIANTES[variante]} ${className}`}
     >
       {children}

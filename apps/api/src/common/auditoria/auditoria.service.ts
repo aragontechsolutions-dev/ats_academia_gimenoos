@@ -31,7 +31,8 @@ export type AccionAuditada =
   | 'ADMIN_INICIAL_CREADO'
   | 'USUARIO_ROL_CAMBIADO'
   | 'USUARIO_DESACTIVADO'
-  | 'USUARIO_REACTIVADO';
+  | 'USUARIO_REACTIVADO'
+  | 'AVISOS_TELEGRAM_ACTUALIZADOS';
 
 export interface EventoAuditoria {
   usuarioId: string | null;

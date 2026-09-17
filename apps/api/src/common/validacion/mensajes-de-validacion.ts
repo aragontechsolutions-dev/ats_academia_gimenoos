@@ -60,8 +60,8 @@ const TEXTOS: Record<string, (campo: string, original: string) => string> = {
     const n = /(-?\d+(?:\.\d+)?)/.exec(original);
     return n ? `${c} no puede ser mayor que ${n[1]}` : `${c} es demasiado grande`;
   },
-  isEnum: (c, original) => `${c} tiene que ser uno de: ${valoresDe(original)}`,
-  isIn: (c, original) => `${c} tiene que ser uno de: ${valoresDe(original)}`,
+  isEnum: (c, original) => unoDe(c, original),
+  isIn: (c, original) => unoDe(c, original),
   arrayMaxSize: (c, original) => {
     const n = /(\d+)/.exec(original);
     return n ? `${c} no puede tener más de ${n[1]} elementos` : `${c} tiene demasiados elementos`;
@@ -77,18 +77,40 @@ const TEXTOS: Record<string, (campo: string, original: string) => string> = {
   whitelistValidation: (c) => `${c} no es un dato que este formulario pueda mandar`,
 };
 
-/** «tipo must be one of the following values: MOTO, AUTO» → «MOTO, AUTO». */
-function valoresDe(original: string): string {
+/**
+ * «tipo must be one of the following values: MOTO, AUTO» → «tipo tiene que ser
+ * uno de: MOTO, AUTO».
+ *
+ * Si la lista no se puede extraer —porque class-validator cambió el texto—, se
+ * arma una frase entera y no se rellena el hueco. La versión anterior devolvía
+ * «tiene que ser uno de: uno de los valores permitidos», que es media oración
+ * pegada a otra media y no dice nada.
+ */
+function unoDe(campo: string, original: string): string {
   const lista = /values:\s*(.+)$/.exec(original);
-  return lista ? lista[1]!.trim() : 'uno de los valores permitidos';
+  return lista
+    ? `${campo} tiene que ser uno de: ${lista[1]!.trim()}`
+    : `${campo} no tiene un valor permitido`;
 }
 
 /**
- * Un mensaje de fábrica siempre empieza con el nombre del campo: «nombre must
- * be…», «tipo must be one of…». Uno escrito a mano en el DTO, no.
+ * Si el mensaje lo escribió class-validator y no una persona.
+ *
+ * Son dos condiciones, y la segunda se agregó después de que la primera fallara
+ * sola. Un mensaje de fábrica empieza con el nombre del campo —«nombre must
+ * be…», «tipo must be one of…»—, pero un mensaje propio bien escrito **también**
+ * puede empezar así: «seccion no es una de las secciones del sitio» es la forma
+ * natural de redactarlo, y quedaba traducido a un texto sin sentido.
+ *
+ * La segunda condición es la que de verdad los separa: todos los mensajes de
+ * fábrica están en inglés y todos usan «must» o «should». Un mensaje escrito
+ * para esta aplicación está en español y no puede contener ninguna de las dos
+ * palabras sueltas.
  */
 function esDeFabrica(propiedad: string, mensaje: string): boolean {
-  return mensaje.startsWith(`${propiedad} `) || mensaje.startsWith(`property ${propiedad} `);
+  const empiezaConElCampo =
+    mensaje.startsWith(`${propiedad} `) || mensaje.startsWith(`property ${propiedad} `);
+  return empiezaConElCampo && /\b(must|should)\b/.test(mensaje);
 }
 
 /** Todos los mensajes de un árbol de errores, incluidos los de objetos anidados. */

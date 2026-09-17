@@ -114,3 +114,53 @@ export async function verificarDiploma(codigo: string): Promise<VerificacionDipl
     return null;
   }
 }
+
+// --- Aviso de contacto por WhatsApp ----------------------------------------
+
+/**
+ * Desde dónde salió el contacto. Tiene que coincidir con el enum de la API
+ * (`SeccionDeContacto`), que rechaza cualquier otro valor.
+ */
+export type SeccionDeContacto =
+  | 'hero'
+  | 'encabezado'
+  | 'modalidades'
+  | 'planes'
+  | 'cta-final'
+  | 'pie'
+  | 'boton-flotante'
+  | 'formulario';
+
+/**
+ * Le avisa a la academia que alguien está por escribirle, y desde qué sección.
+ *
+ * Tres reglas, y las tres existen por el mismo motivo —que el botón de WhatsApp
+ * siga siendo un botón de WhatsApp—:
+ *
+ * 1. **No se espera la respuesta.** Quien llama no hace `await`. Si la API está
+ *    caída o lenta, WhatsApp abre igual.
+ * 2. **No se propaga ningún error.** El `catch` se traga todo. Un aviso que no
+ *    salió no es asunto de quien visita el sitio.
+ * 3. **`keepalive`.** El clic puede llevarse la pestaña por delante; con esto el
+ *    navegador termina de mandar la petición aunque la página se vaya.
+ *
+ * No manda nada de quien toca el botón: sólo la sección y, si existe, de qué
+ * página venía. La API se queda únicamente con el dominio de eso.
+ */
+export function avisarContactoWhatsApp(seccion: SeccionDeContacto): void {
+  try {
+    void fetch(`${API_URL}/landing/contacto-whatsapp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seccion,
+        // Cadena vacía cuando se entró escribiendo la dirección: se manda
+        // `undefined` para que el campo directamente no viaje.
+        desde: document.referrer || undefined,
+      }),
+      keepalive: true,
+    }).catch(() => undefined);
+  } catch {
+    // Ni siquiera armar la petición puede romper el clic.
+  }
+}

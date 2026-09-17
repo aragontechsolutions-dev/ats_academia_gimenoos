@@ -3,6 +3,7 @@ import { MessageCircle, Send } from 'lucide-react';
 import { motivosConsulta } from '../contenido';
 import { construirEnlaceWhatsApp, useNegocio, useSeccion } from '../contexto/ContenidoContexto';
 import { texto } from '../lib/contenidoRemoto';
+import { avisarContactoWhatsApp } from '../lib/api';
 import { Seccion, TituloSeccion } from './ui/Seccion';
 import { clasesBoton } from './ui/Boton';
 
@@ -40,6 +41,12 @@ export function Contacto() {
       cuerpo ? `${presentacion}\n${cuerpo}` : presentacion,
     );
     if (!enlace) return;
+
+    // El aviso a la academia NO lleva nada de lo que se escribió acá: ni el
+    // nombre, ni el motivo, ni el mensaje. Sólo que alguien está por escribir y
+    // desde qué sección. Lo de arriba dice, en letra grande, que los datos no se
+    // guardan en ningún lado; eso tiene que seguir siendo cierto.
+    avisarContactoWhatsApp('formulario');
     window.open(enlace, '_blank', 'noopener,noreferrer');
   }
 

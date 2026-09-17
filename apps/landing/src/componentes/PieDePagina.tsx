@@ -2,12 +2,12 @@ import { useMemo } from 'react';
 import { Facebook, Instagram, Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
 
 import { legal, navegacion } from '../contenido';
-import { useEnlaceWhatsApp, useNegocio, useSeccionVisible } from '../contexto/ContenidoContexto';
+import { useContactoWhatsApp, useNegocio, useSeccionVisible } from '../contexto/ContenidoContexto';
 import { useEgresados } from '../lib/egresados';
 
 export function PieDePagina() {
   const negocio = useNegocio();
-  const wa = useEnlaceWhatsApp();
+  const wa = useContactoWhatsApp('pie');
 
   // La misma regla que en la barra de arriba: un enlace del pie que apunta a una
   // sección que no existe deja a la persona donde estaba, sin ningún aviso.
@@ -96,7 +96,8 @@ export function PieDePagina() {
                   className="mt-0.5 shrink-0 text-marca-500"
                 />
                 <a
-                  href={wa}
+                  href={wa.href}
+                  onClick={wa.onClick}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="transition hover:text-white"

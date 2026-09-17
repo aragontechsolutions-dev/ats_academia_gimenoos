@@ -14,9 +14,10 @@ import { ReservasService } from '../src/modules/agenda/reservas.service';
 import { AgendaController } from '../src/modules/agenda/agenda.controller';
 import { ROLES_REQUERIDOS } from '../src/common/auth/roles.decorator';
 import type { UsuarioAutenticado } from '../src/common/auth/jwt-payload.interface';
+import { telegramCallado } from './ayuda/telegram-callado';
 
 const prisma = new PrismaService();
-const servicio = new ReservasService(prisma, new AuditoriaService(prisma));
+const servicio = new ReservasService(prisma, new AuditoriaService(prisma), telegramCallado());
 
 const ID = {
   usuarioAdmin: '00000000-0000-4000-c000-000000000001',

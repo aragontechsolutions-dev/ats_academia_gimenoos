@@ -95,6 +95,30 @@ export const envSchema = z.object({
   /** Limite de peticiones por ventana, por IP. */
   THROTTLE_TTL_SEGUNDOS: z.coerce.number().int().positive().default(60),
   THROTTLE_LIMITE: z.coerce.number().int().positive().default(100),
+
+  // --- Avisos por Telegram -------------------------------------------------
+  /**
+   * Token del bot, tal como lo entrega @BotFather.
+   *
+   * Es una credencial: quien lo tenga puede escribir como el bot y leer lo que
+   * el bot recibe. Vive SOLO acá, en la variable de entorno, y a propósito no en
+   * la base: así no viaja en los respaldos ni queda al alcance de un volcado.
+   *
+   * Es opcional. Sin token, los avisos no se mandan y la API arranca igual: el
+   * sistema funcionaba antes de que esto existiera y tiene que seguir
+   * funcionando si el bot se cae o todavía no se creó.
+   *
+   * La otra mitad —a qué conversación se escribe y qué se avisa— se configura
+   * desde el panel, porque eso cambia con el tiempo y no es secreto.
+   */
+  TELEGRAM_BOT_TOKEN: z
+    .string()
+    .regex(
+      /^\d+:[A-Za-z0-9_-]{30,}$/,
+      'no tiene la forma de un token de BotFather (1234567890:AAE...)',
+    )
+    .optional()
+    .or(z.literal('')),
 });
 
 export type Env = z.infer<typeof envSchema>;

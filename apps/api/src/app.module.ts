@@ -11,11 +11,13 @@ import { SupabaseAuthGuard } from './common/auth/supabase-auth.guard';
 import { RolesGuard } from './common/auth/roles.guard';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { SupabaseModule } from './common/supabase/supabase.module';
+import { TelegramModule } from './common/telegram/telegram.module';
 
 import { HealthModule } from './modules/health/health.module';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
 import { CatalogoModule } from './modules/catalogo/catalogo.module';
 import { ConfiguracionModule } from './modules/configuracion/configuracion.module';
+import { AvisosModule } from './modules/avisos/avisos.module';
 import { AgendaModule } from './modules/agenda/agenda.module';
 import { InstructoresModule } from './modules/instructores/instructores.module';
 import { VehiculosModule } from './modules/vehiculos/vehiculos.module';
@@ -43,11 +45,13 @@ import { InvitacionesModule } from './modules/invitaciones/invitaciones.module';
     PrismaModule,
     AuditoriaModule,
     SupabaseModule,
+    TelegramModule,
     AuthModule,
     HealthModule,
     UsuariosModule,
     CatalogoModule,
     ConfiguracionModule,
+    AvisosModule,
     AgendaModule,
     InstructoresModule,
     VehiculosModule,

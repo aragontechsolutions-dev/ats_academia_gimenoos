@@ -3,7 +3,7 @@ import { Menu, MessageCircle, X } from 'lucide-react';
 
 import { navegacion } from '../contenido';
 import {
-  useEnlaceWhatsApp,
+  useContactoWhatsApp,
   useDestinoPrincipal,
   useNegocio,
   useSeccionVisible,
@@ -24,8 +24,8 @@ export function Encabezado() {
   const [bajado, setBajado] = useState(false);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const negocio = useNegocio();
-  const wa = useEnlaceWhatsApp();
-  const principal = useDestinoPrincipal();
+  const wa = useContactoWhatsApp('encabezado');
+  const principal = useDestinoPrincipal('encabezado');
 
   const esVisible = useSeccionVisible();
   const egresados = useEgresados();
@@ -145,6 +145,7 @@ export function Encabezado() {
           <a
             href={principal.href}
             {...(principal.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            onClick={principal.onClick}
             className={`${clasesBoton('primario')} hidden !px-5 !py-2.5 !text-sm sm:inline-flex`}
           >
             {wa && <MessageCircle size={18} aria-hidden="true" />}
@@ -192,7 +193,10 @@ export function Encabezado() {
               <a
                 href={principal.href}
                 {...(principal.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                onClick={() => setMenuAbierto(false)}
+                onClick={() => {
+                  principal.onClick();
+                  setMenuAbierto(false);
+                }}
                 className={`${clasesBoton('primario')} w-full`}
               >
                 Consultar

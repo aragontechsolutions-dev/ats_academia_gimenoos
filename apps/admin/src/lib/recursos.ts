@@ -268,3 +268,40 @@ export const graduados = {
   eliminar: (id: string) =>
     llamarApi<{ eliminado: boolean }>(`/graduados/${id}`, { method: 'DELETE' }),
 };
+
+// --- Avisos por Telegram ---------------------------------------------------
+
+export interface EstadoAvisosTelegram {
+  /** Si el servidor tiene cargado el token del bot. El panel nunca ve el token. */
+  botConfigurado: boolean;
+  chatId: string | null;
+  chatNombre: string | null;
+  avisaReservaNueva: boolean;
+  avisaClaseCerrada: boolean;
+  avisaClaseCancelada: boolean;
+  avisaClicWhatsapp: boolean;
+  ultimoEnvioAt: string | null;
+  ultimoErrorAt: string | null;
+  ultimoError: string | null;
+}
+
+export interface ChatDeTelegram {
+  id: string;
+  nombre: string;
+  tipo: 'privado' | 'grupo';
+}
+
+export const avisosTelegram = {
+  estado: () => llamarApi<EstadoAvisosTelegram>('/avisos/telegram'),
+
+  /** Conversaciones que le hablaron al bot en las últimas 24 horas. */
+  chats: () => llamarApi<ChatDeTelegram[]>('/avisos/telegram/chats'),
+
+  guardar: (cuerpo: Record<string, unknown>) =>
+    llamarApi<EstadoAvisosTelegram>('/avisos/telegram', {
+      method: 'PATCH',
+      body: JSON.stringify(cuerpo),
+    }),
+
+  probar: () => llamarApi<{ enviado: boolean }>('/avisos/telegram/probar', { method: 'POST' }),
+};

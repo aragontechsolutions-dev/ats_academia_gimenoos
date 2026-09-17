@@ -144,13 +144,13 @@ enum TipoDocumento {
 /// `id` es el mismo UUID que `auth.users.id` (claim `sub` del JWT): no se genera aca.
 /// La contrasenia y los factores de autenticacion viven SOLO en Supabase Auth.
 model Usuario {
-  id        String     @id @db.Uuid
-  email     String     @unique
-  nombre    String
-  apellido  String
-  telefono  String?
-  rol       RolUsuario @default(CLIENTE)
-  activo    Boolean    @default(true)
+  id       String     @id @db.Uuid
+  email    String     @unique
+  nombre   String
+  apellido String
+  telefono String?
+  rol      RolUsuario @default(CLIENTE)
+  activo   Boolean    @default(true)
 
   /// Fecha en que el usuario presto consentimiento informado para el tratamiento
   /// de sus datos personales (Ley 18.331). Null = consentimiento no registrado.
@@ -159,9 +159,9 @@ model Usuario {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  cliente     Cliente?
-  instructor  Instructor?
-  auditorias  RegistroAuditoria[]
+  cliente    Cliente?
+  instructor Instructor?
+  auditorias RegistroAuditoria[]
 
   @@index([rol])
   @@map("usuarios")
@@ -182,7 +182,7 @@ model Invitacion {
 
   /// Siempre en minuscula: Supabase normaliza los correos y la comparacion
   /// tiene que dar igual escriba como escriba quien la carga.
-  email String
+  email  String
   /// Con que rol se crea la cuenta. No se lee del token: `app_metadata` vive en
   /// Supabase y esto vive en la base de la aplicacion, que es la fuente de verdad.
   rol    RolUsuario       @default(CLIENTE)
@@ -195,16 +195,16 @@ model Invitacion {
 
   /// Cuando se entrego el acceso. Null = la fila existe pero no salio por ningun
   /// lado todavia, y hay que reintentar.
-  enviadaAt   DateTime? @map("enviada_at") @db.Timestamptz(3)
+  enviadaAt   DateTime?        @map("enviada_at") @db.Timestamptz(3)
   /// Por donde se entrego. Null mientras no se haya entregado.
   ///
   /// El enlace EN SI no se guarda nunca, ni aca ni en los registros: es una
   /// credencial, y quien la tenga entra como esa persona. Se genera, se usa y se
   /// olvida.
-  canal       CanalInvitacion? 
-  aceptadaAt  DateTime? @map("aceptada_at") @db.Timestamptz(3)
+  canal       CanalInvitacion?
+  aceptadaAt  DateTime?        @map("aceptada_at") @db.Timestamptz(3)
   /// Usuario que se creo al aceptarla.
-  aceptadaPor String?   @map("aceptada_por") @db.Uuid
+  aceptadaPor String?          @map("aceptada_por") @db.Uuid
 
   invitadaPor String?  @map("invitada_por") @db.Uuid
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -242,27 +242,27 @@ model Cliente {
 
   /// Con que documento se identifica. Un alumno extranjero puede sacar la
   /// libreta con su pasaporte.
-  tipoDocumento TipoIdentificacion @default(CEDULA) @map("tipo_documento")
+  tipoDocumento   TipoIdentificacion @default(CEDULA) @map("tipo_documento")
   /// Pais emisor, ISO 3166-1 alfa-2. Para la cedula uruguaya es siempre UY.
-  paisDocumento String @default("UY") @map("pais_documento") @db.Char(2)
+  paisDocumento   String             @default("UY") @map("pais_documento") @db.Char(2)
   /// Numero del documento. La cedula va solo con digitos, incluido el
   /// verificador; el pasaporte puede llevar letras y se guarda en mayusculas.
   documento       String?
-  fechaNacimiento DateTime? @map("fecha_nacimiento") @db.Date
+  fechaNacimiento DateTime?          @map("fecha_nacimiento") @db.Date
   direccion       String?
-  ciudad          String    @default("San Carlos")
+  ciudad          String             @default("San Carlos")
   /// Observaciones internas del instructor/admin. No visible para el cliente.
-  notasInternas   String?   @map("notas_internas")
-  activo          Boolean   @default(true)
+  notasInternas   String?            @map("notas_internas")
+  activo          Boolean            @default(true)
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  usuario     Usuario?         @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
-  reservas    Reserva[]
-  pagos       Pago[]
-  compras     CompraServicio[]
-  expedientes Expediente[]
+  usuario      Usuario?         @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  reservas     Reserva[]
+  pagos        Pago[]
+  compras      CompraServicio[]
+  expedientes  Expediente[]
   graduaciones Graduado[]
   invitaciones Invitacion[]
 
@@ -278,19 +278,19 @@ model Instructor {
   id        String  @id @default(uuid()) @db.Uuid
   usuarioId String? @unique @map("usuario_id") @db.Uuid
 
-  nombre        String
-  apellido      String
-  telefono      String?
-  habilitaMoto  Boolean @default(false) @map("habilita_moto")
-  habilitaAuto  Boolean @default(true) @map("habilita_auto")
-  activo        Boolean @default(true)
+  nombre       String
+  apellido     String
+  telefono     String?
+  habilitaMoto Boolean @default(false) @map("habilita_moto")
+  habilitaAuto Boolean @default(true) @map("habilita_auto")
+  activo       Boolean @default(true)
   /// Color hexadecimal para distinguirlo en el calendario del panel.
-  colorAgenda   String  @default("#2563eb") @map("color_agenda")
+  colorAgenda  String  @default("#2563eb") @map("color_agenda")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  usuario          Usuario?                   @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  usuario          Usuario?                  @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
   disponibilidades DisponibilidadPlantilla[]
   excepciones      ExcepcionDisponibilidad[]
   reservas         Reserva[]
@@ -338,9 +338,9 @@ model DisponibilidadPlantilla {
   instructorId String @map("instructor_id") @db.Uuid
 
   /// 0 = domingo ... 6 = sabado
-  diaSemana      Int @map("dia_semana")
-  minutoInicio   Int @map("minuto_inicio")
-  minutoFin      Int @map("minuto_fin")
+  diaSemana    Int @map("dia_semana")
+  minutoInicio Int @map("minuto_inicio")
+  minutoFin    Int @map("minuto_fin")
 
   vigenteDesde DateTime? @map("vigente_desde") @db.Date
   vigenteHasta DateTime? @map("vigente_hasta") @db.Date
@@ -388,9 +388,9 @@ model Servicio {
   tipoVehiculo TipoVehiculo? @map("tipo_vehiculo")
 
   /// Cantidad de clases que otorga la compra (1 para clase suelta).
-  cantidadClases Int     @default(1) @map("cantidad_clases")
+  cantidadClases Int @default(1) @map("cantidad_clases")
   /// Duracion de cada clase en minutos.
-  duracionMin    Int     @default(45) @map("duracion_min")
+  duracionMin    Int @default(45) @map("duracion_min")
 
   precioContado Decimal @map("precio_contado") @db.Decimal(12, 2)
   precioTarjeta Decimal @map("precio_tarjeta") @db.Decimal(12, 2)
@@ -417,10 +417,10 @@ model CompraServicio {
   clienteId  String @map("cliente_id") @db.Uuid
   servicioId String @map("servicio_id") @db.Uuid
 
-  clasesTotales Int      @map("clases_totales")
-  clasesUsadas  Int      @default(0) @map("clases_usadas")
+  clasesTotales Int       @map("clases_totales")
+  clasesUsadas  Int       @default(0) @map("clases_usadas")
   /// Precio efectivamente acordado, congelado al momento de la compra.
-  montoTotal    Decimal  @map("monto_total") @db.Decimal(12, 2)
+  montoTotal    Decimal   @map("monto_total") @db.Decimal(12, 2)
   vigenteHasta  DateTime? @map("vigente_hasta") @db.Date
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -445,11 +445,11 @@ model CompraServicio {
 /// son dos EXCLUDE constraints de Postgres (btree_gist + tstzrange) definidas
 /// en la migracion 20260912120000_agenda_exclusion_constraints. Ver docs/01-modelo-datos.md.
 model Reserva {
-  id           String        @id @default(uuid()) @db.Uuid
-  clienteId    String        @map("cliente_id") @db.Uuid
-  instructorId String        @map("instructor_id") @db.Uuid
-  vehiculoId   String?       @map("vehiculo_id") @db.Uuid
-  compraId     String?       @map("compra_id") @db.Uuid
+  id           String  @id @default(uuid()) @db.Uuid
+  clienteId    String  @map("cliente_id") @db.Uuid
+  instructorId String  @map("instructor_id") @db.Uuid
+  vehiculoId   String? @map("vehiculo_id") @db.Uuid
+  compraId     String? @map("compra_id") @db.Uuid
 
   tipo   TipoVehiculo
   inicio DateTime      @db.Timestamptz(3)
@@ -469,8 +469,8 @@ model Reserva {
   /// consulta, y este no entra en los que recibe un CLIENTE.
   notaInstructor String? @map("nota_instructor")
 
-  canceladaAt     DateTime? @map("cancelada_at") @db.Timestamptz(3)
-  motivoCancelacion String? @map("motivo_cancelacion")
+  canceladaAt       DateTime? @map("cancelada_at") @db.Timestamptz(3)
+  motivoCancelacion String?   @map("motivo_cancelacion")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -495,8 +495,8 @@ model Reserva {
 /// Pago unificado para los cuatro canales: checkout online, terminal Point,
 /// transferencia con comprobante y efectivo.
 model Pago {
-  id        String @id @default(uuid()) @db.Uuid
-  clienteId String @map("cliente_id") @db.Uuid
+  id        String  @id @default(uuid()) @db.Uuid
+  clienteId String  @map("cliente_id") @db.Uuid
   compraId  String? @map("compra_id") @db.Uuid
   reservaId String? @map("reserva_id") @db.Uuid
 
@@ -542,13 +542,13 @@ model Expediente {
   categoria CategoriaLicencia
   estado    EstadoExpediente  @default(INICIADO)
 
-  libreMultas   Boolean   @default(false) @map("libre_multas")
-  charlaFecha   DateTime? @map("charla_fecha") @db.Timestamptz(3)
-  teoricoFecha  DateTime? @map("teorico_fecha") @db.Timestamptz(3)
-  teoricoAprobado Boolean? @map("teorico_aprobado")
-  practicoFecha DateTime? @map("practico_fecha") @db.Timestamptz(3)
-  practicoAprobado Boolean? @map("practico_aprobado")
-  emitidaFecha  DateTime? @map("emitida_fecha") @db.Date
+  libreMultas      Boolean   @default(false) @map("libre_multas")
+  charlaFecha      DateTime? @map("charla_fecha") @db.Timestamptz(3)
+  teoricoFecha     DateTime? @map("teorico_fecha") @db.Timestamptz(3)
+  teoricoAprobado  Boolean?  @map("teorico_aprobado")
+  practicoFecha    DateTime? @map("practico_fecha") @db.Timestamptz(3)
+  practicoAprobado Boolean?  @map("practico_aprobado")
+  emitidaFecha     DateTime? @map("emitida_fecha") @db.Date
 
   observaciones String?
 
@@ -567,13 +567,13 @@ model Expediente {
 /// Supabase Storage; aca solo se guarda la ruta. La lectura se hace siempre
 /// con signed URL de corta duracion generada por el backend.
 model DocumentoExpediente {
-  id           String        @id @default(uuid()) @db.Uuid
-  expedienteId String        @map("expediente_id") @db.Uuid
-  tipo         TipoDocumento
-  storagePath  String        @map("storage_path")
-  nombreArchivo String       @map("nombre_archivo")
-  mimeType     String        @map("mime_type")
-  tamanioBytes Int           @map("tamanio_bytes")
+  id            String        @id @default(uuid()) @db.Uuid
+  expedienteId  String        @map("expediente_id") @db.Uuid
+  tipo          TipoDocumento
+  storagePath   String        @map("storage_path")
+  nombreArchivo String        @map("nombre_archivo")
+  mimeType      String        @map("mime_type")
+  tamanioBytes  Int           @map("tamanio_bytes")
 
   verificado    Boolean   @default(false)
   verificadoPor String?   @map("verificado_por") @db.Uuid
@@ -609,31 +609,70 @@ model ConfiguracionAcademia {
   ciudad       String  @default("San Carlos")
   departamento String  @default("Maldonado")
   /// Horarios de atencion, en texto libre (ej: "Lunes a viernes de 9 a 19").
-  horarios  String?
+  horarios     String?
   /// Enlace de Google Maps para el boton "Como llegar".
-  mapaUrl   String? @map("mapa_url")
+  mapaUrl      String? @map("mapa_url")
 
   /// Coordenadas exactas del local, para dibujar el mapa y trazar la ruta.
   /// Van las dos o ninguna: media coordenada no ubica nada. Lo obliga un CHECK.
   /// Mientras esten en null el sitio NO inventa un punto: muestra la
   /// ilustracion de la zona y no ofrece el boton de "llevame hasta alli".
-  latitud  Float?
-  longitud Float?
+  latitud   Float?
+  longitud  Float?
   instagram String?
   facebook  String?
 
   /// Minutos libres que se reservan entre dos clases consecutivas.
-  bufferMinutos Int @default(15) @map("buffer_minutos")
+  bufferMinutos          Int @default(15) @map("buffer_minutos")
   /// Horas minimas de antelacion para que el alumno pueda reservar.
-  antelacionMinimaHoras Int @default(12) @map("antelacion_minima_horas")
+  antelacionMinimaHoras  Int @default(12) @map("antelacion_minima_horas")
   /// Horas minimas de antelacion para cancelar sin penalidad.
   cancelacionMinimaHoras Int @default(24) @map("cancelacion_minima_horas")
   /// Dias hacia adelante que el alumno puede ver y reservar.
-  ventanaReservaDias Int @default(30) @map("ventana_reserva_dias")
+  ventanaReservaDias     Int @default(30) @map("ventana_reserva_dias")
 
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("configuracion_academia")
+}
+
+/// A quien y que se le avisa por Telegram. Una sola fila, como la configuracion.
+///
+/// Vive aparte de `ConfiguracionAcademia` a proposito: esa tabla la lee el
+/// endpoint PUBLICO de la landing para armar el sitio. Con el destino de los
+/// avisos adentro, cualquier campo nuevo que alguien agregue al select publico
+/// se filtraria sin que nadie lo note. Separado, eso no puede pasar.
+///
+/// El token del bot NO esta aca: es una credencial y vive en la variable de
+/// entorno TELEGRAM_BOT_TOKEN, fuera de la base y de sus respaldos.
+model AvisosTelegram {
+  id Int @id @default(1)
+
+  /// Conversacion destino. Sale del boton "Buscar conversaciones" del panel,
+  /// que pregunta a Telegram quien le hablo al bot.
+  chatId     String? @map("chat_id")
+  /// Como nombrarla en el panel: "Henry Gimeno", "Avisos Academia". Es para que
+  /// se pueda verificar de un vistazo que quedo elegida la correcta.
+  chatNombre String? @map("chat_nombre")
+
+  /// Cada aviso se prende y se apaga por separado. El que mas ruido puede hacer
+  /// es el del clic de WhatsApp, porque depende de cuanta gente visite el sitio.
+  avisaReservaNueva   Boolean @default(true) @map("avisa_reserva_nueva")
+  avisaClaseCerrada   Boolean @default(true) @map("avisa_clase_cerrada")
+  avisaClaseCancelada Boolean @default(true) @map("avisa_clase_cancelada")
+  avisaClicWhatsapp   Boolean @default(true) @map("avisa_clic_whatsapp")
+
+  /// Cuando salio bien el ultimo aviso. Sirve para contestar "esto anda?" sin
+  /// tener que mandar uno de prueba.
+  ultimoEnvioAt DateTime? @map("ultimo_envio_at") @db.Timestamptz(3)
+  /// El ultimo fallo y su motivo, tal como lo explico Telegram. Sin esto, un bot
+  /// bloqueado o un chat borrado se ven igual que "no paso nada".
+  ultimoErrorAt DateTime? @map("ultimo_error_at") @db.Timestamptz(3)
+  ultimoError   String?   @map("ultimo_error")
+
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("avisos_telegram")
 }
 
 /// Registro de auditoria de acciones sensibles (acceso a documentos, cambios
@@ -674,15 +713,15 @@ model SeccionLanding {
   /// Si la seccion se muestra en el sitio.
   visible Boolean @default(true)
   /// Orden entre las secciones de contenido. Menor primero.
-  orden Int @default(0)
+  orden   Int     @default(0)
 
   /// Encabezado de la seccion. Null = se usa el texto por defecto del sitio.
-  titulo String?
-  bajada String?
+  titulo   String?
+  bajada   String?
   /// Texto corto sobre el titulo (la insignia del hero, el sobretitulo).
   etiqueta String?
   /// Texto del boton principal de la seccion, cuando la seccion tiene uno.
-  accion String?
+  accion   String?
 
   /// Lista de { titulo, detalle }. Cubre tarjetas, pasos, beneficios y
   /// preguntas frecuentes (pregunta -> titulo, respuesta -> detalle).
@@ -706,11 +745,11 @@ model Graduado {
   clienteId String @map("cliente_id") @db.Uuid
 
   categoria   CategoriaLicencia
-  fechaEgreso DateTime @map("fecha_egreso") @db.Date
+  fechaEgreso DateTime          @map("fecha_egreso") @db.Date
   /// Ano de egreso, desnormalizado: la galeria publica filtra y agrupa por ano
   /// en cada pagina, y un indice sobre una columna es mas barato que una
   /// funcion sobre la fecha en cada consulta.
-  anio Int
+  anio        Int
 
   /// Codigo corto para verificar el diploma. Permite comprobar que es autentico
   /// sin que el diploma tenga que mostrar ningun dato del alumno.
@@ -719,11 +758,11 @@ model Graduado {
   // --- Autorizacion para publicar (Ley 18.331) ------------------------------
   /// Fecha de la firma. Sin esto NO se puede publicar: lo impide una constraint
   /// en la base, no solo el codigo.
-  autorizacionAt DateTime? @map("autorizacion_at") @db.Timestamptz(3)
+  autorizacionAt       DateTime? @map("autorizacion_at") @db.Timestamptz(3)
   /// Quien firmo la autorizacion. Si el alumno es menor, su padre, madre o tutor.
-  autorizacionFirmante String? @map("autorizacion_firmante")
+  autorizacionFirmante String?   @map("autorizacion_firmante")
   /// true cuando quien firmo es el representante legal de un menor de edad.
-  autorizacionEsTutor Boolean @default(false) @map("autorizacion_es_tutor")
+  autorizacionEsTutor  Boolean   @default(false) @map("autorizacion_es_tutor")
 
   /// Foto del egresado con su diploma. Ruta dentro del bucket de Storage.
   fotoRuta String? @map("foto_ruta")
