@@ -20,8 +20,14 @@ export interface AvisoParaElAlumno {
   url: string;
 }
 
-/** «mañana a las 14:30» o «hoy a las 14:30», según el día de Uruguay. */
-function cuando(inicio: Date, ahora: Date): string {
+/**
+ * «mañana a las 14:30» o «hoy a las 14:30», según el día de Uruguay.
+ *
+ * Se exporta porque los TRES canales tienen que decir exactamente lo mismo. Si
+ * el correo armara su propia frase, tarde o temprano una diría «mañana» y la
+ * otra «el mié 18», sobre la misma clase.
+ */
+export function cuando(inicio: Date, ahora: Date): string {
   const clase = DateTime.fromJSDate(inicio).setZone(ZONA);
   const hoy = DateTime.fromJSDate(ahora).setZone(ZONA);
   const dias = clase.startOf('day').diff(hoy.startOf('day'), 'days').days;

@@ -93,3 +93,16 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         sync: false
+      # Servidor SMTP para los recordatorios por correo. Es el MISMO Brevo que ya
+      # esta configurado en Supabase para las invitaciones.
+      # Vacio = no se mandan correos, y la API arranca igual.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PUERTO
+        value: '587'
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_DESDE
+        sync: false

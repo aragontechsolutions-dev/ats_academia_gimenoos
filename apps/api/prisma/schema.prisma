@@ -256,6 +256,29 @@ model Cliente {
   notasInternas   String?            @map("notas_internas")
   activo          Boolean            @default(true)
 
+  /// Si quiere recibir los recordatorios de clase por correo.
+  ///
+  /// Arranca en true: quien deja su correo para que la academia le escriba
+  /// espera que le escriba. Se apaga desde su perfil o desde el enlace de baja
+  /// que lleva cada correo.
+  recibeAvisosPorCorreo Boolean @default(true) @map("recibe_avisos_por_correo")
+
+  /// Lo que hace posible darse de baja SIN iniciar sesion.
+  ///
+  /// Viaja en el enlace de cada correo. Es un UUID y no una firma calculada
+  /// porque asi no hace falta un secreto mas en el servidor, y porque se puede
+  /// invalidar de a uno: cambiarlo corta los enlaces viejos de ESA persona sin
+  /// tocar los de nadie mas.
+  ///
+  /// Quien lo tenga puede darse de baja de los correos de esa persona, y nada
+  /// mas: no da acceso a ningun dato ni a ninguna otra accion.
+  ///
+  /// El valor por defecto lo pone POSTGRES y no Prisma. Con el de Prisma, la
+  /// migracion no puede aplicarse sobre una tabla que ya tiene filas: Prisma no
+  /// sabe con que rellenarlas. Con `gen_random_uuid()` las rellena la base, cada
+  /// una con un valor distinto, en la misma sentencia que agrega la columna.
+  tokenBaja String @default(dbgenerated("gen_random_uuid()")) @map("token_baja") @db.Uuid
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 

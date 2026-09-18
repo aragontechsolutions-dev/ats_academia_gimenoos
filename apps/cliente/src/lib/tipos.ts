@@ -50,6 +50,8 @@ export interface MiFicha {
   documento: string | null;
   fechaNacimiento: string | null;
   direccion: string | null;
+  /** Si quiere seguir recibiendo los recordatorios de clase por correo. */
+  recibeAvisosPorCorreo: boolean;
   compras: Pack[];
 }
 

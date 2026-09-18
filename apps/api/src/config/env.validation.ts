@@ -162,6 +162,26 @@ export const envSchema = z.object({
     .string()
     .regex(/^mailto:.+@.+\..+$/, 'tiene que ser un mailto: con una dirección de correo')
     .default('mailto:contacto@academiagimenoos.com.uy'),
+
+  // --- Correo que manda la API por su cuenta --------------------------------
+  /**
+   * Servidor SMTP para los correos que NO son de autenticación.
+   *
+   * Los de invitación y los de ingreso los manda Supabase Auth, que solo sabe
+   * mandar los suyos. Un recordatorio de clase no es ninguno de esos, así que
+   * sale desde acá, contra el MISMO servidor que ya tiene configurado la
+   * academia en Supabase (Brevo). Que sea el mismo importa: el dominio ya está
+   * autenticado ahí y estos correos heredan esa reputación.
+   *
+   * Todo opcional: sin esto la API arranca igual y no manda correos.
+   * La clave SMTP es una credencial y vive solo acá.
+   */
+  SMTP_HOST: z.string().optional().or(z.literal('')),
+  SMTP_PUERTO: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional().or(z.literal('')),
+  SMTP_PASSWORD: z.string().optional().or(z.literal('')),
+  /** Remitente, con nombre: `Academia Gimenoos <avisos@midominio.com>`. */
+  SMTP_DESDE: z.string().default('Academia Gimenoos <no-responder@academiagimenoos.com.uy>'),
 });
 
 export type Env = z.infer<typeof envSchema>;

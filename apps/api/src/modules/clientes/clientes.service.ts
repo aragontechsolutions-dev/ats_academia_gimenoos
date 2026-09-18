@@ -36,6 +36,10 @@ const CAMPOS_PROPIOS = {
   documento: true,
   fechaNacimiento: true,
   direccion: true,
+  // Su preferencia de correo, para poder mostrarla y cambiarla desde el perfil.
+  // El `tokenBaja` NO va: solo tiene sentido dentro del enlace de un correo, y
+  // todo dato que no se usa en pantalla es un dato que se puede filtrar.
+  recibeAvisosPorCorreo: true,
 } satisfies Prisma.ClienteSelect;
 
 /** Lo que ve un administrador: incluye los datos identificatorios. */
@@ -240,6 +244,11 @@ export class ClientesService {
         fechaNacimiento: dto.fechaNacimiento ?? null,
         direccion: dto.direccion ?? null,
         ...(dto.ciudad ? { ciudad: dto.ciudad } : {}),
+        // `undefined` deja el valor como está: quien guarda sus datos sin tocar
+        // la casilla no cambia su preferencia sin querer.
+        ...(dto.recibeAvisosPorCorreo === undefined
+          ? {}
+          : { recibeAvisosPorCorreo: dto.recibeAvisosPorCorreo }),
       },
       select: CAMPOS_PROPIOS,
     });

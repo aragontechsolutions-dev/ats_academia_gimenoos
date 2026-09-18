@@ -138,4 +138,8 @@ export class ActualizarMiFichaDto {
   @IsString()
   @MaxLength(80)
   ciudad?: string;
+  /** Si quiere seguir recibiendo los recordatorios de clase por correo. */
+  @IsOptional()
+  @IsBoolean()
+  recibeAvisosPorCorreo?: boolean;
 }
