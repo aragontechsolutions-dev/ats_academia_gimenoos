@@ -6,6 +6,7 @@ import { RutaProtegida } from './componentes/RutaProtegida';
 import { Disposicion } from './componentes/Disposicion';
 import { Ingreso } from './paginas/Ingreso';
 import { Entrar } from './paginas/Entrar';
+import { Tablero } from './paginas/Tablero';
 import { Agenda } from './paginas/Agenda';
 import { Alumnos } from './paginas/Alumnos';
 import { AlumnoFicha } from './paginas/AlumnoFicha';
@@ -15,6 +16,7 @@ import { Servicios } from './paginas/Servicios';
 import { Sitio } from './paginas/Sitio';
 import { Graduados } from './paginas/Graduados';
 import { Cuentas } from './paginas/Cuentas';
+import { Pagos } from './paginas/Pagos';
 import { AvisosTelegram } from './paginas/AvisosTelegram';
 
 /**
@@ -44,7 +46,10 @@ export function App() {
             {/* Fuera del guard de rol: es donde se consigue la sesión. */}
             <Route path="/entrar" element={<Entrar />} />
 
-            <Route path="/" element={<Pagina><Agenda /></Pagina>} />
+            {/* El panel aterriza en el resumen: es la pregunta con la que se
+                abre a la mañana. La agenda tiene su propia dirección. */}
+            <Route path="/" element={<Pagina><Tablero /></Pagina>} />
+            <Route path="/agenda" element={<Pagina><Agenda /></Pagina>} />
             <Route path="/alumnos" element={<Pagina><Alumnos /></Pagina>} />
             <Route path="/alumnos/:id" element={<Pagina><AlumnoFicha /></Pagina>} />
 
@@ -70,6 +75,10 @@ export function App() {
               element={<Pagina><Sitio /></Pagina>}
             />
             <Route
+              path="/pagos"
+              element={<Pagina><Pagos /></Pagina>}
+            />
+            <Route
               path="/cuentas"
               element={<Pagina><Cuentas /></Pagina>}
             />
@@ -78,7 +87,7 @@ export function App() {
               element={<Pagina><AvisosTelegram /></Pagina>}
             />
 
-            <Route path="*" element={<Pagina><Agenda /></Pagina>} />
+            <Route path="*" element={<Pagina><Tablero /></Pagina>} />
           </Routes>
         </BrowserRouter>
         <Avisos />

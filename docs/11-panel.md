@@ -8,11 +8,13 @@ Aplicación: `apps/admin` · Rol que entra: **solo `ADMIN`**
 
 | Sección | Quién la ve | Para qué |
 |---|---|---|
+| **Resumen** | solo admin | La pantalla de inicio: cobros, pagos por revisar y clases del período — ver `29-pagos.md` |
 | **Agenda** | solo admin | La operación diaria: ver, agendar, mover y cerrar clases |
 | **Alumnos** | solo admin | Buscar alumnos y consultar su ficha e historial |
 | **Instructores** | solo admin | Alta, horarios semanales y licencias |
 | **Vehículos** | solo admin | Alta, foto, estado y vencimiento del SOA |
 | **Precios** | solo admin | Catálogo de servicios y sus dos precios |
+| **Pagos** | solo admin | Comprobantes de transferencia por revisar y cobros en efectivo — ver `29-pagos.md` |
 | **Cuentas** | solo admin | Quién puede entrar, con qué permisos, e invitaciones sin usar |
 | **Sitio público** | solo admin | Datos de contacto, ubicación en el mapa, y textos y orden de las secciones |
 

@@ -13,6 +13,7 @@ usa como cualquier otra app.
 |---|---|
 | **Mis clases** | Ver las próximas y el historial. Cancelar una clase |
 | **Reservar** | Elegir tipo, duración, día y horario |
+| **Pagar** | Subir el comprobante de una transferencia y ver el estado de sus pagos — ver `29-pagos.md` |
 | **Mi perfil** | Completar sus datos y ver el saldo de sus packs |
 
 La navegación va en una **barra inferior fija**: en el teléfono es la zona que se

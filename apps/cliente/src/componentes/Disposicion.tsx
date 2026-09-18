@@ -11,6 +11,11 @@ const SECCIONES = [
   },
   { ruta: '/reservar', texto: 'Reservar', icono: 'M12 5v14M5 12h14' },
   {
+    ruta: '/pagar',
+    texto: 'Pagar',
+    icono: 'M3 10h18M5 6h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z',
+  },
+  {
     ruta: '/perfil',
     texto: 'Mi perfil',
     icono: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',

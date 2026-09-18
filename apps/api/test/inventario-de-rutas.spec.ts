@@ -15,6 +15,9 @@
  * tres roles sin que nadie lo hubiera decidido. Con un instructor podía agendar
  * clases para cualquier alumno.
  */
+import { readdirSync } from 'node:fs';
+import { basename, join } from 'node:path';
+
 import { RolUsuario } from '@prisma/client';
 
 import { ES_PUBLICO } from '../src/common/auth/publico.decorator';
@@ -30,8 +33,10 @@ import { HealthController } from '../src/modules/health/health.controller';
 import { InstructoresController } from '../src/modules/instructores/instructores.controller';
 import { InvitacionesController } from '../src/modules/invitaciones/invitaciones.controller';
 import { LandingController } from '../src/modules/landing/landing.controller';
+import { PagosController } from '../src/modules/pagos/pagos.controller';
 import { PushController } from '../src/modules/push/push.controller';
 import { RecordatoriosController } from '../src/modules/recordatorios/recordatorios.controller';
+import { TableroController } from '../src/modules/tablero/tablero.controller';
 import { UsuariosController } from '../src/modules/usuarios/usuarios.controller';
 import { VehiculosController } from '../src/modules/vehiculos/vehiculos.controller';
 
@@ -54,8 +59,10 @@ const CONTROLADORES: Controlador[] = [
   InstructoresController,
   InvitacionesController,
   LandingController,
+  PagosController,
   PushController,
   RecordatoriosController,
+  TableroController,
   UsuariosController,
   VehiculosController,
 ];
@@ -173,6 +180,44 @@ describe('Ninguna ruta queda sin decidir', () => {
   });
 });
 
+describe('La lista de controladores está completa', () => {
+  /**
+   * Esto es lo que hace que todo lo de arriba sirva.
+   *
+   * Sin esta prueba, un módulo nuevo con rutas nuevas simplemente no aparece en
+   * el inventario: no falla nada, y las rutas quedan sin clasificar. Pasó con
+   * el tablero, que entró sin sumarse a `CONTROLADORES`. Acá se buscan los
+   * archivos `*.controller.ts` en el disco y se comparan con la lista de arriba.
+   */
+  const RAIZ = join(__dirname, '..', 'src', 'modules');
+
+  function controladoresEnDisco(directorio: string): string[] {
+    return readdirSync(directorio, { withFileTypes: true }).flatMap((entrada) => {
+      const ruta = join(directorio, entrada.name);
+      if (entrada.isDirectory()) return controladoresEnDisco(ruta);
+      return entrada.name.endsWith('.controller.ts') ? [ruta] : [];
+    });
+  }
+
+  it('no hay ningún controlador en el repositorio que falte en el inventario', () => {
+    // Del nombre del archivo se deduce el de la clase: `pagos.controller.ts` es
+    // `PagosController`. Es la convención que sigue todo el repositorio.
+    const esperados = controladoresEnDisco(RAIZ)
+      .map((ruta) => basename(ruta, '.controller.ts'))
+      .map((nombre) =>
+        nombre
+          .split('-')
+          .map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1))
+          .join(''),
+      )
+      .map((nombre) => `${nombre}Controller`)
+      .sort();
+
+    const inventariados = CONTROLADORES.map((c) => c.name).sort();
+    expect(inventariados).toEqual(esperados);
+  });
+});
+
 describe('Lo que solo puede hacer administración', () => {
   /**
    * Rutas que tocan datos de terceros o la configuración de la academia. Si
@@ -187,6 +232,7 @@ describe('Lo que solo puede hacer administración', () => {
     [AvisosController, ['estado', 'chats', 'actualizar', 'probar']],
     [UsuariosController, ['listar', 'actualizar']],
     [LandingController, ['listarSecciones', 'actualizarSeccion', 'obtenerNegocio', 'actualizarNegocio']],
+    [TableroController, ['resumen']],
   ];
 
   for (const [Controlador, metodos] of SOLO_ADMIN) {
@@ -211,6 +257,7 @@ describe('Lo que un alumno NO puede hacer', () => {
   const PROHIBIDAS: Array<[Controlador, string]> = [
     [AgendaController, 'reprogramarReserva'],
     [ClientesController, 'listar'],
+    [TableroController, 'resumen'],
     [InstructoresController, 'crear'],
     [GraduadosController, 'crear'],
     [InvitacionesController, 'crear'],
@@ -232,6 +279,7 @@ describe('Lo que un instructor NO puede hacer', () => {
     [InvitacionesController, 'crear'],
     [UsuariosController, 'listar'],
     [AvisosController, 'estado'],
+    [TableroController, 'resumen'],
   ];
 
   it.each(PROHIBIDAS)('%p.%s no admite al rol INSTRUCTOR', (Controlador, metodo) => {

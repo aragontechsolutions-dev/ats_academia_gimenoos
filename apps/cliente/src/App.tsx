@@ -9,6 +9,7 @@ import { Entrar } from './paginas/Entrar';
 import { MisClases } from './paginas/MisClases';
 import { Reservar } from './paginas/Reservar';
 import { MiPerfil } from './paginas/MiPerfil';
+import { Pagar } from './paginas/Pagar';
 import { Avisos as BajaDeAvisos } from './paginas/Avisos';
 
 function Pagina({ children }: { children: React.ReactNode }) {
@@ -35,6 +36,7 @@ export function App() {
             <Route path="/avisos" element={<BajaDeAvisos />} />
             <Route path="/" element={<Pagina><MisClases /></Pagina>} />
             <Route path="/reservar" element={<Pagina><Reservar /></Pagina>} />
+            <Route path="/pagar" element={<Pagina><Pagar /></Pagina>} />
             <Route path="/perfil" element={<Pagina><MiPerfil /></Pagina>} />
             <Route path="*" element={<Pagina><MisClases /></Pagina>} />
           </Routes>

@@ -8,11 +8,13 @@ import { useSesion } from '../lib/sesion';
  * desde la Etapa 2.D tiene su propia app.
  */
 const SECCIONES = [
-  { ruta: '/', texto: 'Agenda', exacto: true },
+  { ruta: '/', texto: 'Resumen', exacto: true },
+  { ruta: '/agenda', texto: 'Agenda', exacto: false },
   { ruta: '/alumnos', texto: 'Alumnos', exacto: false },
   { ruta: '/instructores', texto: 'Instructores', exacto: false },
   { ruta: '/vehiculos', texto: 'Vehículos', exacto: false },
   { ruta: '/servicios', texto: 'Precios', exacto: false },
+  { ruta: '/pagos', texto: 'Pagos', exacto: false },
   { ruta: '/graduados', texto: 'Egresados', exacto: false },
   { ruta: '/sitio', texto: 'Sitio web', exacto: false },
   { ruta: '/cuentas', texto: 'Cuentas', exacto: false },
