@@ -264,3 +264,9 @@ ahí y la interfaz no queda trabada en «Subiendo…».
 - **El histórico no se indexa bien todavía.** `/graduados` se arma en el
   navegador; el título de la pestaña se ajusta, pero no hay renderizado en el
   servidor.
+
+> **Etapa 6.C:** la galería pública ya no tiene filtro por año ni paginación.
+> Es una lista de años, cada uno con su carrusel, que sale de `GET
+> /graduados/galeria`. El formulario de alta usa un buscador por nombre, cédula
+> o pasaporte en vez de un desplegable. Ver
+> [`30-buscadores-carruseles-y-navbar.md`](30-buscadores-carruseles-y-navbar.md).

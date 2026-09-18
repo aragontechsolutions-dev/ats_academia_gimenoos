@@ -52,9 +52,6 @@ export interface PaginaGraduados {
   datos: GraduadoPublico[];
 }
 
-/** Tamaños que acepta la API. Cualquier otro lo ignora y usa el de por defecto. */
-export const TAMANOS_PAGINA = [10, 20, 50, 100] as const;
-
 const PAGINA_VACIA: PaginaGraduados = {
   total: 0,
   pagina: 1,
@@ -82,12 +79,25 @@ export async function obtenerGraduados(parametros: {
   }
 }
 
-/** Años con egresados publicados, para el filtro. */
-export async function obtenerAniosGraduados(): Promise<number[]> {
+/** Un año de la galería, con sus egresados. */
+export interface AnioDeEgresados {
+  anio: number;
+  /** Cuántos hay en ese año en total, que puede ser más de los que vienen. */
+  total: number;
+  graduados: GraduadoPublico[];
+}
+
+/**
+ * La galería entera, agrupada por año, en una sola petición.
+ *
+ * Reemplazó al filtro por año más la paginación: la página es ahora una lista
+ * de años, cada uno con su carrusel, y se baja en vez de filtrar.
+ */
+export async function obtenerGaleriaPorAnio(): Promise<AnioDeEgresados[]> {
   try {
-    const respuesta = await fetch(`${API_URL}/graduados/anios`);
+    const respuesta = await fetch(`${API_URL}/graduados/galeria`);
     if (!respuesta.ok) return [];
-    return (await respuesta.json()) as number[];
+    return (await respuesta.json()) as AnioDeEgresados[];
   } catch {
     return [];
   }

@@ -32,6 +32,7 @@
 | [27-auditoria-de-seguridad.md](27-auditoria-de-seguridad.md) | **La revisión completa: qué se encontró, qué se corrigió y qué falta** |
 | [28-recordatorio-por-correo.md](28-recordatorio-por-correo.md) | El tercer canal, y por qué la baja de suscripción no es opcional |
 | [29-pagos.md](29-pagos.md) | **Pagos por transferencia y en efectivo, y el tablero del panel** |
+| [30-buscadores-carruseles-y-navbar.md](30-buscadores-carruseles-y-navbar.md) | El buscador de alumno, la galería por años y el navbar con íconos |
 
 **Por dónde empezar:** `07-roadmap.md` si sos quien decide,
 `06-guia-desarrollo.md` para levantar el entorno,

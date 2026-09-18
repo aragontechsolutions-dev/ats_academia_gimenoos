@@ -69,6 +69,7 @@ Guía completa: [`docs/06-guia-desarrollo.md`](docs/06-guia-desarrollo.md).
 | [Auditoría de seguridad](docs/27-auditoria-de-seguridad.md) | **Revisión de punta a punta, con lo encontrado y lo que falta** |
 | [Recordatorio por correo](docs/28-recordatorio-por-correo.md) | El tercer canal de aviso, y cómo se da de baja quien no lo quiere |
 | [Pagos y tablero](docs/29-pagos.md) | Cómo paga un alumno, cómo se aprueba, y el resumen que abre el panel |
+| [Buscadores, carruseles y navbar](docs/30-buscadores-carruseles-y-navbar.md) | El buscador de alumno, la galería de egresados por años y el menú del panel |
 
 ## Antes de publicar
 

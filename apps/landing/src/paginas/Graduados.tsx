@@ -1,14 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowLeft, GraduationCap } from 'lucide-react';
 
-import {
-  obtenerAniosGraduados,
-  obtenerGraduados,
-  TAMANOS_PAGINA,
-  type PaginaGraduados,
-} from '../lib/api';
+import { obtenerGaleriaPorAnio, type AnioDeEgresados, type GraduadoPublico } from '../lib/api';
 import { Seccion, TituloSeccion } from '../componentes/ui/Seccion';
+import { Carrusel } from '../componentes/ui/Carrusel';
 import { useNegocio } from '../contexto/ContenidoContexto';
 
 const CATEGORIA: Record<string, string> = {
@@ -18,62 +14,99 @@ const CATEGORIA: Record<string, string> = {
   G3: 'Motocicleta',
 };
 
-const VACIA: PaginaGraduados = { total: 0, pagina: 1, porPagina: 10, paginas: 1, datos: [] };
-
-/** Lee un número de la URL, cayendo al valor por defecto si no es válido. */
-function numero(valor: string | null, porDefecto: number): number {
-  const convertido = Number(valor);
-  return Number.isInteger(convertido) && convertido > 0 ? convertido : porDefecto;
+/**
+ * Una foto de la galería.
+ *
+ * El ancho es fijo (`w-64`) y no proporcional: dentro de un carrusel las
+ * tarjetas tienen que medir lo mismo estén donde estén, y `shrink-0` es lo que
+ * impide que se apretujen para entrar en el ancho disponible, que es justo lo
+ * contrario de lo que se quiere acá.
+ */
+function Tarjeta({ graduado }: { graduado: GraduadoPublico }) {
+  return (
+    <li className="w-64 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-xl hover:shadow-carbon-950/5">
+      {graduado.fotoUrl ? (
+        <img
+          src={graduado.fotoUrl}
+          alt={`${graduado.nombre} ${graduado.apellido} con su diploma`}
+          loading="lazy"
+          className="h-60 w-full object-cover"
+        />
+      ) : (
+        /* Sin foto la tarjeta igual dice algo: nombre, categoría y año ya son
+           prueba social. Un hueco gris no lo sería. */
+        <div aria-hidden="true" className="flex h-60 items-center justify-center bg-carbon-950">
+          <GraduationCap size={40} className="text-marca-500" />
+        </div>
+      )}
+      <div className="p-5">
+        <p className="text-lg font-bold text-carbon-950">
+          {graduado.nombre} {graduado.apellido}
+        </p>
+        <p className="mt-1 text-sm text-slate-600">
+          {CATEGORIA[graduado.categoria] ?? graduado.categoria}
+        </p>
+      </div>
+    </li>
+  );
 }
 
-export function PaginaGraduadosPublica() {
-  const [parametros, setParametros] = useSearchParams();
-  const [datos, setDatos] = useState<PaginaGraduados>(VACIA);
-  const [anios, setAnios] = useState<number[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const negocio = useNegocio();
+/** Un año con su carrusel. */
+function AnioConCarrusel({ grupo }: { grupo: AnioDeEgresados }) {
+  const faltan = grupo.total - grupo.graduados.length;
 
-  const pagina = numero(parametros.get('pagina'), 1);
-  const porPaginaCrudo = numero(parametros.get('porPagina'), 10);
-  // Un tamaño inventado en la URL no se pasa a la API: se corrige acá.
-  const porPagina = (TAMANOS_PAGINA as readonly number[]).includes(porPaginaCrudo)
-    ? porPaginaCrudo
-    : 10;
-  const anio = parametros.get('anio') ? numero(parametros.get('anio'), 0) : undefined;
+  return (
+    <section className="aparece mt-14 first:mt-10">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-3xl font-black tracking-tight text-carbon-950">{grupo.anio}</h2>
+        <p className="text-sm text-slate-600">
+          {grupo.total === 1 ? '1 egresado' : `${grupo.total} egresados`}
+          {/* Se dice cuántos no se muestran en vez de recortar en silencio: un
+              año que dice «120 egresados» y enseña 24 sin aclararlo parece roto. */}
+          {faltan > 0 && ` · se muestran los ${grupo.graduados.length} más recientes`}
+        </p>
+      </div>
+
+      <div className="mt-5">
+        <Carrusel etiqueta={String(grupo.anio)}>
+          {grupo.graduados.map((graduado) => (
+            <Tarjeta key={graduado.id} graduado={graduado} />
+          ))}
+        </Carrusel>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * La galería pública de egresados, un carrusel por año.
+ *
+ * Antes era un filtro por año más paginación: había que elegir un año, después
+ * un tamaño de página, y recién ahí se veía algo. Ahora la página se baja y
+ * están todos, agrupados por promoción, que es como los recuerda la academia.
+ *
+ * Los carruseles solo se mueven solos cuando las fotos no entran en el ancho de
+ * la pantalla —ver `Carrusel`—, así que un año con tres egresados queda quieto.
+ */
+export function PaginaGraduadosPublica() {
+  const [anios, setAnios] = useState<AnioDeEgresados[] | null>(null);
+  const negocio = useNegocio();
 
   useEffect(() => {
     document.title = `Egresados | ${negocio.nombre}`;
   }, [negocio.nombre]);
 
   useEffect(() => {
-    void obtenerAniosGraduados().then(setAnios);
-  }, []);
-
-  useEffect(() => {
     let vigente = true;
-    setCargando(true);
-    void obtenerGraduados({ pagina, porPagina, anio }).then((resultado) => {
-      if (!vigente) return;
-      setDatos(resultado);
-      setCargando(false);
+    void obtenerGaleriaPorAnio().then((resultado) => {
+      if (vigente) setAnios(resultado);
     });
     return () => {
       vigente = false;
     };
-  }, [pagina, porPagina, anio]);
+  }, []);
 
-  const cambiar = useCallback(
-    (cambios: Record<string, string | undefined>) => {
-      const siguientes = new URLSearchParams(parametros);
-      for (const [clave, valor] of Object.entries(cambios)) {
-        if (valor === undefined) siguientes.delete(clave);
-        else siguientes.set(clave, valor);
-      }
-      setParametros(siguientes);
-      window.scrollTo({ top: 0 });
-    },
-    [parametros, setParametros],
-  );
+  const total = (anios ?? []).reduce((suma, grupo) => suma + grupo.total, 0);
 
   return (
     <main className="min-h-screen bg-white">
@@ -90,130 +123,33 @@ export function PaginaGraduadosPublica() {
       </header>
 
       <Seccion>
+        {/* `nivel={1}`: esta es una página propia, no una sección de la
+            portada. Sin esto el documento no tiene ningún h1. */}
         <TituloSeccion
+          nivel={1}
           sobretitulo="Egresados"
           titulo="Los que ya manejan"
           bajada="Cada uno de ellos pasó por acá. Las fotos se publican con la autorización de cada persona."
         />
 
-        <div className="aparece mt-10 flex flex-wrap items-end gap-6">
-          <div>
-            <label htmlFor="filtro-anio" className="block text-sm font-bold text-carbon-950">
-              Año
-            </label>
-            <select
-              id="filtro-anio"
-              value={anio ?? ''}
-              onChange={(evento) =>
-                cambiar({ anio: evento.target.value || undefined, pagina: '1' })
-              }
-              className="mt-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-carbon-950 outline-none transition focus:border-marca-500 focus:ring-2 focus:ring-marca-200"
-            >
-              <option value="">Todos los años</option>
-              {anios.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </select>
-          </div>
+        {anios === null && <p className="mt-10 text-slate-500">Cargando…</p>}
 
-          <div>
-            <label htmlFor="por-pagina" className="block text-sm font-bold text-carbon-950">
-              Mostrar
-            </label>
-            <select
-              id="por-pagina"
-              value={porPagina}
-              onChange={(evento) => cambiar({ porPagina: evento.target.value, pagina: '1' })}
-              className="mt-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-carbon-950 outline-none transition focus:border-marca-500 focus:ring-2 focus:ring-marca-200"
-            >
-              {TAMANOS_PAGINA.map((tamano) => (
-                <option key={tamano} value={tamano}>
-                  {tamano} por página
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {!cargando && datos.total > 0 && (
-            <p className="pb-2.5 text-sm text-slate-600">
-              {datos.total === 1 ? '1 egresado' : `${datos.total} egresados`}
-              {anio && ` en ${anio}`}
-            </p>
-          )}
-        </div>
-
-        {cargando && <p className="mt-10 text-slate-500">Cargando…</p>}
-
-        {!cargando && datos.datos.length === 0 && (
+        {anios !== null && anios.length === 0 && (
           <p className="mt-10 rounded-xl border border-slate-200 bg-slate-50 p-6 text-slate-600">
-            Todavía no hay egresados publicados
-            {anio && ` para ${anio}`}.
+            Todavía no hay egresados publicados.
           </p>
         )}
 
-        {datos.datos.length > 0 && (
-          <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {datos.datos.map((graduado) => (
-              <li
-                key={graduado.id}
-                className="overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:shadow-xl hover:shadow-carbon-950/5"
-              >
-                {graduado.fotoUrl ? (
-                  <img
-                    src={graduado.fotoUrl}
-                    alt={`${graduado.nombre} ${graduado.apellido} con su diploma`}
-                    loading="lazy"
-                    className="h-60 w-full object-cover"
-                  />
-                ) : (
-                  /* Sin foto la tarjeta igual dice algo: nombre, categoría y año
-                     ya son prueba social. Un hueco gris no lo sería. */
-                  <div
-                    aria-hidden="true"
-                    className="flex h-32 items-center justify-center bg-carbon-950"
-                  >
-                    <GraduationCap size={40} className="text-marca-500" />
-                  </div>
-                )}
-                <div className="p-5">
-                  <p className="text-lg font-bold text-carbon-950">
-                    {graduado.nombre} {graduado.apellido}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {CATEGORIA[graduado.categoria] ?? graduado.categoria} · {graduado.anio}
-                  </p>
-                </div>
-              </li>
+        {anios !== null && anios.length > 0 && (
+          <>
+            <p className="aparece mt-8 text-slate-600">
+              {total === 1 ? '1 egresado' : `${total} egresados`} en{' '}
+              {anios.length === 1 ? 'un año' : `${anios.length} años`}.
+            </p>
+            {anios.map((grupo) => (
+              <AnioConCarrusel key={grupo.anio} grupo={grupo} />
             ))}
-          </ul>
-        )}
-
-        {datos.paginas > 1 && (
-          <nav className="mt-12 flex flex-wrap items-center justify-center gap-2" aria-label="Paginación">
-            <button
-              type="button"
-              disabled={pagina <= 1}
-              onClick={() => cambiar({ pagina: String(pagina - 1) })}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-carbon-950 transition hover:border-marca-500 disabled:opacity-40 disabled:hover:border-slate-300"
-            >
-              Anterior
-            </button>
-
-            <span className="px-4 text-sm text-slate-600">
-              Página {datos.pagina} de {datos.paginas}
-            </span>
-
-            <button
-              type="button"
-              disabled={pagina >= datos.paginas}
-              onClick={() => cambiar({ pagina: String(pagina + 1) })}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-carbon-950 transition hover:border-marca-500 disabled:opacity-40 disabled:hover:border-slate-300"
-            >
-              Siguiente
-            </button>
-          </nav>
+          </>
         )}
       </Seccion>
     </main>

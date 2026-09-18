@@ -38,11 +38,11 @@ export class GraduadosController {
     return this.graduados.galeria(consulta);
   }
 
-  @Get('anios')
+  @Get('galeria')
   @Publico()
-  @ApiOperation({ summary: 'Años que tienen egresados publicados' })
-  anios() {
-    return this.graduados.aniosPublicados();
+  @ApiOperation({ summary: 'Egresados publicados agrupados por año, para los carruseles' })
+  galeriaPorAnio() {
+    return this.graduados.galeriaPorAnio();
   }
 
   @Get('verificar/:codigo')

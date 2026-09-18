@@ -5,7 +5,8 @@ import { Boton } from '../componentes/ui/Boton';
 import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
 import { Paginacion, PAGINA_VACIA, type Pagina } from '../componentes/ui/Paginacion';
-import { pagos as api, clientes as apiClientes, servicios as apiServicios } from '../lib/recursos';
+import { BuscadorDeAlumno } from '../componentes/BuscadorDeAlumno';
+import { pagos as api, servicios as apiServicios } from '../lib/recursos';
 import { fechaYHora } from '../lib/fecha';
 import { documentoLegible } from '../lib/paises';
 import { useAvisos } from '../lib/avisos';
@@ -413,9 +414,7 @@ function PagoEnEfectivo({
   onGuardado: () => void;
 }) {
   const avisos = useAvisos();
-  const [alumnos, setAlumnos] = useState<Cliente[]>([]);
   const [lista, setLista] = useState<Servicio[]>([]);
-  const [busqueda, setBusqueda] = useState('');
   const [alumno, setAlumno] = useState<Cliente | null>(null);
   const [servicioId, setServicioId] = useState('');
   const [monto, setMonto] = useState('');
@@ -426,20 +425,6 @@ function PagoEnEfectivo({
     // Desplegable: necesita la lista completa, no una página.
     void apiServicios.listar().then(setLista).catch(() => setLista([]));
   }, []);
-
-  useEffect(() => {
-    if (busqueda.trim().length < 2) {
-      setAlumnos([]);
-      return;
-    }
-    const temporizador = setTimeout(() => {
-      void apiClientes
-        .listar({ q: busqueda.trim(), porPagina: 100 })
-        .then((p) => setAlumnos(p.datos))
-        .catch(() => setAlumnos([]));
-    }, 300);
-    return () => clearTimeout(temporizador);
-  }, [busqueda]);
 
   const elegido = lista.find((s) => s.id === servicioId);
 
@@ -464,48 +449,7 @@ function PagoEnEfectivo({
     <Modal titulo="Pago en efectivo" onCerrar={onCerrar} ancho="max-w-xl">
       <div className="space-y-4">
         <Campo etiqueta="Alumno" requerido>
-          {alumno ? (
-            <div className="mt-1 flex items-center justify-between rounded-lg border border-marca-600 bg-marca-50 px-3 py-2">
-              <span className="text-sm font-medium text-slate-900">
-                {alumno.nombre} {alumno.apellido}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setAlumno(null);
-                  setBusqueda('');
-                }}
-                className="text-sm text-marca-700 underline"
-              >
-                Cambiar
-              </button>
-            </div>
-          ) : (
-            <>
-              <input
-                type="search"
-                value={busqueda}
-                onChange={(evento) => setBusqueda(evento.target.value)}
-                placeholder="Buscar por nombre, apellido o cédula"
-                className={clasesControl}
-              />
-              {alumnos.length > 0 && (
-                <ul className="mt-1 max-h-40 overflow-y-auto rounded-lg border border-slate-200">
-                  {alumnos.map((candidato) => (
-                    <li key={candidato.id}>
-                      <button
-                        type="button"
-                        onClick={() => setAlumno(candidato)}
-                        className="block w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
-                      >
-                        {candidato.nombre} {candidato.apellido}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
-          )}
+          <BuscadorDeAlumno valor={alumno} onElegir={setAlumno} autoFoco />
         </Campo>
 
         <Campo etiqueta="Qué pagó" requerido>
