@@ -81,7 +81,8 @@ const PUBLICAS: Record<string, string> = {
   'LandingController.contactoWhatsApp':
     'Avisa que alguien tocó WhatsApp. Sección de lista cerrada y límite propio de 6/min.',
   'GraduadosController.galeria': 'Galería de egresados, solo los que autorizaron.',
-  'GraduadosController.anios': 'Años con egresados, para el filtro de la galería.',
+  'GraduadosController.galeriaPorAnio':
+    'La misma galería, agrupada por año. Mismos campos públicos, con tope por año.',
   'GraduadosController.verificar': 'Comprobar un diploma por su código. Es para lo que existe.',
   'PushController.clavePublica': 'La clave VAPID pública, que el navegador necesita para suscribirse.',
   'RecordatoriosController.procesar':

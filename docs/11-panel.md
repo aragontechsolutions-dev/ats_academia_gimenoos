@@ -9,6 +9,11 @@ Aplicación: `apps/admin` · Rol que entra: **solo `ADMIN`**
 | Sección | Quién la ve | Para qué |
 |---|---|---|
 | **Resumen** | solo admin | La pantalla de inicio: cobros, pagos por revisar y clases del período — ver `29-pagos.md` |
+
+> Desde la Etapa 6.D el menú del escritorio muestra **solo el ícono** de cada
+> sección, con el nombre en un globo al dejar el mouse. En el teléfono se ven
+> ícono y nombre. Ver [`30-buscadores-carruseles-y-navbar.md`](30-buscadores-carruseles-y-navbar.md).
+
 | **Agenda** | solo admin | La operación diaria: ver, agendar, mover y cerrar clases |
 | **Alumnos** | solo admin | Buscar alumnos y consultar su ficha e historial |
 | **Instructores** | solo admin | Alta, horarios semanales y licencias |

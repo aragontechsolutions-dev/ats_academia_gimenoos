@@ -25,18 +25,30 @@ export function Seccion({
   );
 }
 
-/** Título de sección con la línea de acento que recorre toda la página. */
+/**
+ * Título de sección con la línea de acento que recorre toda la página.
+ *
+ * `nivel` existe porque el mismo componente sirve para dos cosas distintas. En
+ * la portada es el título de UNA sección entre varias, debajo del `h1` del hero:
+ * ahí `h2` es correcto. En una página propia —la de egresados, por ejemplo— es
+ * el título de la página entera, y dejarlo en `h2` deja el documento **sin
+ * ningún `h1`**: quien navega con lector de pantalla salta de encabezado en
+ * encabezado y nunca encuentra de qué trata la página.
+ */
 export function TituloSeccion({
   sobretitulo,
   titulo,
   bajada,
   claro = false,
+  nivel = 2,
 }: {
   sobretitulo?: string;
   titulo: string;
   bajada?: string;
   claro?: boolean;
+  nivel?: 1 | 2;
 }) {
+  const Titulo = nivel === 1 ? 'h1' : 'h2';
   return (
     <header className="aparece max-w-3xl">
       {sobretitulo && (
@@ -56,13 +68,13 @@ export function TituloSeccion({
           {sobretitulo}
         </p>
       )}
-      <h2
+      <Titulo
         className={`mt-3 text-3xl font-extrabold leading-tight sm:text-4xl ${
           claro ? 'text-white' : 'text-carbon-950'
         }`}
       >
         {titulo}
-      </h2>
+      </Titulo>
       {bajada && (
         <p className={`mt-4 text-lg ${claro ? 'text-slate-300' : 'text-slate-600'}`}>{bajada}</p>
       )}

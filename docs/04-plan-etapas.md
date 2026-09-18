@@ -556,3 +556,37 @@ Ver `docs/05-proteccion-datos.md`.
   `Reserva`, ver `docs/01-modelo-datos.md`).
 - Aplicación nativa (la PWA cubre la necesidad).
 - Facturación electrónica ante DGI.
+
+---
+
+## Etapa 6 — Ajustes de interfaz — HECHO
+
+Fuera de la línea principal de funcionalidad: cuatro cambios de interfaz que
+salieron de usar el sistema. Documentados en
+[`30-buscadores-carruseles-y-navbar.md`](30-buscadores-carruseles-y-navbar.md).
+
+### 6.A · Buscador de alumno
+
+Un componente compartido que reemplaza al desplegable en el alta de egresado y
+en el pago en efectivo. Busca por nombre, apellido, cédula o pasaporte.
+**Arregla un error real**: el desplegable pedía solo los primeros cien alumnos,
+así que del ciento uno en adelante no se podía registrar a nadie.
+
+### 6.B · API de la galería agrupada
+
+`GET /graduados/galeria`, pública, con tope de 24 fotos por año y 12 años. Se
+eliminó `GET /graduados/anios`, que dejó de usarse.
+
+### 6.C · Galería pública con carruseles
+
+Un carrusel por año, en vez del filtro y la paginación. Se mueve solo cuando las
+fotos no entran, se frena al pasar el mouse y respeta `prefers-reduced-motion`.
+
+### 6.D · Navbar del panel con íconos
+
+Once secciones en una fila cómoda: ícono en el escritorio con el nombre en un
+globo, ícono y nombre en el teléfono. Íconos de `lucide-react`, que ya usaba el
+sitio público.
+
+De paso se arregló que las páginas propias del sitio (egresados y verificación
+de diploma) no tuvieran ningún `h1`.

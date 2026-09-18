@@ -59,6 +59,7 @@ export function PaginaDiploma() {
       <Seccion>
         <div className="mx-auto max-w-xl">
           <TituloSeccion
+            nivel={1}
             sobretitulo="Verificación"
             titulo="¿Este diploma es auténtico?"
             bajada="Ingresá el código que figura en el diploma y te confirmamos si lo emitimos nosotros."

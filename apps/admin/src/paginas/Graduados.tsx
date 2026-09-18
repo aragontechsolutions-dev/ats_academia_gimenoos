@@ -7,7 +7,8 @@ import { Aviso } from '../componentes/ui/Aviso';
 import { Campo, clasesControl } from '../componentes/ui/Campo';
 import { DiplomaImprimible } from '../componentes/DiplomaImprimible';
 import { CeldaFoto } from '../componentes/CeldaFoto';
-import { graduados as api, clientes as apiClientes } from '../lib/recursos';
+import { BuscadorDeAlumno } from '../componentes/BuscadorDeAlumno';
+import { graduados as api } from '../lib/recursos';
 import { hoyEnMontevideo } from '../lib/fecha';
 import { useAvisos } from '../lib/avisos';
 import type { Cliente, Graduado } from '../lib/tipos';
@@ -282,8 +283,7 @@ function FormularioEgresado({
   onCerrar: () => void;
   onGuardado: () => void;
 }) {
-  const [alumnos, setAlumnos] = useState<Cliente[]>([]);
-  const [clienteId, setClienteId] = useState('');
+  const [alumno, setAlumno] = useState<Cliente | null>(null);
   const [categoria, setCategoria] = useState<string>('A');
   // `hoyEnMontevideo()` y no `new Date().toISOString().slice(0, 10)`: ese recorte
   // da la fecha en UTC, y de las nueve de la noche en adelante Uruguay ya está en
@@ -297,19 +297,12 @@ function FormularioEgresado({
   const [guardando, setGuardando] = useState(false);
   const avisos = useAvisos();
 
-  useEffect(() => {
-    // Desplegable: necesita la lista completa, no una página.
-    void apiClientes
-      .listar({ porPagina: 100 })
-      .then((pagina) => setAlumnos(pagina.datos))
-      .catch(() => setAlumnos([]));
-  }, []);
-
   const guardar = () => {
+    if (!alumno) return;
     setGuardando(true);
     void api
       .crear({
-        clienteId,
+        clienteId: alumno.id,
         categoria,
         fechaEgreso,
         ...(tieneAutorizacion
@@ -331,19 +324,11 @@ function FormularioEgresado({
   return (
     <Modal titulo="Registrar egresado" onCerrar={onCerrar}>
       <div className="space-y-4">
+        {/* Buscador y no desplegable: el desplegable pedía solo los primeros
+            cien alumnos, así que a partir del ciento uno no había forma de
+            registrar a nadie y nada lo avisaba. */}
         <Campo etiqueta="Alumno" requerido>
-          <select
-            value={clienteId}
-            onChange={(evento) => setClienteId(evento.target.value)}
-            className={clasesControl}
-          >
-            <option value="">Elegí un alumno</option>
-            {alumnos.map((alumno) => (
-              <option key={alumno.id} value={alumno.id}>
-                {alumno.apellido}, {alumno.nombre}
-              </option>
-            ))}
-          </select>
+          <BuscadorDeAlumno valor={alumno} onElegir={setAlumno} autoFoco />
         </Campo>
 
         <Campo etiqueta="Categoría" requerido>
@@ -434,7 +419,7 @@ function FormularioEgresado({
         >
           Cancelar
         </button>
-        <Boton onClick={guardar} disabled={guardando || !clienteId}>
+        <Boton onClick={guardar} disabled={guardando || !alumno}>
           {guardando ? 'Guardando…' : 'Registrar y emitir diploma'}
         </Boton>
       </div>

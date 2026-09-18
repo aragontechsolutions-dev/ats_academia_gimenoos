@@ -63,6 +63,19 @@ body {
     opacity: 1;
     transform: none;
   }
+
+  /* Una fila que se arrastra con el dedo pero no muestra la barra.
+     `overflow-x: auto` es necesario para que el gesto funcione; la barra abajo
+     de cada carrusel de fotos solo agrega ruido. Se esconde en los dos motores
+     porque `scrollbar-width` todavía no llega a Safari. */
+  .sin-barra {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .sin-barra::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Quien pidió menos movimiento en su sistema operativo no debería recibir

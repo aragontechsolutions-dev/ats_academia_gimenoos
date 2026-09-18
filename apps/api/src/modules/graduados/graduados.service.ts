@@ -33,6 +33,18 @@ const CAMPOS_PUBLICOS = {
   cliente: { select: { nombre: true, apellido: true } },
 } as const;
 
+/**
+ * Cuántas fotos trae cada año de la galería agrupada.
+ *
+ * Veinticuatro son cuatro pantallas de carrusel: suficiente para que se note el
+ * volumen de la academia sin cargar una promoción entera de golpe. Si un año
+ * tiene más, la página lo dice en vez de esconderlo.
+ */
+const POR_ANIO_MAXIMO = 24;
+
+/** Cuántos años se muestran. Los más recientes son los que interesan. */
+const ANIOS_MAXIMOS = 12;
+
 @Injectable()
 export class GraduadosService {
   constructor(
@@ -95,14 +107,54 @@ export class GraduadosService {
     );
   }
 
-  /** Años con egresados publicados, para el filtro de la galería. */
-  async aniosPublicados(): Promise<number[]> {
-    const filas = await this.prisma.graduado.groupBy({
-      by: ['anio'],
-      where: { publicado: true },
-      orderBy: { anio: 'desc' },
-    });
-    return filas.map((fila) => fila.anio);
+  /**
+   * La galería entera, agrupada por año.
+   *
+   * Es lo que dibuja la página pública: un carrusel por año, de más nuevo a más
+   * viejo, en **una sola petición**. Hacerlo con la galería paginada obligaría a
+   * pedir un año por vez y la página tardaría tantos viajes como años tenga la
+   * academia.
+   *
+   * Hay dos topes, y no son decorativos: sin ellos, dentro de cinco años esta
+   * ruta —que es **pública, sin sesión**— devuelve mil fotos en cada carga y se
+   * convierte en la forma más barata de tirar abajo el sitio.
+   */
+  async galeriaPorAnio() {
+    const anios = (
+      await this.prisma.graduado.groupBy({
+        by: ['anio'],
+        where: { publicado: true },
+        _count: { _all: true },
+        orderBy: { anio: 'desc' },
+      })
+    ).slice(0, ANIOS_MAXIMOS);
+
+    // Una consulta por año, en paralelo. Traer todo junto y agrupar en memoria
+    // no permitiría recortar CADA año a su tope.
+    const grupos = await Promise.all(
+      anios.map(async (fila) => {
+        const filas = await this.prisma.graduado.findMany({
+          where: { publicado: true, anio: fila.anio },
+          select: CAMPOS_PUBLICOS,
+          orderBy: { fechaEgreso: 'desc' },
+          take: POR_ANIO_MAXIMO,
+        });
+        return {
+          anio: fila.anio,
+          total: fila._count._all,
+          graduados: filas.map((g) => ({
+            id: g.id,
+            nombre: g.cliente.nombre,
+            apellido: g.cliente.apellido,
+            categoria: g.categoria,
+            anio: g.anio,
+            fotoUrl: this.urlFoto(g.fotoRuta),
+          })),
+        };
+      }),
+    );
+
+    return grupos;
   }
 
   /**

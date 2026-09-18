@@ -296,11 +296,43 @@ describe('lo que ve el público', () => {
     expect(pagina.datos.every((g) => g.anio === 2025)).toBe(true);
   });
 
-  it('devuelve los años que tienen egresados publicados, del más nuevo al más viejo', async () => {
-    const anios = await graduados.aniosPublicados();
-    expect(anios).toEqual([...anios].sort((a, b) => b - a));
-    expect(anios).toContain(2026);
-    expect(anios).toContain(2025);
+  it('agrupa la galería por año, del más nuevo al más viejo', async () => {
+    const grupos = await graduados.galeriaPorAnio();
+
+    expect(grupos.map((g) => g.anio)).toEqual([...grupos.map((g) => g.anio)].sort((a, b) => b - a));
+    expect(grupos.map((g) => g.anio)).toContain(2026);
+    expect(grupos.map((g) => g.anio)).toContain(2025);
+    // Cada grupo trae solo los suyos: si mezclara años, el carrusel de 2025
+    // mostraría gente de 2026 sin que nada lo avise.
+    for (const grupo of grupos) {
+      expect(grupo.graduados.every((g) => g.anio === grupo.anio)).toBe(true);
+      expect(grupo.total).toBeGreaterThanOrEqual(grupo.graduados.length);
+    }
+  });
+
+  it('la galería agrupada publica los MISMOS campos que la paginada, y nada más', async () => {
+    // Es una ruta pública nueva: si se le colara la cédula o el teléfono,
+    // quedarían al alcance de cualquiera sin sesión.
+    const grupos = await graduados.galeriaPorAnio();
+    const alguno = grupos.flatMap((g) => g.graduados)[0];
+
+    expect(alguno).toBeDefined();
+    expect(Object.keys(alguno!).sort()).toEqual(
+      ['anio', 'apellido', 'categoria', 'fotoUrl', 'id', 'nombre'].sort(),
+    );
+  });
+
+  it('la galería agrupada NO incluye egresados sin autorización', async () => {
+    const grupos = await graduados.galeriaPorAnio();
+    const ids = grupos.flatMap((g) => g.graduados.map((e) => e.id));
+    const sinPublicar = await prisma.graduado.findMany({
+      where: { publicado: false },
+      select: { id: true },
+    });
+
+    for (const oculto of sinPublicar) {
+      expect(ids).not.toContain(oculto.id);
+    }
   });
 
   it('las páginas no se pisan ni repiten', async () => {
