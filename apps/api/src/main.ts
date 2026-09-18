@@ -19,8 +19,48 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix(API_PREFIX);
 
-  // Cabeceras de seguridad. La API no sirve HTML, por eso no necesita CSP propia.
-  app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'same-site' } }));
+  // --- Cabeceras de seguridad ------------------------------------------------
+  //
+  // La API devuelve JSON y nada más, así que puede declarar que NO carga ningún
+  // recurso de ningún lado. Es la política más restrictiva que existe y acá no
+  // cuesta nada, porque no hay nada que permitir.
+  //
+  // Antes iba sin CSP, con el razonamiento de que una API no sirve HTML. Es
+  // cierto hoy, pero no protege de mañana: alcanza con que un endpoint devuelva
+  // HTML alguna vez —una página de error, una redirección— para que la falta se
+  // note. Una cabecera que dice «nada» no puede quedar desactualizada.
+  const cabecerasEstrictas = helmet({
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        'default-src': ["'none'"],
+        // Que nadie pueda incrustar las respuestas en un iframe de otro sitio.
+        'frame-ancestors': ["'none'"],
+        'base-uri': ["'none'"],
+        'form-action': ["'none'"],
+      },
+    },
+    crossOriginResourcePolicy: { policy: 'same-site' },
+  });
+
+  // La documentación interactiva SÍ es HTML y carga sus propios scripts y
+  // estilos: con la política de arriba quedaría en blanco. Solo existe fuera de
+  // producción (ver más abajo), así que la excepción no llega al servidor real.
+  const cabecerasDeLaDocumentacion = helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'same-site' },
+  });
+
+  const rutaDocs = `/${API_PREFIX}/docs`;
+  app.use((peticion: { path?: string; url: string }, respuesta: unknown, siguiente: unknown) => {
+    const camino = peticion.path ?? peticion.url;
+    const middleware = camino.startsWith(rutaDocs) ? cabecerasDeLaDocumentacion : cabecerasEstrictas;
+    return (middleware as (a: unknown, b: unknown, c: unknown) => void)(
+      peticion,
+      respuesta,
+      siguiente,
+    );
+  });
 
   // CORS con lista blanca explicita: nunca origin '*' junto a credenciales.
   //
