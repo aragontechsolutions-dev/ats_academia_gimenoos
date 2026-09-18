@@ -472,6 +472,35 @@ Son las mismas credenciales de Brevo que ya están en Supabase.
 
 **Objetivo:** cobrar por los tres canales y conciliar.
 
+### 4.A · API de pagos — HECHO
+
+- `POST /pagos/mios` y `PATCH /pagos/mios/:id/comprobante` para el alumno.
+- Listado con buscador, alta en efectivo, aprobar y rechazar para el panel.
+- El monto sale del catálogo en el servidor; el alumno solo dice qué servicio paga.
+- Aprobar crea la compra y marca el pago **en una sola transacción**.
+- 29 pruebas.
+
+### 4.B · Pantalla de pago del alumno — HECHO
+
+- Pestaña **Pagar** en la PWA, con los tres pasos y el historial recortado a cinco.
+- El archivo sube **directo al bucket privado**, sin recomprimir. Tope de 5 MB.
+
+### 4.C · Módulo de pagos del panel — HECHO
+
+- Buscador en tiempo real por nombre, cédula o pasaporte (300 ms de espera).
+- Detalle con el comprobante por dirección firmada de cinco minutos, auditada.
+- Alta de cobros en efectivo del mostrador.
+
+### 4.D · Tablero — HECHO
+
+- El panel aterriza acá. `GET /tablero`, solo ADMIN.
+- Hoy / semana / mes / rango a medida, con tope de 400 días.
+- Cobrado por canal y por servicio, cola de revisión, clases dictadas y por
+  instructor, alumnos nuevos, gráfico día a día.
+- El corte diario se hace en `America/Montevideo`, en la base. 22 pruebas.
+
+Todo esto está documentado en `docs/29-pagos.md`.
+
 ### Checkout online (Mercado Pago)
 - Creación de preferencia desde el backend, con el monto calculado allí.
 - Webhook con validación de firma `x-signature` (HMAC-SHA256).
@@ -479,10 +508,9 @@ Son las mismas credenciales de Brevo que ya están en Supabase.
 - Idempotencia por `external_reference`.
 - Probar en sandbox antes de producción.
 
-### Comprobante de transferencia
-- Subida a bucket privado con presigned upload URL.
-- Bandeja de verificación en el panel, con signed URL temporal para ver el archivo.
-- Aprobación/rechazo auditado.
+### Comprobante de transferencia — HECHO (4.A a 4.C)
+Ver arriba. Lo único que quedó afuera es el aviso por Telegram cuando entra un
+comprobante nuevo: el interruptor de avisos ya existe, falta engancharlo.
 
 ### Cobro presencial (Mercado Pago Point)
 > **Confirmar primero con Mercado Pago Uruguay** si la API de Point está

@@ -1,6 +1,14 @@
 /** Llamadas a la API que puede hacer un alumno. */
 import { llamarApi } from './api';
-import type { ConfiguracionPublica, Hueco, MiFicha, Reserva, TipoVehiculo } from './tipos';
+import type {
+  ConfiguracionPublica,
+  Hueco,
+  MiFicha,
+  MiPago,
+  Reserva,
+  ServicioPublico,
+  TipoVehiculo,
+} from './tipos';
 
 const query = (parametros: Record<string, string | number | undefined>): string => {
   const busqueda = new URLSearchParams();
@@ -57,4 +65,24 @@ export const miFicha = {
 
 export const academia = {
   configuracion: () => llamarApi<ConfiguracionPublica>('/configuracion/publica'),
+};
+
+export const servicios = {
+  /** El catálogo publicado. Es el mismo que muestra el sitio. */
+  listar: () => llamarApi<ServicioPublico[]>('/catalogo/servicios'),
+};
+
+export const misPagos = {
+  listar: () => llamarApi<MiPago[]>('/pagos/mios'),
+
+  /** Empieza un pago. El monto lo pone el servidor, del catálogo. */
+  empezar: (servicioId: string) =>
+    llamarApi<MiPago>('/pagos/mios', { method: 'POST', body: JSON.stringify({ servicioId }) }),
+
+  /** Avisa que el comprobante ya está en el bucket. La ruta la arma la API. */
+  registrarComprobante: (pagoId: string, archivo: string) =>
+    llamarApi<MiPago>(`/pagos/mios/${pagoId}/comprobante`, {
+      method: 'PATCH',
+      body: JSON.stringify({ archivo }),
+    }),
 };

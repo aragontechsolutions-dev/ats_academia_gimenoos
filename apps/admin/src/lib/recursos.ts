@@ -4,7 +4,7 @@ import type { Pagina } from '../componentes/ui/Paginacion';
 import type {
   Cliente, FichaCliente, Excepcion, Franja, Hueco, Instructor, Reserva, Servicio, TipoVehiculo,
   Vehiculo, EstadoReserva, SeccionLanding, NegocioLanding, Graduado, Invitacion,
-  CuentaUsuario, Rol, EstadoInvitacion, CanalInvitacion,
+  CuentaUsuario, Rol, EstadoInvitacion, CanalInvitacion, Pago, ResumenDelTablero,
 } from './tipos';
 
 const query = (parametros: Record<string, string | number | boolean | undefined>): string => {
@@ -305,4 +305,42 @@ export const avisosTelegram = {
     }),
 
   probar: () => llamarApi<{ enviado: boolean }>('/avisos/telegram/probar', { method: 'POST' }),
+};
+
+// --- Pagos -----------------------------------------------------------------
+
+export const pagos = {
+  listar: (consulta: { pagina?: number; porPagina?: number; estado?: string; q?: string }) =>
+    llamarApi<Pagina<Pago>>(`/pagos${query(consulta)}`),
+
+  obtener: (id: string) => llamarApi<Pago>(`/pagos/${id}`),
+
+  /** Una dirección temporal para ver el comprobante. Se pide cada vez. */
+  verComprobante: (id: string) => llamarApi<{ url: string }>(`/pagos/${id}/comprobante`),
+
+  registrarEfectivo: (cuerpo: Record<string, unknown>) =>
+    llamarApi<Pago>('/pagos/efectivo', { method: 'POST', body: JSON.stringify(cuerpo) }),
+
+  aprobar: (id: string, cuerpo: Record<string, unknown> = {}) =>
+    llamarApi<Pago>(`/pagos/${id}/aprobar`, { method: 'POST', body: JSON.stringify(cuerpo) }),
+
+  rechazar: (id: string, motivo: string) =>
+    llamarApi<Pago>(`/pagos/${id}/rechazar`, {
+      method: 'POST',
+      body: JSON.stringify({ motivo }),
+    }),
+};
+
+// --- Tablero ---------------------------------------------------------------
+
+export const tablero = {
+  /**
+   * El resumen del período. Sin `desde`/`hasta`, la API devuelve el mes en curso.
+   *
+   * Las fechas van como día suelto (`2026-09-18`) y no como instante: el corte
+   * lo hace el servidor en la hora de San Carlos, para que el número no dependa
+   * del reloj de la computadora desde la que se mire.
+   */
+  resumen: (consulta: { desde?: string; hasta?: string } = {}) =>
+    llamarApi<ResumenDelTablero>(`/tablero${query(consulta)}`),
 };

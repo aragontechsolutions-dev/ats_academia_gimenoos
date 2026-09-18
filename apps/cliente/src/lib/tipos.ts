@@ -86,3 +86,42 @@ export const COLOR_ESTADO: Record<EstadoReserva, string> = {
 
 /** Estados en los que la clase sigue en pie y se puede cancelar. */
 export const ESTADOS_VIGENTES: EstadoReserva[] = ['PENDIENTE', 'CONFIRMADA'];
+
+// --- Pagos -----------------------------------------------------------------
+
+export type EstadoPago =
+  | 'PENDIENTE'
+  | 'PENDIENTE_VERIFICACION'
+  | 'APROBADO'
+  | 'RECHAZADO'
+  | 'REEMBOLSADO';
+
+/** Cómo se le dice a cada estado en la app del alumno. */
+export const ETIQUETA_PAGO: Record<EstadoPago, string> = {
+  PENDIENTE: 'Falta el comprobante',
+  PENDIENTE_VERIFICACION: 'En revisión',
+  APROBADO: 'Aprobado',
+  RECHAZADO: 'Rechazado',
+  REEMBOLSADO: 'Reembolsado',
+};
+
+export interface MiPago {
+  id: string;
+  /** Prisma serializa Decimal como string para no perder precisión. */
+  monto: string;
+  canal: 'MP_ONLINE' | 'MP_POINT' | 'TRANSFERENCIA' | 'EFECTIVO';
+  estado: EstadoPago;
+  motivoRechazo: string | null;
+  createdAt: string;
+  servicio: { id: string; nombre: string; cantidadClases: number } | null;
+}
+
+export interface ServicioPublico {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  cantidadClases: number;
+  /** Prisma serializa Decimal como string para no perder precisión. */
+  precioContado: string;
+  precioTarjeta: string;
+}

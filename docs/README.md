@@ -31,6 +31,7 @@
 | [26-cierre-de-la-base.md](26-cierre-de-la-base.md) | **Por qué las tablas no se pueden leer desde el navegador, y cómo comprobarlo** |
 | [27-auditoria-de-seguridad.md](27-auditoria-de-seguridad.md) | **La revisión completa: qué se encontró, qué se corrigió y qué falta** |
 | [28-recordatorio-por-correo.md](28-recordatorio-por-correo.md) | El tercer canal, y por qué la baja de suscripción no es opcional |
+| [29-pagos.md](29-pagos.md) | **Pagos por transferencia y en efectivo, y el tablero del panel** |
 
 **Por dónde empezar:** `07-roadmap.md` si sos quien decide,
 `06-guia-desarrollo.md` para levantar el entorno,

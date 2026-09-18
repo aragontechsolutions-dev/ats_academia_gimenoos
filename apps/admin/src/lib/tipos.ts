@@ -271,3 +271,89 @@ export interface Graduado {
   notas: string | null;
   cliente: { id: string; nombre: string; apellido: string };
 }
+
+// --- Pagos -----------------------------------------------------------------
+
+export type EstadoPago =
+  | 'PENDIENTE'
+  | 'PENDIENTE_VERIFICACION'
+  | 'APROBADO'
+  | 'RECHAZADO'
+  | 'REEMBOLSADO';
+
+export type CanalPago = 'MP_ONLINE' | 'MP_POINT' | 'TRANSFERENCIA' | 'EFECTIVO';
+
+/** Cómo se nombra cada estado en el panel. */
+export const ETIQUETA_ESTADO_PAGO: Record<EstadoPago, string> = {
+  PENDIENTE: 'Sin comprobante',
+  PENDIENTE_VERIFICACION: 'Para revisar',
+  APROBADO: 'Aprobado',
+  RECHAZADO: 'Rechazado',
+  REEMBOLSADO: 'Reembolsado',
+};
+
+export const ETIQUETA_CANAL: Record<CanalPago, string> = {
+  MP_ONLINE: 'Mercado Pago',
+  MP_POINT: 'Point',
+  TRANSFERENCIA: 'Transferencia',
+  EFECTIVO: 'Efectivo',
+};
+
+export interface Pago {
+  id: string;
+  /** Prisma serializa Decimal como string para no perder precisión. */
+  monto: string;
+  montoEsperado: string | null;
+  canal: CanalPago;
+  estado: EstadoPago;
+  motivoRechazo: string | null;
+  nota: string | null;
+  comprobantePath: string | null;
+  verificadoPor: string | null;
+  verificadoAt: string | null;
+  createdAt: string;
+  servicio: { id: string; nombre: string; cantidadClases: number } | null;
+  cliente: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    telefono: string | null;
+    tipoDocumento: 'CEDULA' | 'PASAPORTE';
+    paisDocumento: string;
+    documento: string | null;
+  };
+  compra: { id: string; clasesTotales: number; clasesUsadas: number } | null;
+}
+
+// --- Tablero ---------------------------------------------------------------
+
+/**
+ * El resumen que muestra la pantalla de inicio.
+ *
+ * Todos los montos son texto: vienen de un `Decimal` de la base y convertirlos
+ * a número acá sería volver a meter la coma flotante que la API se ocupó de
+ * evitar. El panel solo los muestra formateados.
+ */
+export interface ResumenDelTablero {
+  periodo: { desde: string; hasta: string };
+  cobrado: {
+    total: string;
+    cantidad: number;
+    porCanal: { canal: CanalPago; monto: string; cantidad: number }[];
+  };
+  /** La cola de revisión. NO está acotada al período: es trabajo pendiente. */
+  pendientes: { cantidad: number; monto: string; desdeCuando: string | null };
+  rechazados: number;
+  clases: {
+    dictadas: number;
+    agendadas: number;
+    canceladas: number;
+    ausentes: number;
+    /** Clases ya compradas que todavía no se dieron. Es servicio adeudado. */
+    sinUsar: number;
+  };
+  alumnosNuevos: number;
+  porServicio: { servicio: string; monto: string; cantidad: number }[];
+  porInstructor: { instructor: string; clases: number }[];
+  dias: { dia: string; cobrado: string; pagos: number; clases: number }[];
+}

@@ -32,7 +32,12 @@ export type AccionAuditada =
   | 'USUARIO_ROL_CAMBIADO'
   | 'USUARIO_DESACTIVADO'
   | 'USUARIO_REACTIVADO'
-  | 'AVISOS_TELEGRAM_ACTUALIZADOS';
+  | 'AVISOS_TELEGRAM_ACTUALIZADOS'
+  | 'PAGO_INICIADO'
+  | 'PAGO_REGISTRADO_EN_EFECTIVO'
+  | 'PAGO_APROBADO'
+  | 'PAGO_RECHAZADO'
+  | 'COMPROBANTE_CONSULTADO';
 
 export interface EventoAuditoria {
   usuarioId: string | null;

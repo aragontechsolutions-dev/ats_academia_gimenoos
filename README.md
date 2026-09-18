@@ -68,6 +68,7 @@ Guía completa: [`docs/06-guia-desarrollo.md`](docs/06-guia-desarrollo.md).
 | [Cierre de la base](docs/26-cierre-de-la-base.md) | **Ninguna tabla se lee desde el navegador: cómo se cerró y cómo verificarlo** |
 | [Auditoría de seguridad](docs/27-auditoria-de-seguridad.md) | **Revisión de punta a punta, con lo encontrado y lo que falta** |
 | [Recordatorio por correo](docs/28-recordatorio-por-correo.md) | El tercer canal de aviso, y cómo se da de baja quien no lo quiere |
+| [Pagos y tablero](docs/29-pagos.md) | Cómo paga un alumno, cómo se aprueba, y el resumen que abre el panel |
 
 ## Antes de publicar
 

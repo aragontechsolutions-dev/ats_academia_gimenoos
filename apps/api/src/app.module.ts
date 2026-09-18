@@ -21,6 +21,8 @@ import { CatalogoModule } from './modules/catalogo/catalogo.module';
 import { ConfiguracionModule } from './modules/configuracion/configuracion.module';
 import { AvisosModule } from './modules/avisos/avisos.module';
 import { RecordatoriosModule } from './modules/recordatorios/recordatorios.module';
+import { PagosModule } from './modules/pagos/pagos.module';
+import { TableroModule } from './modules/tablero/tablero.module';
 import { PushApiModule } from './modules/push/push-api.module';
 import { AgendaModule } from './modules/agenda/agenda.module';
 import { InstructoresModule } from './modules/instructores/instructores.module';
@@ -59,6 +61,8 @@ import { InvitacionesModule } from './modules/invitaciones/invitaciones.module';
     ConfiguracionModule,
     AvisosModule,
     RecordatoriosModule,
+    PagosModule,
+    TableroModule,
     PushApiModule,
     AgendaModule,
     InstructoresModule,

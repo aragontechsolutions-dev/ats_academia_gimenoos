@@ -429,6 +429,7 @@ model Servicio {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   compras CompraServicio[]
+  pagos   Pago[]
 
   @@index([activo, publico, orden])
   @@map("servicios")
@@ -522,8 +523,17 @@ model Reserva {
 model Pago {
   id        String  @id @default(uuid()) @db.Uuid
   clienteId String  @map("cliente_id") @db.Uuid
+  /// La compra que genero este pago. Se crea AL APROBARLO, no antes: hasta que
+  /// alguien mira el comprobante, el alumno no tiene clases acreditadas.
   compraId  String? @map("compra_id") @db.Uuid
   reservaId String? @map("reserva_id") @db.Uuid
+
+  /// Que esta pagando. Se elige del catalogo y de ahi sale el monto.
+  ///
+  /// Va aparte de `compraId` porque el servicio se elige al MOMENTO DE PAGAR y
+  /// la compra recien existe cuando la administracion aprueba. Entre esos dos
+  /// momentos, esto es lo unico que dice que compro la persona.
+  servicioId String? @map("servicio_id") @db.Uuid
 
   /// El monto SIEMPRE lo calcula el backend desde el catalogo. Nunca se toma del cliente.
   monto  Decimal    @db.Decimal(12, 2)
@@ -537,8 +547,24 @@ model Pago {
   externalRef String? @unique @map("external_ref")
 
   /// Ruta del comprobante de transferencia dentro del bucket privado.
-  /// Formato: <usuarioId>/<pagoId>/<archivo>. Nunca es una URL publica.
+  ///
+  /// Formato: <usuarioId>/<pagoId>/<archivo>. Nunca es una URL publica: el
+  /// bucket es privado y se lee con una direccion firmada de corta duracion.
+  ///
+  /// La API NO acepta esta ruta del navegador: la compone con el id de la sesion
+  /// y el del pago, y del cuerpo del pedido toma solo el nombre del archivo. Asi
+  /// nadie puede hacer que apunte al comprobante de otra persona.
   comprobantePath String? @map("comprobante_path")
+
+  /// Lo que se esperaba cobrar, congelado al crear el pago.
+  ///
+  /// Se guarda aparte de `monto` para que quede el rastro cuando la
+  /// administracion corrige el importe al aprobar: sin esto, un pago corregido
+  /// es indistinguible de uno que siempre fue por ese monto.
+  montoEsperado Decimal? @map("monto_esperado") @db.Decimal(12, 2)
+
+  /// Anotacion de quien registra o revisa el pago. No la ve el alumno.
+  nota String?
 
   /// Verificacion manual del comprobante de transferencia.
   verificadoPor String?   @map("verificado_por") @db.Uuid
@@ -548,12 +574,16 @@ model Pago {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  cliente Cliente         @relation(fields: [clienteId], references: [id], onDelete: Restrict)
-  compra  CompraServicio? @relation(fields: [compraId], references: [id], onDelete: SetNull)
-  reserva Reserva?        @relation(fields: [reservaId], references: [id], onDelete: SetNull)
+  cliente  Cliente         @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  compra   CompraServicio? @relation(fields: [compraId], references: [id], onDelete: SetNull)
+  reserva  Reserva?        @relation(fields: [reservaId], references: [id], onDelete: SetNull)
+  servicio Servicio?       @relation(fields: [servicioId], references: [id], onDelete: SetNull)
 
   @@index([estado, canal])
   @@index([clienteId, createdAt])
+  /// El panel lista por fecha y filtra por estado: es la consulta de la pantalla
+  /// de pagos y la del tablero.
+  @@index([createdAt])
   @@map("pagos")
 }
 

@@ -101,8 +101,14 @@ las fotos y el logo:
 - [ ] **Textos del sitio** → misma pantalla, sección por sección. Ya no hace
       falta tocar código para cambiar un título ni para agregar una pregunta
       frecuente.
+- [ ] **Los datos de la cuenta bancaria** → todavía NO están en el sistema. La
+      pantalla de pago le dice al alumno que se los pida por WhatsApp. Si querés
+      que aparezcan solos, decímelo: el lugar correcto es la configuración de la
+      academia, nunca el sitio público, porque ahí quedarían publicados.
 - [ ] **Ejecutar `infra/supabase/01-storage.sql`** de nuevo en Supabase: crea los
-      buckets `graduados` y `vehiculos` y sus políticas. Sin eso, subir una foto
+      buckets `graduados`, `vehiculos` y `comprobantes` y sus políticas. El de
+      comprobantes es **privado** y acepta PDF, JPG y PNG hasta 5 MB. Sin él, un
+      alumno no puede subir su comprobante. Sin eso, subir una foto
       falla con «Falta crear el bucket de fotos en Supabase». Y después hacer las
       cinco comprobaciones de [`15-graduados-y-diploma.md`](15-graduados-y-diploma.md):
       **la subida a Storage es lo único del proyecto que no se pudo probar
