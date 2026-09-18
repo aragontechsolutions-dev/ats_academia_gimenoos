@@ -9,6 +9,7 @@ import { Entrar } from './paginas/Entrar';
 import { MisClases } from './paginas/MisClases';
 import { Reservar } from './paginas/Reservar';
 import { MiPerfil } from './paginas/MiPerfil';
+import { Avisos as BajaDeAvisos } from './paginas/Avisos';
 
 function Pagina({ children }: { children: React.ReactNode }) {
   return (
@@ -29,6 +30,9 @@ export function App() {
             <Route path="/ingresar" element={<Ingreso />} />
             {/* Fuera del guard de sesión: es justamente donde se consigue la sesión. */}
             <Route path="/entrar" element={<Entrar />} />
+            {/* Fuera del guard a propósito: se llega desde el pie de un correo,
+                y quien lo abre no necesariamente tiene la sesión iniciada. */}
+            <Route path="/avisos" element={<BajaDeAvisos />} />
             <Route path="/" element={<Pagina><MisClases /></Pagina>} />
             <Route path="/reservar" element={<Pagina><Reservar /></Pagina>} />
             <Route path="/perfil" element={<Pagina><MiPerfil /></Pagina>} />

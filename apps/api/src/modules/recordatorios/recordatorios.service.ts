@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   CanalRecordatorio,
   EstadoReserva,
@@ -9,8 +10,10 @@ import {
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { TelegramService } from '../../common/telegram/telegram.service';
 import { PushService } from '../../common/push/push.service';
+import { CorreoService } from '../../common/correo/correo.service';
 import { ANTELACION_HORAS, correspondeMandar } from './reglas';
-import { recordatorioParaElAlumno, recordatorioParaLaAcademia } from './mensajes';
+import { cuando, recordatorioParaElAlumno, recordatorioParaLaAcademia } from './mensajes';
+import { correoDeRecordatorio } from './correo-recordatorio';
 
 /** Qué pasó en una pasada. Es lo que devuelve el endpoint y lo que se registra. */
 export interface ResumenDeLaPasada {
@@ -35,7 +38,19 @@ const SELECCION = {
   // `usuarioId` para saber a qué teléfono mandarle el aviso. Un alumno sin
   // cuenta —la ficha existe pero nunca fue invitado— lo tiene en null, y
   // simplemente no recibe push.
-  cliente: { select: { nombre: true, apellido: true, telefono: true, usuarioId: true } },
+  cliente: {
+    select: {
+      nombre: true,
+      apellido: true,
+      telefono: true,
+      usuarioId: true,
+      // Para el correo: a dónde mandarlo, si lo quiere, y con qué enlace se da
+      // de baja.
+      email: true,
+      recibeAvisosPorCorreo: true,
+      tokenBaja: true,
+    },
+  },
   instructor: { select: { nombre: true, apellido: true } },
 } satisfies Prisma.ReservaSelect;
 
@@ -59,6 +74,8 @@ export class RecordatoriosService {
     private readonly prisma: PrismaService,
     private readonly telegram: TelegramService,
     private readonly push: PushService,
+    private readonly correo: CorreoService,
+    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -102,6 +119,7 @@ export class RecordatoriosService {
         // instalada no puede dejar a la academia sin su aviso, ni al revés.
         await this.mandarALaAcademia(clase, tipo, ahora, resumen);
         await this.mandarAlAlumno(clase, tipo, ahora, resumen);
+        await this.mandarPorCorreo(clase, tipo, ahora, resumen);
       }
     }
 
@@ -164,6 +182,59 @@ export class RecordatoriosService {
       // llegó o no.
       return resultado.estado === 'enviado' ? { estado: 'enviado' as const } : resultado;
     });
+  }
+
+  /**
+   * El recordatorio por correo.
+   *
+   * Es el único canal con una **preferencia explícita**: el push se activa dando
+   * permiso y se apaga quitándolo, pero un correo llega sin que nadie lo haya
+   * pedido. Por eso cada correo lleva su enlace de baja y se respeta la
+   * decisión de quien ya se dio de baja.
+   */
+  private async mandarPorCorreo(
+    clase: Clase,
+    tipo: TipoRecordatorio,
+    ahora: Date,
+    resumen: ResumenDeLaPasada,
+  ): Promise<void> {
+    const { email, recibeAvisosPorCorreo, tokenBaja } = clase.cliente;
+
+    // Sin correo cargado, o dado de baja: no hay nada que mandar y no es un
+    // fallo. No se anota, así que si mañana carga su correo lo recibe.
+    if (!email || !recibeAvisosPorCorreo) return;
+
+    await this.porUnCanal(clase, tipo, CanalRecordatorio.CORREO, resumen, async () => {
+      const armado = correoDeRecordatorio(clase, tipo, cuando(clase.inicio, ahora), this.enlaceDeBaja(tokenBaja));
+
+      return this.correo.enviar({
+        para: email,
+        asunto: armado.asunto,
+        html: armado.html,
+        texto: armado.texto,
+        cabeceras: {
+          // Con esta cabecera, Gmail y Outlook muestran su propio botón de
+          // «cancelar suscripción» arriba del correo. Vale más que el enlace del
+          // pie: quien no encuentra cómo darse de baja marca el correo como
+          // spam, y eso ensucia la reputación del dominio para TODOS los correos
+          // de la academia, invitaciones incluidas.
+          //
+          // Va SIN `List-Unsubscribe-Post`. Esa segunda cabecera le promete al
+          // cliente de correo que puede dar de baja con un POST a esta misma
+          // dirección, y esta dirección es una pantalla de la app, no un
+          // endpoint: el POST no haría nada y la persona se quedaría creyendo
+          // que se dio de baja. Sin la cabecera, el botón abre la pantalla en el
+          // navegador, que es un paso más pero funciona de verdad.
+          'List-Unsubscribe': `<${this.enlaceDeBaja(tokenBaja)}>`,
+        },
+      });
+    });
+  }
+
+  /** La dirección que abre la pantalla de baja, en la app del alumno. */
+  private enlaceDeBaja(tokenBaja: string): string {
+    const app = this.config.getOrThrow<string>('APP_ALUMNO_URL');
+    return `${app}/avisos?baja=${tokenBaja}`;
   }
 
   /**

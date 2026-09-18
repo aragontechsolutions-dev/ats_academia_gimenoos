@@ -79,6 +79,8 @@ const PUBLICAS: Record<string, string> = {
   'PushController.clavePublica': 'La clave VAPID pública, que el navegador necesita para suscribirse.',
   'RecordatoriosController.procesar':
     'Lo llama una máquina, no una persona: se protege con un secreto compartido, no con sesión.',
+  'RecordatoriosController.darDeBaja':
+    'Se llega desde el pie de un correo, sin sesión. El token solo sirve para esto y para nadie más.',
 };
 
 /**

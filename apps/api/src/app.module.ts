@@ -13,6 +13,7 @@ import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter'
 import { SupabaseModule } from './common/supabase/supabase.module';
 import { TelegramModule } from './common/telegram/telegram.module';
 import { PushModule } from './common/push/push.module';
+import { CorreoModule } from './common/correo/correo.module';
 
 import { HealthModule } from './modules/health/health.module';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
@@ -50,6 +51,7 @@ import { InvitacionesModule } from './modules/invitaciones/invitaciones.module';
     SupabaseModule,
     TelegramModule,
     PushModule,
+    CorreoModule,
     AuthModule,
     HealthModule,
     UsuariosModule,

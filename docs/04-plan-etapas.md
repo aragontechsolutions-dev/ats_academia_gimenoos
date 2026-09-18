@@ -448,9 +448,23 @@ Sin ellas la app dice que los avisos no están disponibles, en vez de fallar.
 **Limitación conocida:** en iPhone sólo funciona con la app agregada a la
 pantalla de inicio. Es de Safari, no del sistema.
 
-### Etapa 3.C — Recordatorio por correo ⏳ BLOQUEADA
+### Etapa 3.C — Recordatorio por correo ✅ COMPLETADA
 
-Espera el servidor SMTP propio de la academia (ver la Etapa 2.G).
+Ver [`28-recordatorio-por-correo.md`](28-recordatorio-por-correo.md).
+
+| Qué | Estado |
+|---|---|
+| Envío SMTP propio desde la API, contra el mismo Brevo que ya usa Supabase | ✅ |
+| El correo en HTML y en texto plano, con la identidad del sistema | ✅ |
+| Baja de suscripción: cabecera, pie del correo y casilla en el perfil | ✅ |
+| La baja necesita un clic de verdad: un antivirus de correo no da de baja a nadie | ✅ |
+| Cada alumno con su propio token, que solo sirve para esto | ✅ |
+| Pruebas | ✅ 427 + la baja comprobada sobre HTTP real |
+
+**Queda del lado de la academia:** cargar las cinco variables `SMTP_*` en Render.
+Son las mismas credenciales de Brevo que ya están en Supabase.
+
+**Con esto cierra la Etapa 3 completa.**
 
 ---
 

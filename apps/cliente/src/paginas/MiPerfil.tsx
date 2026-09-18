@@ -23,6 +23,7 @@ type Borrador = {
   documento: string;
   fechaNacimiento: string;
   direccion: string;
+  recibeAvisosPorCorreo: boolean;
 };
 
 const borradorDe = (ficha: MiFicha): Borrador => ({
@@ -34,6 +35,7 @@ const borradorDe = (ficha: MiFicha): Borrador => ({
   documento: ficha.documento ?? '',
   fechaNacimiento: ficha.fechaNacimiento?.slice(0, 10) ?? '',
   direccion: ficha.direccion ?? '',
+  recibeAvisosPorCorreo: ficha.recibeAvisosPorCorreo,
 });
 
 export function MiPerfil() {
@@ -80,6 +82,40 @@ export function MiPerfil() {
       setDatos(borradorDe(fresca));
       avisos.exito('Datos guardados');
     } catch (problema) {
+      avisos.error(problema);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  /**
+   * La casilla del correo se guarda sola, sin apretar «Guardar cambios».
+   *
+   * Es una preferencia, no un dato del formulario: quien la apaga espera que
+   * deje de llegarle el correo, no tener que buscar un botón más abajo.
+   */
+  async function cambiarAvisosPorCorreo(quiere: boolean) {
+    // Esta función solo se llama desde la casilla, que se dibuja cuando la ficha
+    // ya llegó. El guardia está igual porque TypeScript no lo sabe, y porque un
+    // día alguien puede llamarla desde otro lado.
+    if (!datos) return;
+    const previo = datos;
+    setDatos((actual) => (actual ? { ...actual, recibeAvisosPorCorreo: quiere } : actual));
+    setGuardando(true);
+    try {
+      // El nombre y el apellido van aunque no cambien: el endpoint los exige, y
+      // mandar solo la preferencia daría 400.
+      const actualizada = await miFicha.actualizar({
+        nombre: datos.nombre,
+        apellido: datos.apellido,
+        recibeAvisosPorCorreo: quiere,
+      });
+      const fresca = { ...(ficha as MiFicha), ...actualizada };
+      setFicha(fresca);
+      setDatos(borradorDe(fresca));
+      avisos.exito(quiere ? 'Te vamos a avisar por correo' : 'No te vamos a escribir más por correo');
+    } catch (problema) {
+      setDatos(previo);
       avisos.error(problema);
     } finally {
       setGuardando(false);
@@ -254,9 +290,31 @@ export function MiPerfil() {
 
       <section className="mt-8 rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="font-semibold text-slate-900">Avisos de tus clases</h2>
+
         <div className="mt-3">
           <AvisosDelTelefono variante="control" />
         </div>
+
+        {/* El correo es el otro canal, y el único que llega sin que la persona
+            haya dado permiso en el teléfono. Por eso se controla desde acá y,
+            además, desde el enlace que lleva cada correo. */}
+        {ficha.email && (
+          <label className="mt-4 flex items-start gap-3 border-t border-slate-100 pt-4">
+            <input
+              type="checkbox"
+              checked={datos.recibeAvisosPorCorreo}
+              disabled={guardando}
+              onChange={(e) => void cambiarAvisosPorCorreo(e.target.checked)}
+              className="mt-0.5 h-4 w-4"
+            />
+            <span className="text-sm">
+              <span className="font-medium text-slate-900">Recibir los avisos por correo</span>
+              <span className="mt-0.5 block text-xs text-slate-600">
+                A {ficha.email}, el día antes y dos horas antes de cada clase.
+              </span>
+            </span>
+          </label>
+        )}
       </section>
 
       {ficha?.email && (

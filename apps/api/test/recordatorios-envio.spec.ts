@@ -7,9 +7,16 @@
  */
 import { CanalRecordatorio, EstadoReserva, TipoRecordatorio, TipoVehiculo } from '@prisma/client';
 
+import { ConfigService } from '@nestjs/config';
+
 import { PrismaService } from '../src/common/prisma/prisma.service';
 import type { TelegramService, ResultadoDeAviso } from '../src/common/telegram/telegram.service';
 import type { AvisoPush, PushService, ResultadoPush } from '../src/common/push/push.service';
+import type {
+  CorreoASalir,
+  CorreoService,
+  ResultadoDeCorreo,
+} from '../src/common/correo/correo.service';
 import { RecordatoriosService } from '../src/modules/recordatorios/recordatorios.service';
 
 const prisma = new PrismaService();
@@ -57,9 +64,39 @@ function pushFalso(resultado: ResultadoPush = { estado: 'omitido' }) {
   return { servicio, mandados };
 }
 
-/** El servicio con los dos canales, para no repetir el armado en cada prueba. */
-function conCanales(telegram: TelegramService, push?: PushService) {
-  return new RecordatoriosService(prisma, telegram, push ?? pushFalso().servicio);
+/**
+ * Un servicio de correo de mentira. Por defecto NO manda nada.
+ *
+ * Mismo criterio que el push: las pruebas que miran otro canal no tienen por
+ * qué ver los numeros del resumen alterados por este.
+ */
+function correoFalso(resultado: ResultadoDeCorreo = { estado: 'omitido' }) {
+  const mandados: CorreoASalir[] = [];
+  const servicio = {
+    configurado: true,
+    enviar: async (correo: CorreoASalir) => {
+      mandados.push(correo);
+      return resultado;
+    },
+  } as unknown as CorreoService;
+  return { servicio, mandados };
+}
+
+/** La configuración mínima que el servicio consulta. */
+const CONFIG = {
+  getOrThrow: (clave: string) =>
+    clave === 'APP_ALUMNO_URL' ? 'https://alumnos.academiagimenoos.com.uy' : '',
+} as unknown as ConfigService;
+
+/** El servicio con los tres canales, para no repetir el armado en cada prueba. */
+function conCanales(telegram: TelegramService, push?: PushService, correo?: CorreoService) {
+  return new RecordatoriosService(
+    prisma,
+    telegram,
+    push ?? pushFalso().servicio,
+    correo ?? correoFalso().servicio,
+    CONFIG,
+  );
 }
 
 async function crearReserva(id: string, createdAt: Date) {
@@ -95,6 +132,7 @@ beforeAll(async () => {
       nombre: 'Lautaro',
       apellido: 'Recordatorio',
       telefono: '+598 92331784',
+      email: 'lautaro-rec@prueba.uy',
     },
   });
   await prisma.instructor.upsert({
@@ -240,9 +278,9 @@ describe('cuando el aviso no sale', () => {
     const recordatorios = conCanales(servicio);
     const ahora = new Date(INICIO.getTime() - hs(23));
 
-    // Dos: ni Telegram ni el push tienen a dónde mandar en esta prueba.
+    // Tres: ninguno de los tres canales tiene a dónde mandar en esta prueba.
     const resumen = await recordatorios.procesar(ahora);
-    expect(resumen.omitidos).toBe(2);
+    expect(resumen.omitidos).toBe(3);
     expect(await prisma.recordatorioEnviado.count({ where: { reservaId: ID.reserva } })).toBe(0);
 
     // Y con el bot ya configurado, el mismo recordatorio sale.
@@ -344,5 +382,130 @@ describe('el aviso al alumno en su teléfono', () => {
     } finally {
       await prisma.cliente.update({ where: { id: ID.cliente }, data: { usuarioId: ID.usuario } });
     }
+  });
+});
+
+describe('el recordatorio por correo', () => {
+  it('sale además de los otros dos, con su propio texto', async () => {
+    const { servicio: telegram } = telegramFalso();
+    const { servicio: correo, mandados } = correoFalso({ estado: 'enviado' });
+    const recordatorios = conCanales(telegram, undefined, correo);
+
+    await recordatorios.procesar(new Date(INICIO.getTime() - hs(23)));
+
+    expect(mandados).toHaveLength(1);
+    expect(mandados[0]!.para).toBe('lautaro-rec@prueba.uy');
+    expect(mandados[0]!.asunto).toBe('Tenés clase mañana');
+    expect(mandados[0]!.texto).toContain('mañana a las 14:00');
+    expect(mandados[0]!.html).toContain('mañana a las 14:00');
+  });
+
+  it('lleva SIEMPRE el enlace de baja, en el HTML y en el texto', async () => {
+    // Sin una forma visible de darse de baja, quien no la encuentra marca el
+    // correo como spam, y eso ensucia la reputación del dominio para TODOS los
+    // correos de la academia, invitaciones incluidas.
+    const { servicio: correo, mandados } = correoFalso({ estado: 'enviado' });
+    await conCanales(telegramFalso().servicio, undefined, correo).procesar(
+      new Date(INICIO.getTime() - hs(23)),
+    );
+
+    const enviado = mandados[0]!;
+    expect(enviado.html).toContain('/avisos?baja=');
+    expect(enviado.texto).toContain('/avisos?baja=');
+    expect(enviado.cabeceras?.['List-Unsubscribe']).toMatch(/^<https?:\/\/.+\/avisos\?baja=.+>$/);
+  });
+
+  it('NO promete la baja de un clic, porque esa dirección no acepta un POST', async () => {
+    // `List-Unsubscribe-Post` le dice al cliente de correo que puede dar de baja
+    // con un POST a esa misma dirección. La nuestra es una pantalla de la app:
+    // el POST no haría nada y la persona se quedaría creyendo que se dio de baja.
+    const { servicio: correo, mandados } = correoFalso({ estado: 'enviado' });
+    await conCanales(telegramFalso().servicio, undefined, correo).procesar(
+      new Date(INICIO.getTime() - hs(23)),
+    );
+    expect(mandados[0]!.cabeceras?.['List-Unsubscribe-Post']).toBeUndefined();
+  });
+
+  it('el texto plano dice lo mismo que el HTML', async () => {
+    // Hay clientes de correo que solo muestran el texto, y los filtros de spam
+    // desconfían de un correo que solo trae HTML.
+    const { servicio: correo, mandados } = correoFalso({ estado: 'enviado' });
+    await conCanales(telegramFalso().servicio, undefined, correo).procesar(
+      new Date(INICIO.getTime() - hs(23)),
+    );
+    const { texto, html } = mandados[0]!;
+    expect(texto.length).toBeGreaterThan(80);
+    for (const dato of ['Lautaro', 'Marta Instructora', 'mañana a las 14:00']) {
+      expect(texto).toContain(dato);
+      expect(html).toContain(dato);
+    }
+  });
+
+  it('a quien se dio de baja NO se le escribe', async () => {
+    await prisma.cliente.update({
+      where: { id: ID.cliente },
+      data: { recibeAvisosPorCorreo: false },
+    });
+    try {
+      const { servicio: correo, mandados } = correoFalso({ estado: 'enviado' });
+      const resumen = await conCanales(telegramFalso().servicio, undefined, correo).procesar(
+        new Date(INICIO.getTime() - hs(23)),
+      );
+
+      expect(mandados).toHaveLength(0);
+      // Ni se anota ni cuenta como fallo: es una decisión suya, no un problema.
+      expect(resumen.fallidos).toBe(0);
+      expect(
+        await prisma.recordatorioEnviado.count({
+          where: { reservaId: ID.reserva, canal: CanalRecordatorio.CORREO },
+        }),
+      ).toBe(0);
+    } finally {
+      await prisma.cliente.update({
+        where: { id: ID.cliente },
+        data: { recibeAvisosPorCorreo: true },
+      });
+    }
+  });
+
+  it('a quien no tiene correo cargado tampoco, y no es un fallo', async () => {
+    await prisma.cliente.update({ where: { id: ID.cliente }, data: { email: null } });
+    try {
+      const { servicio: correo, mandados } = correoFalso({ estado: 'enviado' });
+      const resumen = await conCanales(telegramFalso().servicio, undefined, correo).procesar(
+        new Date(INICIO.getTime() - hs(23)),
+      );
+      expect(mandados).toHaveLength(0);
+      expect(resumen.fallidos).toBe(0);
+    } finally {
+      await prisma.cliente.update({
+        where: { id: ID.cliente },
+        data: { email: 'lautaro-rec@prueba.uy' },
+      });
+    }
+  });
+
+  it('tampoco le llega dos veces', async () => {
+    const { servicio: correo, mandados } = correoFalso({ estado: 'enviado' });
+    const recordatorios = conCanales(telegramFalso().servicio, undefined, correo);
+    const ahora = new Date(INICIO.getTime() - hs(23));
+
+    await recordatorios.procesar(ahora);
+    await recordatorios.procesar(ahora);
+
+    expect(mandados).toHaveLength(1);
+  });
+
+  it('cada alumno recibe SU enlace de baja, no el de otro', async () => {
+    // Si dos alumnos compartieran enlace, uno podría dar de baja al otro.
+    const { tokenBaja } = await prisma.cliente.findUniqueOrThrow({
+      where: { id: ID.cliente },
+      select: { tokenBaja: true },
+    });
+    const { servicio: correo, mandados } = correoFalso({ estado: 'enviado' });
+    await conCanales(telegramFalso().servicio, undefined, correo).procesar(
+      new Date(INICIO.getTime() - hs(23)),
+    );
+    expect(mandados[0]!.html).toContain(tokenBaja);
   });
 });
