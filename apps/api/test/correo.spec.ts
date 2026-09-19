@@ -14,6 +14,7 @@ import {
   CuentaYaRegistradaError,
   SupabaseAdminService,
 } from '../src/common/supabase/supabase-admin.service';
+import { sinDirecciones } from '../src/common/correo/correo.service';
 
 const config = {
   get: (clave: string) =>
@@ -220,5 +221,42 @@ describe('Al generar el código de acceso', () => {
     await expect(
       supabase.generarCodigo('alumno@ejemplo.uy', 'https://app.ejemplo.uy', true),
     ).rejects.toThrow(/no devolvió un código/);
+  });
+});
+
+/**
+ * Lo que un servidor SMTP mete en el mensaje de error.
+ *
+ * El destinatario no lo escribe el sistema: lo agrega el servidor del otro
+ * lado. Ese motivo termina en el registro del servidor Y en la columna `error`
+ * de `recordatorios_enviados`, donde quedaria guardado. Una direccion de correo
+ * es un dato personal.
+ */
+describe('El motivo de un correo fallido no arrastra la direccion', () => {
+  const casos: Array<[string, string]> = [
+    ['550 5.1.1 <ana@ejemplo.com>: Recipient address rejected', 'ana@ejemplo.com'],
+    ['Invalid recipients: alumno.perez+clases@gmail.com', 'alumno.perez+clases@gmail.com'],
+    ['Message rejected for maria@sub.dominio.com.uy and otro@x.org', 'maria@sub.dominio.com.uy'],
+  ];
+
+  it.each(casos)('tacha la direccion de %p', (mensaje, direccion) => {
+    const limpio = sinDirecciones(mensaje);
+    expect(limpio).not.toContain(direccion);
+    expect(limpio).toContain('«dirección»');
+  });
+
+  it('tacha TODAS las que haya, no solo la primera', () => {
+    const limpio = sinDirecciones('rechazado para a@x.com y para b@y.com');
+    expect(limpio).not.toMatch(/@[\w-]+\./);
+  });
+
+  it('pero deja legible el resto del motivo, que es para lo que sirve', () => {
+    const limpio = sinDirecciones('550 5.1.1 <ana@ejemplo.com>: Recipient address rejected');
+    expect(limpio).toContain('550 5.1.1');
+    expect(limpio).toContain('Recipient address rejected');
+  });
+
+  it('un motivo sin direcciones queda igual', () => {
+    expect(sinDirecciones('Connection timeout')).toBe('Connection timeout');
   });
 });

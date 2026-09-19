@@ -71,6 +71,7 @@ Guía completa: [`docs/06-guia-desarrollo.md`](docs/06-guia-desarrollo.md).
 | [Pagos y tablero](docs/29-pagos.md) | Cómo paga un alumno, cómo se aprueba, y el resumen que abre el panel |
 | [Buscadores, carruseles y navbar](docs/30-buscadores-carruseles-y-navbar.md) | El buscador de alumno, la galería de egresados por años y el menú del panel |
 | [Arreglos de pago y avisos](docs/31-arreglos-pago-y-avisos.md) | Subir el comprobante desde el teléfono, y qué falta para los avisos |
+| [Segunda auditoría](docs/32-auditoria-2.md) | **Revisión de todo lo nuevo: 103 comprobaciones, 3 hallazgos corregidos** |
 
 ## Antes de publicar
 
