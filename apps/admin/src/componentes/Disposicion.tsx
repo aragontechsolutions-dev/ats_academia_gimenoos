@@ -12,6 +12,7 @@ import {
   UserCog,
   Users,
   Globe,
+  BookOpen,
 } from 'lucide-react';
 
 import { useSesion } from '../lib/sesion';
@@ -39,6 +40,7 @@ const SECCIONES: { ruta: string; texto: string; exacto: boolean; Icono: Componen
   { ruta: '/sitio', texto: 'Sitio web', exacto: false, Icono: Globe },
   { ruta: '/cuentas', texto: 'Cuentas', exacto: false, Icono: KeyRound },
   { ruta: '/avisos', texto: 'Avisos', exacto: false, Icono: Bell },
+  { ruta: '/manuales', texto: 'Manuales', exacto: false, Icono: BookOpen },
 ];
 
 export function Disposicion({ children }: { children: ReactNode }) {

@@ -247,3 +247,11 @@ pnpm audit --audit-level low
 
 Las tres conviene pasarlas **antes de cada despliegue grande y cada vez que se
 toca un permiso, una ruta pública o una política de Storage**.
+
+---
+
+> **Tercera pasada, tras los manuales.** El barrido pasó de 103 a **107**
+> comprobaciones: los manuales no agregaron ninguna ruta a la API, su texto no
+> viaja en el HTML servido, y cada aplicación lleva al navegador **solo el
+> suyo**. Ver [`33-manuales.md`](33-manuales.md) §5.
+

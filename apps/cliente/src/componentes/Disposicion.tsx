@@ -39,6 +39,23 @@ export function Disposicion({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-10 bg-carbon-950 pt-[env(safe-area-inset-top)] text-white">
         <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
           <Logotipo etiqueta="Alumnos" className="text-lg" />
+
+          {/* El manual va acá y no en la barra de abajo: esa tiene cuatro
+              secciones y una quinta la deja apretada en un teléfono chico.
+              El signo de pregunta arriba a la derecha es donde se lo busca. */}
+          <NavLink
+            to="/manual"
+            aria-label="Manual de uso"
+            className={({ isActive }) =>
+              `flex h-8 w-8 items-center justify-center rounded-full border text-sm font-bold transition ${
+                isActive
+                  ? 'border-white bg-white text-carbon-950'
+                  : 'border-white/30 text-white hover:border-white'
+              }`
+            }
+          >
+            ?
+          </NavLink>
         </div>
       </header>
 

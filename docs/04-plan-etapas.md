@@ -613,3 +613,25 @@ Migración: `aviso_de_pago_nuevo`. 36 pruebas en `pagos.spec.ts` (siete nuevas) 
 
 Documentado en [`29-pagos.md`](29-pagos.md) §6 bis y en
 [`23-avisos-telegram.md`](23-avisos-telegram.md).
+
+---
+
+## Etapa 8 — Manuales de uso — HECHO
+
+Tres manuales, uno por rol, dentro de las aplicaciones.
+
+- **Alumno e instructor** ven el suyo desde un signo de pregunta en el
+  encabezado: solo **lo que pueden hacer**, sin explicaciones de cómo funciona
+  el sistema por dentro.
+- **Administración** ve los tres, en la sección Manuales: las acciones de cada
+  parte del panel **y cuatro flujos completos** —el ciclo de una clase, el de un
+  pago, cómo entra alguien nuevo y quién recibe qué aviso—, con quién hace cada
+  paso.
+
+El texto vive una sola vez, en `packages/shared`, porque el panel muestra el del
+alumno: con copias, el que lee el alumno y el que lee quien lo ayuda se irían
+separando. Un paso de CI comprueba que, aun así, cada app lleve **solo** su
+manual al navegador.
+
+Documentado en [`33-manuales.md`](33-manuales.md).
+

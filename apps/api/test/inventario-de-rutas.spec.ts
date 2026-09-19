@@ -289,3 +289,18 @@ describe('Lo que un instructor NO puede hacer', () => {
     );
   });
 });
+
+/**
+ * Los manuales no son una ruta de la API.
+ *
+ * Son texto compilado dentro de cada aplicacion. Se deja fijado para que a
+ * nadie se le ocurra servirlos desde el servidor sin decidirlo: el de
+ * administracion describe los flujos internos del sistema y no tiene por que
+ * viajar por ninguna direccion publica.
+ */
+describe('Los manuales viven en las aplicaciones, no en la API', () => {
+  it('ningun controlador expone algo llamado manual', () => {
+    const sospechosas = RUTAS.filter((r) => /manual/i.test(r.nombre));
+    expect(sospechosas).toEqual([]);
+  });
+});

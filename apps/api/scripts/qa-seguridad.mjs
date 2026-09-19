@@ -555,6 +555,20 @@ console.log('\n═══ 22. Limite en la galeria publica ═══');
     cortado > 0 && cortado <= limite + 5, cortado ? `corto en la ${cortado}` : 'NO corto nunca');
 }
 
+// ============ 23. Los manuales ============
+// Entraron despues de la segunda auditoria. No agregan ninguna ruta a la API
+// —son texto compilado dentro de cada aplicacion—, y eso es justamente lo que
+// hay que confirmar: que no se haya colado una superficie nueva sin querer.
+console.log('\n═══ 23. Los manuales no abrieron superficie nueva ═══');
+for (const ruta of ['/manuales', '/manual', '/ayuda']) {
+  const r = await pedir(ruta, { token: '' });
+  check(`la API no sirve ${ruta}`, r.estado === 404, String(r.estado));
+}
+{
+  const r = await pedir('/manuales', { rol: 'admin' });
+  check('tampoco con sesion de administracion', r.estado === 404, String(r.estado));
+}
+
 console.log(`\n${ok} bien, ${fallos.length} mal`);
 if (fallos.length) {
   console.log('\nPENDIENTES:\n' + fallos.map((f) => ' - ' + f).join('\n'));

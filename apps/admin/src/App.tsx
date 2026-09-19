@@ -18,6 +18,7 @@ import { Graduados } from './paginas/Graduados';
 import { Cuentas } from './paginas/Cuentas';
 import { Pagos } from './paginas/Pagos';
 import { AvisosTelegram } from './paginas/AvisosTelegram';
+import { Manuales } from './paginas/Manuales';
 
 /**
  * Envuelve una página con el guard y la disposición del panel.
@@ -85,6 +86,10 @@ export function App() {
             <Route
               path="/avisos"
               element={<Pagina><AvisosTelegram /></Pagina>}
+            />
+            <Route
+              path="/manuales"
+              element={<Pagina><Manuales /></Pagina>}
             />
 
             <Route path="*" element={<Pagina><Tablero /></Pagina>} />
