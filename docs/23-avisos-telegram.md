@@ -71,10 +71,14 @@ Cada uno se prende y se apaga por separado desde el panel. Apagar corta el aviso
 | **Clase agendada** | Un alumno reserva desde su app, o se agenda desde el panel. Distingue cuál de los dos: la del alumno queda pendiente de confirmar |
 | **Clase cerrada** | El instructor la marca como dictada, o marca que el alumno no vino |
 | **Clase cancelada** | La cancele quien la cancele, con el motivo si lo hay |
+| **Comprobante de pago** | Un alumno sube el comprobante de una transferencia. Sin esto, la única forma de enterarse es abrir el panel a ver si hay algo esperando |
 | **Alguien va a escribir por WhatsApp** | Alguien toca un botón de WhatsApp en el sitio. Dice **desde qué sección** |
 
 Confirmar una clase **no** avisa: es movimiento interno y quien recibiría el
-aviso es justamente quien acaba de confirmarla.
+aviso es justamente quien acaba de confirmarla. Por lo mismo, un **cobro en
+efectivo** tampoco avisa: lo registra la academia en el mostrador y no hay nada
+que ir a revisar. Y **empezar** un pago tampoco: hasta que no sube el
+comprobante no hay nada que mirar.
 
 ### Las ocho secciones del sitio
 
@@ -100,6 +104,7 @@ academia.
 |---|---|
 | Clase agendada / cerrada / cancelada | Nombre y apellido del alumno y del instructor, fecha y hora, y el motivo si se canceló |
 | Clic de WhatsApp | La sección, la hora, si fue de celular o computadora, y el **dominio** de la página de la que venía |
+| Comprobante de pago | Nombre y apellido del alumno, el servicio y el monto declarado. **No** la ruta del comprobante ni identificadores: la ruta, con la clave de servicio, llega al archivo, y un grupo de Telegram puede tener a cualquiera |
 
 **Lo que NO sale, en ningún caso:** cédula, teléfono, correo, dirección,
 identificadores internos, ni nada de quien visita el sitio.

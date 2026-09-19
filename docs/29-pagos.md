@@ -221,9 +221,36 @@ sin sesión   → 401
   `MP_ONLINE` y `MP_POINT` previstos, pero Point sigue bloqueado a la espera de la
   confirmación escrita de Mercado Pago Uruguay sobre disponibilidad de la API para
   UYU.
-- **No avisa por Telegram cuando entra un comprobante.** Se puede sumar al
-  interruptor de avisos existente; no está hecho.
 - **No exporta a planilla.** El tablero se mira, no se descarga.
+
+---
+
+## 6 bis. Quién se entera de qué
+
+Sin esto, el círculo quedaba abierto por los dos lados: la academia se enteraba
+de que había un comprobante esperando sólo si a alguien se le ocurría abrir el
+panel, y el alumno se enteraba de la decisión sólo si volvía a entrar a la app.
+
+| Cuándo | A quién | Por dónde |
+|---|---|---|
+| El alumno sube el comprobante | La academia | Telegram, interruptor **«Comprobante de pago»** |
+| La academia aprueba | El alumno | Aviso en el teléfono, con cuántas clases le quedaron |
+| La academia rechaza | El alumno | Aviso en el teléfono, **sin el motivo** |
+| La academia cobra en efectivo | Nadie | Lo registró ella misma; no hay nada que revisar |
+| El alumno empieza un pago | Nadie | Todavía no hay nada que mirar |
+
+**Por qué el motivo del rechazo no va en la notificación.** Lo escribe una
+persona y puede nombrar el banco o la cuenta del alumno. Una notificación se lee
+en la pantalla bloqueada, donde la ve cualquiera que tenga el teléfono en la
+mano. El aviso dice que entre a la app; el motivo entero está ahí, detrás de la
+sesión.
+
+**Los avisos no hacen esperar a nadie.** Salen con `void`: el panel no se queda
+esperando a Google para mostrar que el pago quedó aprobado, y un aviso que no
+sale no puede deshacer una aprobación que ya está en la base.
+
+**Un alumno cargado por la academia que todavía no creó su cuenta** no tiene a
+dónde recibir nada. No es un error y no se registra como tal.
 
 ---
 
@@ -247,7 +274,8 @@ apps/cliente/src/lib/comprobantes.ts      la subida directa al bucket
 apps/admin/src/paginas/Pagos.tsx          listado, buscador, detalle, efectivo
 apps/admin/src/paginas/Tablero.tsx        el resumen; el gráfico es SVG a mano
 
-apps/api/test/pagos.spec.ts               29 pruebas
+apps/api/test/pagos.spec.ts               36 pruebas
+apps/api/src/modules/pagos/avisos-de-pago.ts   qué se dice y qué NO sale
 apps/api/test/tablero.spec.ts             22 pruebas
 ```
 

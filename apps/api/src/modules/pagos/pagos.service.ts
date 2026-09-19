@@ -13,6 +13,9 @@ import {
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditoriaService } from '../../common/auditoria/auditoria.service';
+import { TelegramService } from '../../common/telegram/telegram.service';
+import { PushService, type AvisoPush } from '../../common/push/push.service';
+import { avisoDeComprobante, pagoAprobado, pagoRechazado } from './avisos-de-pago';
 import { armarPagina, normalizarPaginacion } from '../../common/paginacion/paginacion';
 import type {
   AprobarPagoDto,
@@ -71,7 +74,28 @@ export class PagosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditoria: AuditoriaService,
+    private readonly telegram: TelegramService,
+    private readonly push: PushService,
   ) {}
+
+  /**
+   * Avisa al teléfono del alumno, sin hacer esperar a quien aprobó.
+   *
+   * `void` y no `await`: el panel no tiene por qué quedarse esperando a Google
+   * para mostrar que el pago quedó aprobado, y un aviso que no sale no puede
+   * deshacer una aprobación que ya está en la base. `avisar()` no lanza nunca.
+   */
+  private avisarAlAlumno(clienteId: string, aviso: AvisoPush): void {
+    void this.prisma.cliente
+      .findUnique({ where: { id: clienteId }, select: { usuarioId: true } })
+      .then((cliente) => {
+        // Un alumno cargado por la academia que todavía no creó su cuenta no
+        // tiene a dónde recibir nada. No es un error.
+        if (cliente?.usuarioId) return this.push.avisar(cliente.usuarioId, aviso);
+        return undefined;
+      })
+      .catch(() => undefined);
+  }
 
   // --------------------------------------------------------------------------
   // Lo que hace el alumno
@@ -158,14 +182,27 @@ export class PagosService {
       throw new ConflictException('Ese pago ya fue revisado por la academia');
     }
 
-    return this.prisma.pago.update({
+    const actualizado = await this.prisma.pago.update({
       where: { id: pago.id },
       data: {
         comprobantePath: `${usuarioId}/${pago.id}/${dto.archivo}`,
         estado: EstadoPago.PENDIENTE_VERIFICACION,
       },
-      select: CAMPOS_DEL_ALUMNO,
+      select: { ...CAMPOS_DEL_ALUMNO, cliente: { select: { nombre: true, apellido: true } } },
     });
+
+    // La academia se entera ahora y no cuando a alguien se le ocurra abrir el
+    // panel. `void`: el alumno no tiene por qué esperar a Telegram para ver que
+    // su comprobante quedó enviado.
+    void this.telegram.avisar('pagoNuevo', avisoDeComprobante({
+      monto: actualizado.monto.toString(),
+      cliente: actualizado.cliente,
+      servicio: actualizado.servicio,
+    }));
+
+    // El alumno recibe los campos de siempre: `cliente` se pidió solo para el aviso.
+    const { cliente: _, ...paraElAlumno } = actualizado;
+    return paraElAlumno;
   }
 
   /** Los pagos del alumno, del más nuevo al más viejo. */
@@ -355,6 +392,8 @@ export class PagosService {
       },
     });
 
+    this.avisarAlAlumno(pago.clienteId, pagoAprobado(servicio));
+
     return aprobado;
   }
 
@@ -362,7 +401,7 @@ export class PagosService {
   async rechazar(id: string, dto: RechazarPagoDto, usuarioId: string) {
     const pago = await this.prisma.pago.findUnique({
       where: { id },
-      select: { id: true, estado: true },
+      select: { id: true, estado: true, clienteId: true },
     });
     if (!pago) throw new NotFoundException('Ese pago no existe');
     if (!REVISABLES.includes(pago.estado)) {
@@ -389,6 +428,8 @@ export class PagosService {
       // otra. Queda en el pago, que es donde se lee.
       detalle: {},
     });
+
+    this.avisarAlAlumno(pago.clienteId, pagoRechazado());
 
     return rechazado;
   }

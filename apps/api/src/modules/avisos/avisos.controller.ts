@@ -19,6 +19,7 @@ const POR_DEFECTO = {
   avisaClaseCancelada: true,
   avisaClicWhatsapp: true,
   avisaRecordatorios: true,
+  avisaPagoNuevo: true,
   ultimoEnvioAt: null,
   ultimoErrorAt: null,
   ultimoError: null,

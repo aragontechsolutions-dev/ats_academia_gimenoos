@@ -804,6 +804,9 @@ model AvisosTelegram {
   avisaClicWhatsapp   Boolean @default(true) @map("avisa_clic_whatsapp")
   /// Los recordatorios de clase, 24 horas y 2 horas antes.
   avisaRecordatorios  Boolean @default(true) @map("avisa_recordatorios")
+  /// Cuando un alumno sube un comprobante de transferencia. Sin esto, la unica
+  /// forma de enterarse es abrir el panel a ver si hay algo esperando.
+  avisaPagoNuevo      Boolean @default(true) @map("avisa_pago_nuevo")
 
   /// Cuando salio bien el ultimo aviso. Sirve para contestar "esto anda?" sin
   /// tener que mandar uno de prueba.

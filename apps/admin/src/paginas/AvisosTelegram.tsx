@@ -35,6 +35,12 @@ const INTERRUPTORES = [
       'El día antes y dos horas antes de cada clase, con el teléfono del alumno a mano por si hay que llamarlo.',
   },
   {
+    clave: 'avisaPagoNuevo',
+    titulo: 'Comprobante de pago',
+    detalle:
+      'Cuando un alumno sube el comprobante de una transferencia. Sin esto, la única forma de enterarse es abrir el panel a ver si hay algo esperando.',
+  },
+  {
     clave: 'avisaClicWhatsapp',
     titulo: 'Alguien va a escribir por WhatsApp',
     detalle:
