@@ -60,6 +60,20 @@ export function AvisosDelTelefono({ variante }: { variante: 'tarjeta' | 'control
   // que después salte a «activado» se lee como un error.
   if (estado === null) return null;
 
+  /*
+   * La academia todavía no cargó las claves. No se ofrece nada: antes se
+   * mostraba la tarjeta, el alumno tocaba «Sí, avisame», el navegador le pedía
+   * permiso, y recién ahí aparecía un error rojo diciendo que la academia no lo
+   * tenía configurado. Ese permiso se pide una sola vez con comodidad.
+   */
+  if (estado === 'sin-configurar') {
+    return variante === 'control' ? (
+      <p className="text-sm text-slate-500">
+        Los avisos en el teléfono todavía no están disponibles. Los estamos preparando.
+      </p>
+    ) : null;
+  }
+
   // Un navegador que no puede no tiene por qué enterarse de que esto existe.
   if (estado === 'no-disponible') {
     return variante === 'control' ? (

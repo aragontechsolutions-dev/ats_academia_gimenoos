@@ -33,6 +33,7 @@
 | [28-recordatorio-por-correo.md](28-recordatorio-por-correo.md) | El tercer canal, y por qué la baja de suscripción no es opcional |
 | [29-pagos.md](29-pagos.md) | **Pagos por transferencia y en efectivo, y el tablero del panel** |
 | [30-buscadores-carruseles-y-navbar.md](30-buscadores-carruseles-y-navbar.md) | El buscador de alumno, la galería por años y el navbar con íconos |
+| [31-arreglos-pago-y-avisos.md](31-arreglos-pago-y-avisos.md) | **Por qué el comprobante en imagen no llegaba, y el error rojo de los avisos** |
 
 **Por dónde empezar:** `07-roadmap.md` si sos quien decide,
 `06-guia-desarrollo.md` para levantar el entorno,

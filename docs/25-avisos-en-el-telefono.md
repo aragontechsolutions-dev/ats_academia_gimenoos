@@ -187,3 +187,11 @@ Corregido en las tres.
 | Cambiar dónde se ofrece o el texto de la oferta | `apps/cliente/src/componentes/AvisosDelTelefono.tsx` |
 | Tocar el permiso o la suscripción | `apps/cliente/src/lib/avisosDelTelefono.ts` |
 | Agregar los iconos de la notificación | `sw.ts`, marcado con `TODO(datos-reales)` |
+
+---
+
+> **Mientras `VAPID_PUBLIC_KEY` no esté cargada en Render**, la app no ofrece
+> nada: no muestra la tarjeta de «¿Te avisamos antes de cada clase?» y no le pide
+> permiso al navegador. Se comprueba abriendo
+> `/api/v1/push/clave-publica`; si contesta `{"clave":null}`, falta cargarlas.
+> Ver [`31-arreglos-pago-y-avisos.md`](31-arreglos-pago-y-avisos.md).

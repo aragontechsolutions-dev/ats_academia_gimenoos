@@ -18,6 +18,8 @@ import { llamarApi } from './api';
 export type EstadoDeLosAvisos =
   /** El navegador no puede: iPhone sin instalar, o un navegador viejo. */
   | 'no-disponible'
+  /** El navegador puede, pero la academia todavia no cargo las claves VAPID. */
+  | 'sin-configurar'
   /** Puede, y todavía no se le preguntó. */
   | 'sin-pedir'
   /** Dijo que sí y está suscripto. */
@@ -46,6 +48,29 @@ export function sePuede(): boolean {
  */
 const ESPERA_MAXIMA_MS = 3000;
 
+/**
+ * La clave publica de la academia, preguntada una sola vez.
+ *
+ * Tres respuestas distintas, y la diferencia importa:
+ *  - una cadena: la academia tiene los avisos configurados;
+ *  - `null`: la API contesto que NO hay clave cargada;
+ *  - `undefined`: no se pudo preguntar (sin red, API caida). Eso no es lo mismo
+ *    que «no esta configurado», y afirmarlo seria inventar.
+ */
+let clavePedida: Promise<string | null | undefined> | null = null;
+
+async function clavePublica(): Promise<string | null | undefined> {
+  clavePedida ??= llamarApi<{ clave: string | null }>('/push/clave-publica')
+    .then((respuesta) => respuesta.clave)
+    .catch(() => {
+      // Se olvida el pedido fallido para que el proximo intento vuelva a
+      // preguntar en vez de arrastrar para siempre un «no se pudo».
+      clavePedida = null;
+      return undefined;
+    });
+  return clavePedida;
+}
+
 /** El registro del service worker, o null si no aparece a tiempo. */
 async function registro(): Promise<ServiceWorkerRegistration | null> {
   return Promise.race([
@@ -57,6 +82,12 @@ async function registro(): Promise<ServiceWorkerRegistration | null> {
 /** En qué estado está, sin pedir nada ni cambiar nada. */
 export async function estado(): Promise<EstadoDeLosAvisos> {
   if (!sePuede()) return 'no-disponible';
+
+  // Se pregunta ANTES que nada por el permiso: no tiene sentido ofrecerle a
+  // nadie algo que la academia todavia no puede mandar, y menos pedirle al
+  // navegador un permiso que despues no se va a usar.
+  if ((await clavePublica()) === null) return 'sin-configurar';
+
   if (Notification.permission === 'denied') return 'bloqueados';
   if (Notification.permission === 'default') return 'sin-pedir';
 
@@ -79,13 +110,19 @@ export async function estado(): Promise<EstadoDeLosAvisos> {
 export async function activar(): Promise<EstadoDeLosAvisos> {
   if (!sePuede()) return 'no-disponible';
 
+  // La clave PRIMERO, y despues el permiso. Al reves —como estaba— se le pedia
+  // permiso al navegador para terminar diciendole que la academia no lo tiene
+  // configurado: se gasta el unico pedido de permiso que Chrome permite hacer
+  // con comodidad, y si la persona dice que no, recuperarlo exige que entre a
+  // los ajustes del sitio.
+  const clave = await clavePublica();
+  if (clave === null) return 'sin-configurar';
+  if (clave === undefined) {
+    throw new Error('No pudimos comprobar si los avisos estan disponibles. Probá de nuevo.');
+  }
+
   const permiso = await Notification.requestPermission();
   if (permiso !== 'granted') return permiso === 'denied' ? 'bloqueados' : 'sin-pedir';
-
-  const { clave } = await llamarApi<{ clave: string | null }>('/push/clave-publica');
-  if (!clave) {
-    throw new Error('La academia todavía no tiene configurados los avisos al teléfono.');
-  }
 
   const sw = await registro();
   if (!sw) {
