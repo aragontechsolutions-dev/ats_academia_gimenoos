@@ -275,6 +275,286 @@ console.log('\n═══ 11. Cuerpos abusivos ═══');
   check('No se puede pedir una pagina ilimitada', r.estado === 400 || cuantos <= 100, `${r.estado}, devolvio ${cuantos}`);
 }
 
+// ============ 12. Pagos: lo de uno no es de otro ============
+// El modulo de pagos entro despues de la primera auditoria. Mueve plata y
+// guarda documentos bancarios: es la superficie mas delicada que se agrego.
+console.log('\n═══ 12. Pagos: ¿puede alguien tocar el pago de otro? ═══');
+const pagoDeAna = await (async () => {
+  const servicios = (await pedir('/catalogo/servicios')).json ?? [];
+  const servicio = servicios.find((s) => Number(s.precioContado) > 0);
+  if (!servicio) { check('hay un servicio con precio para poder probar pagos', false, 'ninguno activo'); return null; }
+  const r = await pedir('/pagos/mios', { rol: 'ana', metodo: 'POST', cuerpo: { servicioId: servicio.id } });
+  check('Ana puede empezar un pago suyo', r.estado === 201 || r.estado === 200, `${r.estado} ${r.texto.slice(0,120)}`);
+  // El monto lo pone el servidor: si viniera del navegador, vendria uno.
+  check('el monto sale del catalogo, no del navegador',
+    Number(r.json?.monto) === Number(servicio.precioContado), `${r.json?.monto} vs ${servicio.precioContado}`);
+  return r.json;
+})();
+
+if (pagoDeAna) {
+  {
+    const r = await pedir(`/pagos/mios/${pagoDeAna.id}/comprobante`, { rol: 'bruno', metodo: 'PATCH', cuerpo: { archivo: 'x.pdf' } });
+    check('Bruno NO puede colgarle un comprobante al pago de Ana', r.estado === 404 || r.estado === 403, String(r.estado));
+  }
+  {
+    const r = await pedir(`/pagos/${pagoDeAna.id}`, { rol: 'ana' });
+    check('Ana NO puede abrir el detalle de administracion de su propio pago', r.estado === 403, String(r.estado));
+  }
+  {
+    // La direccion firmada abre un documento bancario SIN pedir sesion: quien la
+    // consigue, ve el archivo. Solo administracion puede pedirla.
+    const r = await pedir(`/pagos/${pagoDeAna.id}/comprobante`, { rol: 'ana' });
+    check('Ana NO puede pedir la direccion firmada del comprobante', r.estado === 403, String(r.estado));
+  }
+  {
+    const r = await pedir(`/pagos/${pagoDeAna.id}/aprobar`, { rol: 'ana', metodo: 'POST', cuerpo: {} });
+    check('Ana NO puede aprobarse un pago a si misma', r.estado === 403, String(r.estado));
+  }
+  {
+    const r = await pedir(`/pagos/${pagoDeAna.id}/aprobar`, { rol: 'inst', metodo: 'POST', cuerpo: {} });
+    check('El instructor NO puede aprobar pagos', r.estado === 403, String(r.estado));
+  }
+  {
+    const r = await pedir('/pagos/efectivo', { rol: 'ana', metodo: 'POST', cuerpo: { clienteId: ID.fichaAna, servicioId: pagoDeAna.servicio?.id } });
+    check('Ana NO puede registrarse un cobro en efectivo', r.estado === 403, String(r.estado));
+  }
+}
+{
+  const r = await pedir('/pagos', { rol: 'ana' });
+  check('Ana NO puede listar los pagos de la academia', r.estado === 403, String(r.estado));
+}
+{
+  const r = await pedir('/pagos', { rol: 'inst' });
+  check('El instructor tampoco', r.estado === 403, String(r.estado));
+}
+{
+  const r = await pedir('/pagos/mios', { rol: 'bruno' });
+  const ajenos = (r.json ?? []).length;
+  check('Bruno solo ve SUS pagos', r.estado === 200 && ajenos === 0, `${r.estado}, ${ajenos} pagos`);
+}
+{
+  const r = await pedir('/pagos/mios', { rol: 'ana' });
+  const campos = new Set((r.json ?? []).flatMap((p) => Object.keys(p)));
+  // La nota es interna y la ruta, con la clave de servicio, llega al archivo.
+  check('el alumno NO recibe la nota interna ni la ruta del comprobante',
+    !campos.has('nota') && !campos.has('comprobantePath') && !campos.has('verificadoPor'),
+    [...campos].join(','));
+}
+
+// ============ 13. Pagos: el nombre del archivo ============
+// La API compone la ruta del bucket con el id de la sesion y el del pago, y del
+// cuerpo toma SOLO el nombre. Si aceptara una ruta, se podria apuntar al
+// comprobante de otra persona y despues pedir que lo muestren.
+console.log('\n═══ 13. Pagos: ¿se puede escapar de la carpeta propia? ═══');
+if (pagoDeAna) {
+  const nombresProhibidos = [
+    ['../../otro/comprobante.pdf', 'subir un nivel'],
+    ['..%2F..%2Fotro.pdf', 'subir un nivel codificado'],
+    ['/etc/passwd', 'ruta absoluta'],
+    ['carpeta/archivo.pdf', 'una barra en el medio'],
+    ['comprobante.pdf\u0000.png', 'byte nulo'],
+    ['comprobante.svg', 'SVG, que puede traer scripts'],
+    ['comprobante.html', 'HTML'],
+    ['comprobante.php', 'codigo de servidor'],
+    ['comprobante', 'sin extension'],
+    ['COMPROBANTE.PDF', 'mayusculas, que el bucket no espera'],
+    [`${'a'.repeat(200)}.pdf`, 'nombre larguisimo'],
+  ];
+  for (const [archivo, motivo] of nombresProhibidos) {
+    const r = await pedir(`/pagos/mios/${pagoDeAna.id}/comprobante`, { rol: 'ana', metodo: 'PATCH', cuerpo: { archivo } });
+    check(`rechaza ${motivo}`, r.estado === 400, `${r.estado} ${r.texto.slice(0, 80)}`);
+  }
+  {
+    const r = await pedir(`/pagos/mios/${pagoDeAna.id}/comprobante`, { rol: 'ana', metodo: 'PATCH', cuerpo: { archivo: 'comprobante-1.pdf' } });
+    check('y acepta un nombre normal', r.estado === 200, `${r.estado} ${r.texto.slice(0,90)}`);
+  }
+}
+
+// ============ 14. Pagos: importes ============
+console.log('\n═══ 14. Pagos: importes que no deberian entrar ═══');
+{
+  const servicios = (await pedir('/catalogo/servicios')).json ?? [];
+  const servicio = servicios.find((s) => Number(s.precioContado) > 0);
+  if (servicio) {
+    const r = await pedir('/pagos/mios', { rol: 'ana', metodo: 'POST', cuerpo: { servicioId: servicio.id, monto: 1 } });
+    check('el alumno NO puede mandar el monto en el cuerpo', r.estado === 400, `${r.estado} ${r.texto.slice(0,90)}`);
+  }
+}
+{
+  const pago = (await pedir('/pagos?estado=PENDIENTE&porPagina=10', { rol: 'admin' })).json?.datos?.[0];
+  if (pago) {
+    for (const [monto, motivo] of [[-100, 'negativo'], [0, 'cero'], [1.5, 'con centavos'], [999999999, 'absurdo']]) {
+      const r = await pedir(`/pagos/${pago.id}/aprobar`, { rol: 'admin', metodo: 'POST', cuerpo: { monto } });
+      check(`no se aprueba con un monto ${motivo}`, r.estado === 400, `${r.estado} ${r.texto.slice(0,70)}`);
+    }
+    const r = await pedir(`/pagos/${pago.id}/rechazar`, { rol: 'admin', metodo: 'POST', cuerpo: { motivo: '   ' } });
+    check('no se rechaza sin escribir un motivo', r.estado === 400, `${r.estado} ${r.texto.slice(0,70)}`);
+  } else {
+    check('hay un pago pendiente para probar importes', false, 'ninguno');
+  }
+}
+
+// ============ 15. Tablero ============
+// Devuelve la facturacion de la academia y el rendimiento de cada instructor.
+console.log('\n═══ 15. Tablero: solo administracion ═══');
+for (const rol of ['ana', 'inst']) {
+  const r = await pedir('/tablero', { rol });
+  check(`${rol} NO puede abrir el tablero`, r.estado === 403, String(r.estado));
+}
+{
+  const r = await pedir('/tablero', { token: '' });
+  check('sin sesion tampoco', r.estado === 401, String(r.estado));
+}
+for (const [consulta, motivo] of [
+  ['?desde=ayer', 'una fecha en palabras'],
+  ["?desde=2026-01-01'--", 'una comilla en la fecha'],
+  ['?desde=2026-09-10&hasta=2026-09-01', 'un rango invertido'],
+  ['?desde=1990-01-01&hasta=2026-01-01', 'un rango de treinta anios'],
+  ['?otro=1', 'un parametro que no existe'],
+]) {
+  const r = await pedir(`/tablero${consulta}`, { rol: 'admin' });
+  check(`rechaza ${motivo}`, r.estado === 400, `${r.estado} ${r.texto.slice(0,80)}`);
+}
+{
+  const r = await pedir('/tablero', { rol: 'admin' });
+  const texto = JSON.stringify(r.json ?? {});
+  // Agrega: no tiene por que llevar ni un nombre de alumno ni un identificador.
+  check('el tablero no arrastra datos personales', r.estado === 200 && !/documento|telefono|email/i.test(texto), texto.slice(0,120));
+}
+
+// ============ 16. La galeria publica ============
+// Ruta nueva, PUBLICA y sin sesion: lo que salga de aca lo ve internet.
+console.log('\n═══ 16. Galeria de egresados (publica) ═══');
+{
+  const r = await pedir('/graduados/galeria', { token: '' });
+  check('contesta sin sesion, que es para lo que existe', r.estado === 200, String(r.estado));
+  const gente = (r.json ?? []).flatMap((a) => a.graduados ?? []);
+  const campos = new Set(gente.flatMap((g) => Object.keys(g)));
+  const permitidos = ['id', 'nombre', 'apellido', 'categoria', 'anio', 'fotoUrl'];
+  check('publica SOLO los seis campos previstos',
+    [...campos].every((c) => permitidos.includes(c)), [...campos].join(','));
+  check('ningun anio pasa el tope de 24 fotos',
+    (r.json ?? []).every((a) => (a.graduados ?? []).length <= 24),
+    (r.json ?? []).map((a) => `${a.anio}:${a.graduados.length}`).join(' '));
+  check('no devuelve mas de 12 anios', (r.json ?? []).length <= 12, String((r.json ?? []).length));
+}
+{
+  // La ruta vieja se elimino. No contesta 404 sino 401, porque el camino lo
+  // absorbe `GET /graduados/:id`, que pide ADMIN: el guard corta antes de que
+  // nadie mire si «anios» es un identificador. Lo que importa no es el numero
+  // sino que ya NO entregue la lista de anios a quien no tiene sesion.
+  const r = await pedir('/graduados/anios', { token: '' });
+  check('la lista de anios ya no se sirve sin sesion',
+    r.estado !== 200 && !Array.isArray(r.json), `${r.estado} ${r.texto.slice(0,60)}`);
+  const conSesion = await pedir('/graduados/anios', { rol: 'admin' });
+  check('y tampoco con sesion: el camino quedo como un id invalido',
+    conSesion.estado === 400 || conSesion.estado === 404, String(conSesion.estado));
+}
+
+// ============ 17. El buscador de alumnos ============
+// Lo usa el alta de egresado y el cobro en efectivo. Busca por cedula.
+console.log('\n═══ 17. El buscador de alumnos ═══');
+for (const rol of ['ana', 'inst']) {
+  const r = await pedir('/clientes?q=a', { rol });
+  check(`${rol} NO puede usar el buscador de alumnos`, r.estado === 403, String(r.estado));
+}
+{
+  const r = await pedir("/clientes?q=' OR 1=1 --", { rol: 'admin' });
+  check('una inyeccion en el buscador no devuelve la tabla entera',
+    r.estado === 200 && (r.json?.datos?.length ?? 0) === 0, `${r.estado}, ${r.json?.datos?.length} resultados`);
+}
+{
+  const r = await pedir(`/clientes?q=${'a'.repeat(500)}`, { rol: 'admin' });
+  check('una busqueda gigante se rechaza', r.estado === 400, String(r.estado));
+}
+
+// ============ 18. El interruptor de avisos nuevo ============
+console.log('\n═══ 18. Avisos ═══');
+for (const rol of ['ana', 'inst']) {
+  const r = await pedir('/avisos/telegram', { rol, metodo: 'PATCH', cuerpo: { avisaPagoNuevo: false } });
+  check(`${rol} NO puede tocar los avisos de la academia`, r.estado === 403, String(r.estado));
+}
+{
+  const r = await pedir('/avisos/telegram', { rol: 'admin' });
+  check('la API nunca devuelve el token del bot',
+    r.estado === 200 && !JSON.stringify(r.json).includes('token') || !/\d{8,}:[A-Za-z0-9_-]{30,}/.test(JSON.stringify(r.json)),
+    JSON.stringify(r.json).slice(0, 100));
+}
+
+// ============ 19. Campos de mas en el cuerpo (asignacion masiva) ============
+// El peligro no es que el campo exista: es que el servicio lo copie tal cual al
+// registro. `forbidNonWhitelisted` corta antes, pero conviene comprobarlo en la
+// superficie que mueve plata y estados, no confiar en que sigue puesto.
+console.log('\n═══ 19. ¿Se puede colar un campo de mas? ═══');
+{
+  const servicios = (await pedir('/catalogo/servicios')).json ?? [];
+  const servicio = servicios.find((s) => Number(s.precioContado) > 0);
+  const intentos = [
+    [{ servicioId: servicio?.id, estado: 'APROBADO' }, 'nacer aprobado'],
+    [{ servicioId: servicio?.id, clienteId: ID.fichaBruno }, 'ponerlo a nombre de otro'],
+    [{ servicioId: servicio?.id, comprobantePath: 'otro/archivo.pdf' }, 'fijar la ruta del archivo'],
+    [{ servicioId: servicio?.id, verificadoPor: ID.fichaAna }, 'decir quien lo verifico'],
+    [{ servicioId: servicio?.id, canal: 'EFECTIVO' }, 'cambiar la forma de pago'],
+  ];
+  for (const [cuerpo, motivo] of intentos) {
+    const r = await pedir('/pagos/mios', { rol: 'ana', metodo: 'POST', cuerpo });
+    check(`no se puede ${motivo}`, r.estado === 400, `${r.estado} ${r.texto.slice(0,70)}`);
+  }
+}
+{
+  const r = await pedir('/usuarios/me', { rol: 'ana', metodo: 'PATCH', cuerpo: { nombre: 'Ana', apellido: 'A', activo: false } });
+  check('nadie se cambia el campo «activo» desde su perfil', r.estado === 400, String(r.estado));
+}
+
+// ============ 20. Metodos que no existen ============
+console.log('\n═══ 20. Metodos HTTP que no corresponden ═══');
+{
+  const pago = (await pedir('/pagos?porPagina=10', { rol: 'admin' })).json?.datos?.[0];
+  if (pago) {
+    for (const metodo of ['DELETE', 'PUT']) {
+      const r = await pedir(`/pagos/${pago.id}`, { rol: 'admin', metodo });
+      check(`un pago no se puede ${metodo}`, r.estado === 404 || r.estado === 405, `${r.estado}`);
+    }
+  }
+}
+
+// ============ 21. Enumerar identificadores ============
+// «No existe» y «no es tuyo» tienen que contestar lo MISMO. Si se distinguen,
+// probar identificadores dice cuales existen.
+console.log('\n═══ 21. ¿Se pueden enumerar identificadores? ═══');
+{
+  const inexistente = '00000000-0000-4000-9999-999999999999';
+  const deOtro = (await pedir('/pagos?porPagina=10', { rol: 'admin' })).json?.datos?.[0]?.id;
+  if (deOtro) {
+    const a = await pedir(`/pagos/mios/${inexistente}/comprobante`, { rol: 'bruno', metodo: 'PATCH', cuerpo: { archivo: 'c.pdf' } });
+    const b = await pedir(`/pagos/mios/${deOtro}/comprobante`, { rol: 'bruno', metodo: 'PATCH', cuerpo: { archivo: 'c.pdf' } });
+    check('«no existe» y «no es tuyo» contestan lo mismo',
+      a.estado === b.estado && a.json?.message === b.json?.message,
+      `${a.estado}:${a.json?.message} vs ${b.estado}:${b.json?.message}`);
+  }
+}
+{
+  // Una direccion de correo que existe y una que no tienen que verse igual.
+  const r = await pedir('/graduados/verificar/CODIGOQUENOEXISTE', { token: '' });
+  check('un codigo de diploma inexistente no habla de mas',
+    r.estado === 404 || r.json?.valido === false, `${r.estado} ${r.texto.slice(0,70)}`);
+}
+
+// ============ 22. Limite de peticiones en las rutas nuevas ============
+// La galeria es PUBLICA y hace una consulta por anio. Sin limite global seria
+// una forma barata de hacer trabajar a la base desde internet.
+console.log('\n═══ 22. Limite en la galeria publica ═══');
+{
+  const limite = Number(process.env.THROTTLE_LIMITE ?? 100);
+  let cortado = 0;
+  for (let i = 0; i < limite + 20; i++) {
+    const r = await pedir('/graduados/galeria', { token: '' });
+    if (r.estado === 429) { cortado = i + 1; break; }
+  }
+  check('la galeria publica cae bajo el limite global de peticiones',
+    cortado > 0 && cortado <= limite + 5, cortado ? `corto en la ${cortado}` : 'NO corto nunca');
+}
+
 console.log(`\n${ok} bien, ${fallos.length} mal`);
 if (fallos.length) {
   console.log('\nPENDIENTES:\n' + fallos.map((f) => ' - ' + f).join('\n'));

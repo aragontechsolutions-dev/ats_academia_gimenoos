@@ -193,3 +193,11 @@ de vulnerabilidades de paquetes), y la configuración de Vercel y Render.
 - [ ] Lo de protección de datos que sigue pendiente: inscripción ante la URCDP,
       política de privacidad publicada y consentimiento en el alta. Ver
       [`05-proteccion-datos.md`](05-proteccion-datos.md).
+
+---
+
+> **Hay una segunda pasada.** Después de esta auditoría entraron pagos, el
+> tablero, los comprobantes en Storage, el buscador de alumnos, la galería
+> pública agrupada y los avisos de pago. Todo eso se revisó —y esto se volvió a
+> correr— en [`32-auditoria-2.md`](32-auditoria-2.md).
+

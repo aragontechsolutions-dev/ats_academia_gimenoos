@@ -37,6 +37,23 @@ export type ResultadoDeCorreo =
  * Que sea el mismo servidor importa: el dominio ya está autenticado ahí, así que
  * estos correos heredan la reputación de los que ya llegan bien.
  */
+/**
+ * Tacha las direcciones de correo del motivo de un fallo.
+ *
+ * No alcanza con «no escribir el destinatario en el mensaje»: los servidores
+ * SMTP lo meten ellos. Un rechazo típico llega como
+ * `550 5.1.1 <ana@ejemplo.com>: Recipient address rejected`, y ese motivo va a
+ * dos lados que no son la base de personas: el registro del servidor y la
+ * columna `error` de `recordatorios_enviados`, donde quedaría guardado para
+ * siempre. Una dirección de correo es un dato personal (Ley 18.331).
+ *
+ * Se tacha acá, en el único lugar por donde pasan todos los fallos de correo,
+ * y no en cada sitio que los consume: así no hay forma de olvidarse en uno.
+ */
+export function sinDirecciones(mensaje: string): string {
+  return mensaje.replace(/[\w.!#$%&'*+/=?^`{|}~-]+@[\w-]+(?:\.[\w-]+)+/g, '«dirección»');
+}
+
 @Injectable()
 export class CorreoService {
   private readonly log = new Logger(CorreoService.name);
@@ -102,9 +119,7 @@ export class CorreoService {
       });
       return { estado: 'enviado' };
     } catch (problema) {
-      const motivo = problema instanceof Error ? problema.message : String(problema);
-      // El destinatario NO va al registro: es un dato personal y los registros
-      // los lee más gente que la base.
+      const motivo = sinDirecciones(problema instanceof Error ? problema.message : String(problema));
       this.log.warn(`No se pudo mandar un correo: ${motivo}`);
       return { estado: 'fallo', motivo };
     }

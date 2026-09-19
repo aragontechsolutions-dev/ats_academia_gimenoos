@@ -18,10 +18,33 @@
 -- NO van al repositorio.
 -- ============================================================================
 BEGIN;
-DELETE FROM reservas WHERE id IN ('00000000-0000-4000-aa00-000000000031','00000000-0000-4000-aa00-000000000032');
-DELETE FROM clientes WHERE id IN ('00000000-0000-4000-aa00-00000000000a','00000000-0000-4000-aa00-00000000000b');
-DELETE FROM instructores WHERE id = '00000000-0000-4000-aa00-0000000000e1';
-DELETE FROM vehiculos WHERE id = '00000000-0000-4000-aa00-0000000000f1';
+
+-- La limpieza va por DUENIO y no por identificador de fila, y ese detalle
+-- importa: el barrido crea cosas a traves de la API —una reserva, un pago— y
+-- borrar solo las dos filas conocidas dejaba las otras enganchadas a la ficha.
+-- Entonces el DELETE del cliente chocaba contra su clave foranea y el archivo
+-- dejaba de poder reejecutarse, justo lo contrario de lo que promete arriba.
+-- Un guion de seguridad que no se puede volver a correr es un guion que se deja
+-- de correr.
+--
+-- El orden es de hijo a padre: cada tabla antes de aquella a la que apunta.
+DELETE FROM pagos              WHERE cliente_id IN ('00000000-0000-4000-aa00-00000000000a','00000000-0000-4000-aa00-00000000000b');
+DELETE FROM reservas           WHERE cliente_id IN ('00000000-0000-4000-aa00-00000000000a','00000000-0000-4000-aa00-00000000000b')
+                                  OR instructor_id = '00000000-0000-4000-aa00-0000000000e1'
+                                  OR vehiculo_id  = '00000000-0000-4000-aa00-0000000000f1';
+DELETE FROM compras_servicio   WHERE cliente_id IN ('00000000-0000-4000-aa00-00000000000a','00000000-0000-4000-aa00-00000000000b');
+DELETE FROM graduados          WHERE cliente_id IN ('00000000-0000-4000-aa00-00000000000a','00000000-0000-4000-aa00-00000000000b');
+DELETE FROM clientes           WHERE id IN ('00000000-0000-4000-aa00-00000000000a','00000000-0000-4000-aa00-00000000000b');
+DELETE FROM disponibilidad_plantillas WHERE instructor_id = '00000000-0000-4000-aa00-0000000000e1';
+DELETE FROM excepciones_disponibilidad WHERE instructor_id = '00000000-0000-4000-aa00-0000000000e1';
+DELETE FROM instructores       WHERE id = '00000000-0000-4000-aa00-0000000000e1';
+DELETE FROM vehiculos          WHERE id = '00000000-0000-4000-aa00-0000000000f1';
+DELETE FROM suscripciones_push WHERE usuario_id IN (
+  '00000000-0000-4000-aa00-000000000001','00000000-0000-4000-aa00-000000000002',
+  '00000000-0000-4000-aa00-000000000003','00000000-0000-4000-aa00-000000000004');
+DELETE FROM registros_auditoria WHERE usuario_id IN (
+  '00000000-0000-4000-aa00-000000000001','00000000-0000-4000-aa00-000000000002',
+  '00000000-0000-4000-aa00-000000000003','00000000-0000-4000-aa00-000000000004');
 DELETE FROM usuarios WHERE id IN (
   '00000000-0000-4000-aa00-000000000001','00000000-0000-4000-aa00-000000000002',
   '00000000-0000-4000-aa00-000000000003','00000000-0000-4000-aa00-000000000004');
