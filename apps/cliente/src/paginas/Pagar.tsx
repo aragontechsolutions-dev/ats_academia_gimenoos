@@ -9,6 +9,17 @@ import { useAvisos } from '../lib/avisos';
 import { useSesion } from '../lib/sesion';
 import { ETIQUETA_PAGO, type ConfiguracionPublica, type MiPago, type ServicioPublico } from '../lib/tipos';
 
+/** Dónde se recuerda el servicio elegido mientras se busca el comprobante. */
+const RECUERDO = 'gimenoos:pago-elegido';
+
+function recordado(): string {
+  try {
+    return sessionStorage.getItem(RECUERDO) ?? '';
+  } catch {
+    return '';
+  }
+}
+
 /** Los pesos, como se escriben en Uruguay: $ 12.000 */
 const pesos = (monto: string): string =>
   `$ ${new Intl.NumberFormat('es-UY', { maximumFractionDigits: 0 }).format(Number(monto))}`;
@@ -41,7 +52,27 @@ export function Pagar() {
   const [config, setConfig] = useState<ConfiguracionPublica | null>(null);
   const [mios, setMios] = useState<MiPago[] | null>(null);
 
-  const [elegido, setElegido] = useState<string>('');
+  /**
+   * Qué servicio eligió, recordado entre recargas.
+   *
+   * No es un lujo. En el teléfono, abrir la galería o la cámara para elegir el
+   * comprobante deja a la app en segundo plano, y Android la puede cerrar para
+   * liberar memoria. Al volver, la app arranca de cero y lo elegido se perdió:
+   * la persona ve la pantalla en blanco otra vez y cree que algo falló. Con esto
+   * vuelve a donde estaba.
+   */
+  const [elegido, setElegido] = useState<string>(() => recordado());
+
+  /**
+   * A qué pago va el archivo que se está por elegir.
+   *
+   * `nuevo` crea el pago en el momento; `existente` completa uno que quedó sin
+   * comprobante. Sin esto, el mismo botón de archivo no podría servir para las
+   * dos cosas.
+   */
+  const [destino, setDestino] = useState<{ tipo: 'nuevo' } | { tipo: 'existente'; pagoId: string }>(
+    { tipo: 'nuevo' },
+  );
   /**
    * El historial arranca recortado.
    *
@@ -53,6 +84,19 @@ export function Pagar() {
   const [subiendo, setSubiendo] = useState(false);
   const entrada = useRef<HTMLInputElement>(null);
 
+  // Se guarda en `sessionStorage` y no en `localStorage`: es el estado de algo
+  // que se está haciendo ahora, no una preferencia que deba sobrevivir a cerrar
+  // la app.
+  useEffect(() => {
+    try {
+      if (elegido) sessionStorage.setItem(RECUERDO, elegido);
+      else sessionStorage.removeItem(RECUERDO);
+    } catch {
+      // Navegación privada o almacenamiento bloqueado. Se pierde el recuerdo y
+      // nada más: la pantalla funciona igual.
+    }
+  }, [elegido]);
+
   const cargar = useCallback(() => {
     void misPagos.listar().then(setMios).catch(() => setMios([]));
   }, []);
@@ -63,34 +107,67 @@ export function Pagar() {
     cargar();
   }, [cargar]);
 
+  /** Abre el selector de archivos apuntando a dónde va el comprobante. */
+  function elegirArchivo(hacia: { tipo: 'nuevo' } | { tipo: 'existente'; pagoId: string }) {
+    setDestino(hacia);
+    entrada.current?.click();
+  }
+
   /**
-   * Crea el pago y sube el comprobante, en ese orden.
+   * Sube el comprobante, sea de un pago nuevo o de uno que quedó a medias.
    *
-   * Si la subida falla, el pago queda en «Falta el comprobante»: se ve en el
-   * listado de abajo y el alumno puede volver a intentarlo sin empezar de cero.
+   * El pago se crea ANTES de subir el archivo porque la carpeta donde vive el
+   * archivo lleva su identificador. La consecuencia buena es que, si la subida
+   * falla, el pago queda en «Falta el comprobante» **con un botón para
+   * completarlo** en el historial de abajo: no se pierde nada y no hay que
+   * empezar de cero. Eso último faltaba, y era lo que convertía cualquier
+   * tropiezo en «se borró todo».
    */
-  async function pagar(archivo: File) {
-    if (!elegido || !perfil) return;
+  async function subir(archivo: File) {
+    if (!perfil) return;
     setSubiendo(true);
     try {
-      const pago = await misPagos.empezar(elegido);
-      const { archivo: nombre } = await subirComprobante(perfil.id, pago.id, archivo);
-      await misPagos.registrarComprobante(pago.id, nombre);
+      const pagoId =
+        destino.tipo === 'existente'
+          ? destino.pagoId
+          : elegido
+            ? (await misPagos.empezar(elegido)).id
+            : null;
+      if (!pagoId) return;
 
-      avisos.exito('Comprobante enviado. La academia lo va a revisar.');
+      const { archivo: nombre, seAchico } = await subirComprobante(perfil.id, pagoId, archivo);
+      await misPagos.registrarComprobante(pagoId, nombre);
+
+      avisos.exito(
+        seAchico
+          ? 'Comprobante enviado. La imagen se redujo para que entrara; si no se llega a leer, mandanos el PDF.'
+          : 'Comprobante enviado. La academia lo va a revisar.',
+      );
       setElegido('');
+      setDestino({ tipo: 'nuevo' });
       cargar();
     } catch (problema) {
       avisos.error(problema);
+      // A propósito NO se limpia lo elegido: si falló, la persona va a querer
+      // reintentar con otro archivo sin volver a elegir el servicio.
+      cargar();
     } finally {
       setSubiendo(false);
+      // Se limpia el input para que elegir DOS VECES el mismo archivo vuelva a
+      // disparar el evento: sin esto, un reintento con el mismo archivo no hace
+      // nada y parece que la app se colgó.
       if (entrada.current) entrada.current.value = '';
     }
   }
 
   const activos = (servicios ?? []).filter((s) => Number(s.precioContado) > 0);
   const ULTIMOS = 5;
-  const visibles = verTodos ? (mios ?? []) : (mios ?? []).slice(0, ULTIMOS);
+  // Un pago sin comprobante SIEMPRE se ve, aunque sea viejo: es lo único de
+  // esta lista sobre lo que hay algo que hacer, y esconderlo detrás de «ver los
+  // anteriores» es esconder justo lo que hace falta.
+  const visibles = verTodos
+    ? (mios ?? [])
+    : (mios ?? []).filter((pago, indice) => indice < ULTIMOS || pago.estado === 'PENDIENTE');
   const ocultos = (mios?.length ?? 0) - visibles.length;
 
   return (
@@ -170,13 +247,13 @@ export function Pagar() {
           className="hidden"
           onChange={(evento) => {
             const archivo = evento.target.files?.[0];
-            if (archivo) void pagar(archivo);
+            if (archivo) void subir(archivo);
           }}
         />
         <Boton
           className="mt-3 w-full"
           disabled={!elegido || subiendo}
-          onClick={() => entrada.current?.click()}
+          onClick={() => elegirArchivo({ tipo: 'nuevo' })}
         >
           {subiendo ? 'Enviando…' : 'Elegir el comprobante'}
         </Boton>
@@ -213,6 +290,26 @@ export function Pagar() {
                     </span>
                   </div>
                 </div>
+
+                {/* El camino de vuelta. Un pago sin comprobante —porque la
+                    subida falló, porque el teléfono cerró la app mientras se
+                    buscaba la foto, o porque se cambió de idea a mitad— se
+                    completa desde acá en vez de empezar de cero. */}
+                {pago.estado === 'PENDIENTE' && (
+                  <div className="mt-3">
+                    <p className="text-xs text-slate-600">
+                      Este pago quedó sin comprobante. Subilo y la academia lo revisa.
+                    </p>
+                    <Boton
+                      className="mt-2 w-full"
+                      variante="secundario"
+                      disabled={subiendo}
+                      onClick={() => elegirArchivo({ tipo: 'existente', pagoId: pago.id })}
+                    >
+                      {subiendo ? 'Enviando…' : 'Subir el comprobante'}
+                    </Boton>
+                  </div>
+                )}
 
                 {pago.estado === 'RECHAZADO' && pago.motivoRechazo && (
                   <div className="mt-3">

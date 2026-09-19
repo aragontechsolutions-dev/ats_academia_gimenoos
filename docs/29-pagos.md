@@ -261,3 +261,11 @@ contenedor (`h-32`). Un porcentaje solo se resuelve contra un alto definido, y c
 `flex-1` las barras quedaban en cero y el gráfico salía en blanco **sin que fallara
 ninguna prueba**, porque la prueba contaba columnas y no píxeles pintados. Ahora
 mide el alto real.
+
+---
+
+> **Arreglos posteriores (ver [`31-arreglos-pago-y-avisos.md`](31-arreglos-pago-y-avisos.md)):**
+> un pago que quedó sin comprobante ahora se completa desde el historial con un
+> botón, el servicio elegido se recuerda entre recargas, el tipo del archivo se
+> deduce del nombre cuando el teléfono no lo declara, y una imagen de más de
+> 5 MB se achica en vez de rechazarse.
