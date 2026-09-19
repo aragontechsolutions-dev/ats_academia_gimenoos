@@ -590,3 +590,26 @@ sitio público.
 
 De paso se arregló que las páginas propias del sitio (egresados y verificación
 de diploma) no tuvieran ningún `h1`.
+
+---
+
+## Etapa 7 — Cerrar el círculo de los pagos — HECHO
+
+El módulo de pagos funcionaba, pero nadie se enteraba de nada sin entrar a
+mirar. Dos avisos que faltaban:
+
+- **A la academia, cuando llega un comprobante.** Interruptor propio
+  («Comprobante de pago») en la pantalla de Avisos, prendido por omisión y
+  apagable como los demás. Un cobro en efectivo no avisa: lo registró ella
+  misma. Empezar un pago tampoco: hasta que no sube el comprobante no hay nada
+  que mirar.
+- **Al alumno, cuando se aprueba o se rechaza.** Aviso en el teléfono, por el
+  mismo camino que los recordatorios. El de aprobación dice cuántas clases
+  quedaron; el de rechazo **no lleva el motivo**, porque una notificación se lee
+  en la pantalla bloqueada y el motivo puede nombrar el banco de la persona.
+
+Migración: `aviso_de_pago_nuevo`. 36 pruebas en `pagos.spec.ts` (siete nuevas) y
+8 comprobaciones en el navegador del panel.
+
+Documentado en [`29-pagos.md`](29-pagos.md) §6 bis y en
+[`23-avisos-telegram.md`](23-avisos-telegram.md).

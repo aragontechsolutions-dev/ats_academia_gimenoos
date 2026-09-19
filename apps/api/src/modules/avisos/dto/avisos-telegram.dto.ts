@@ -55,4 +55,9 @@ export class ActualizarAvisosTelegramDto {
   @IsOptional()
   @IsBoolean()
   avisaRecordatorios?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  avisaPagoNuevo?: boolean;
 }

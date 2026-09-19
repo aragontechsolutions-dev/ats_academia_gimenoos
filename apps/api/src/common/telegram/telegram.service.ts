@@ -18,7 +18,8 @@ export type ClaseDeAviso =
   | 'claseCerrada'
   | 'claseCancelada'
   | 'clicWhatsapp'
-  | 'recordatorio';
+  | 'recordatorio'
+  | 'pagoNuevo';
 
 /** Qué columna manda sobre cada aviso. */
 const INTERRUPTOR = {
@@ -27,6 +28,7 @@ const INTERRUPTOR = {
   claseCancelada: 'avisaClaseCancelada',
   clicWhatsapp: 'avisaClicWhatsapp',
   recordatorio: 'avisaRecordatorios',
+  pagoNuevo: 'avisaPagoNuevo',
 } as const satisfies Record<ClaseDeAviso, string>;
 
 /**

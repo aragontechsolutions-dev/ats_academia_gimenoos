@@ -281,6 +281,7 @@ export interface EstadoAvisosTelegram {
   avisaClaseCancelada: boolean;
   avisaClicWhatsapp: boolean;
   avisaRecordatorios: boolean;
+  avisaPagoNuevo: boolean;
   ultimoEnvioAt: string | null;
   ultimoErrorAt: string | null;
   ultimoError: string | null;

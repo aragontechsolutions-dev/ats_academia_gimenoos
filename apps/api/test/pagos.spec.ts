@@ -11,9 +11,37 @@ import { CanalPago, EstadoPago, TipoServicio } from '@prisma/client';
 import { PrismaService } from '../src/common/prisma/prisma.service';
 import { AuditoriaService } from '../src/common/auditoria/auditoria.service';
 import { PagosService } from '../src/modules/pagos/pagos.service';
+import type { TelegramService } from '../src/common/telegram/telegram.service';
+import type { PushService } from '../src/common/push/push.service';
 
 const prisma = new PrismaService();
-const servicio = new PagosService(prisma, new AuditoriaService(prisma));
+
+/**
+ * Los avisos, espiados.
+ *
+ * Se reemplazan por funciones que sólo anotan qué se pidió mandar: acá no hay
+ * Telegram ni claves VAPID, y sobre todo, lo que importa probar no es que el
+ * mensaje salga —eso lo prueban `telegram.service.spec` y `push.service.spec`—
+ * sino **que se dispare cuando corresponde y no cuando no**.
+ */
+const telegramaEnviados: Array<{ clase: string; texto: string }> = [];
+const pushEnviados: Array<{ usuarioId: string; titulo: string }> = [];
+
+const telegram = {
+  avisar: jest.fn(async (clase: string, texto: string) => {
+    telegramaEnviados.push({ clase, texto });
+    return { estado: 'enviado' as const };
+  }),
+} as unknown as TelegramService;
+
+const push = {
+  avisar: jest.fn(async (usuarioId: string, aviso: { titulo: string }) => {
+    pushEnviados.push({ usuarioId, titulo: aviso.titulo });
+    return { estado: 'enviado' as const, dispositivos: 1 };
+  }),
+} as unknown as PushService;
+
+const servicio = new PagosService(prisma, new AuditoriaService(prisma), telegram, push);
 
 const ID = {
   usuarioAna: '00000000-0000-4000-e100-000000000001',
@@ -87,6 +115,8 @@ beforeAll(async () => {
 beforeEach(async () => {
   await prisma.pago.deleteMany({ where: { clienteId: { in: [ID.ana, ID.bruno] } } });
   await prisma.compraServicio.deleteMany({ where: { clienteId: { in: [ID.ana, ID.bruno] } } });
+  telegramaEnviados.length = 0;
+  pushEnviados.length = 0;
 });
 
 afterAll(async () => {
@@ -396,5 +426,90 @@ describe('La compra y el pago van juntos o no van', () => {
     } finally {
       await prisma.servicio.update({ where: { id: ID.pack }, data: { cantidadClases: 10 } });
     }
+  });
+});
+
+/**
+ * Los avisos que cierran el círculo del pago.
+ *
+ * Sin esto, la academia se entera de que hay un comprobante esperando sólo si a
+ * alguien se le ocurre abrir el panel, y el alumno se entera de la decisión sólo
+ * si vuelve a entrar a la app. Las dos cosas ya pasaban.
+ *
+ * Los avisos salen SIN esperar (`void`), así que las pruebas dan una vuelta al
+ * bucle de eventos antes de mirar qué se pidió mandar.
+ */
+describe('Los avisos del pago', () => {
+  /** Los avisos se disparan sin await: hay que dejarlos correr. */
+  const dejarSalir = () => new Promise((r) => setTimeout(r, 30));
+
+  it('empezar un pago NO avisa: todavía no hay nada que revisar', async () => {
+    await servicio.crearPropio(ID.usuarioAna, { servicioId: ID.pack });
+    await dejarSalir();
+
+    expect(telegramaEnviados).toHaveLength(0);
+  });
+
+  it('subir el comprobante avisa a la academia', async () => {
+    const pago = await servicio.crearPropio(ID.usuarioAna, { servicioId: ID.pack });
+    await servicio.registrarComprobante(ID.usuarioAna, pago.id, { archivo: 'c.pdf' });
+    await dejarSalir();
+
+    expect(telegramaEnviados).toHaveLength(1);
+    expect(telegramaEnviados[0]!.clase).toBe('pagoNuevo');
+    expect(telegramaEnviados[0]!.texto).toContain('Ana');
+    expect(telegramaEnviados[0]!.texto).toContain('Pack de 10 clases');
+  });
+
+  it('el aviso NO lleva la ruta del comprobante ni el documento del alumno', async () => {
+    // La ruta, junto con la clave de servicio, llega al archivo. Telegram lo lee
+    // más gente que la base, y un chat de grupo puede tener a cualquiera.
+    const pago = await servicio.crearPropio(ID.usuarioAna, { servicioId: ID.pack });
+    await servicio.registrarComprobante(ID.usuarioAna, pago.id, { archivo: 'c.pdf' });
+    await dejarSalir();
+
+    const texto = telegramaEnviados[0]!.texto;
+    expect(texto).not.toContain('c.pdf');
+    expect(texto).not.toContain(ID.usuarioAna);
+    expect(texto).not.toContain(pago.id);
+  });
+
+  it('aprobar le avisa al alumno, y dice cuántas clases le quedaron', async () => {
+    const pago = await servicio.crearPropio(ID.usuarioAna, { servicioId: ID.pack });
+    await servicio.aprobar(pago.id, {}, ID.usuarioAdmin);
+    await dejarSalir();
+
+    expect(pushEnviados).toHaveLength(1);
+    expect(pushEnviados[0]!.usuarioId).toBe(ID.usuarioAna);
+    expect(pushEnviados[0]!.titulo).toBe('Pago aprobado');
+  });
+
+  it('rechazar también le avisa, pero sin el motivo adentro', async () => {
+    // El motivo lo escribe una persona y puede nombrar el banco o la cuenta del
+    // alumno. Una notificación se lee en la pantalla bloqueada; el motivo entero
+    // está en la app, detrás de la sesión.
+    const pago = await servicio.crearPropio(ID.usuarioAna, { servicioId: ID.pack });
+    await servicio.rechazar(pago.id, { motivo: 'El comprobante es de otra cuenta' }, ID.usuarioAdmin);
+    await dejarSalir();
+
+    expect(pushEnviados).toHaveLength(1);
+    expect(pushEnviados[0]!.usuarioId).toBe(ID.usuarioAna);
+    expect(JSON.stringify(pushEnviados[0])).not.toContain('otra cuenta');
+  });
+
+  it('el aviso va al alumno del pago, no a quien lo aprobó', async () => {
+    const pago = await servicio.crearPropio(ID.usuarioBruno, { servicioId: ID.pack });
+    await servicio.aprobar(pago.id, {}, ID.usuarioAdmin);
+    await dejarSalir();
+
+    expect(pushEnviados[0]!.usuarioId).toBe(ID.usuarioBruno);
+  });
+
+  it('un cobro en efectivo NO dispara el aviso de comprobante', async () => {
+    // Lo registra la academia en el mostrador: no hay nada que ir a revisar.
+    await servicio.crearEnEfectivo({ clienteId: ID.ana, servicioId: ID.pack }, ID.usuarioAdmin);
+    await dejarSalir();
+
+    expect(telegramaEnviados).toHaveLength(0);
   });
 });
