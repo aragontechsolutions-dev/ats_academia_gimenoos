@@ -7,6 +7,7 @@ import { Avisos } from './componentes/ui/Avisos';
 import { RutaProtegida } from './componentes/RutaProtegida';
 import { Disposicion } from './componentes/Disposicion';
 import { Ingreso } from './paginas/Ingreso';
+import { ManualDeUso } from './paginas/ManualDeUso';
 import { Entrar } from './paginas/Entrar';
 import { MiAgenda } from './paginas/MiAgenda';
 
@@ -30,6 +31,7 @@ export function App() {
             <Route path="/ingresar" element={<Ingreso />} />
             {/* Fuera del guard de sesión: es justamente donde se consigue la sesión. */}
             <Route path="/entrar" element={<Entrar />} />
+            <Route path="/manual" element={<Pagina><ManualDeUso /></Pagina>} />
             <Route
               path="*"
               element={

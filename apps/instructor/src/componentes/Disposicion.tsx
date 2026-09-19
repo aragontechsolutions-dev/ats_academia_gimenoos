@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { NavLink } from 'react-router-dom';
 
 import { Logotipo } from './Logotipo';
 import { useSesion } from '../lib/sesion';
@@ -22,6 +23,23 @@ export function Disposicion({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-10 bg-carbon-950 pt-[env(safe-area-inset-top)] text-white">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-4 py-3">
           <Logotipo etiqueta="Instructores" className="text-lg" />
+          <div className="flex items-center gap-2">
+            {/* El signo de pregunta, donde se lo busca. Esta app no tiene barra
+                de navegación —es una sola pantalla—, así que el encabezado es
+                el único lugar posible. */}
+            <NavLink
+              to="/manual"
+              aria-label="Manual de uso"
+              className={({ isActive }) =>
+                `flex h-8 w-8 items-center justify-center rounded-full border text-sm font-bold transition ${
+                  isActive
+                    ? 'border-white bg-white text-carbon-950'
+                    : 'border-white/30 text-white hover:border-white'
+                }`
+              }
+            >
+              ?
+            </NavLink>
           {perfil && (
             <button
               type="button"
@@ -31,6 +49,7 @@ export function Disposicion({ children }: { children: ReactNode }) {
               Salir
             </button>
           )}
+          </div>
         </div>
       </header>
 

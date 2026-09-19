@@ -61,6 +61,32 @@ jobs:
           VITE_SUPABASE_ANON_KEY: clave-de-compilacion
           VITE_API_URL: http://localhost:3000/api/v1
 
+      - name: Cada app lleva SOLO su propio manual
+        run: |
+          # Los tres manuales viven en un unico objeto de @gimenoos/shared para
+          # que el panel pueda mostrarlos. Que el del alumno NO viaje al
+          # navegador del instructor —y menos el de administracion, que describe
+          # los flujos internos— depende de que el empaquetador pode lo que no
+          # se usa. Hoy lo hace; esto avisa el dia que deje de hacerlo, por
+          # ejemplo si alguien escribe MANUALES[algoDinamico] en una PWA.
+          falla=0
+          revisar() {
+            app="$1"; frase="$2"; esperado="$3"
+            hallados=$(grep -rl "$frase" "apps/$app/dist/assets/" 2>/dev/null | wc -l)
+            if [ "$hallados" != "$esperado" ]; then
+              echo "::error::apps/$app: '$frase' aparece en $hallados archivos, se esperaban $esperado"
+              falla=1
+            fi
+          }
+          revisar cliente    'Manual del alumno'      1
+          revisar cliente    'puede hacer que'        0
+          revisar cliente    'Manual del instructor'  0
+          revisar instructor 'Manual del instructor'  1
+          revisar instructor 'Manual del alumno'      0
+          revisar admin      'Manual de administraci'  1
+          [ "$falla" = 0 ] || exit 1
+          echo "Cada app lleva solo su manual"
+
   base-de-datos:
     name: Migraciones y constraints de agenda
     runs-on: ubuntu-latest
